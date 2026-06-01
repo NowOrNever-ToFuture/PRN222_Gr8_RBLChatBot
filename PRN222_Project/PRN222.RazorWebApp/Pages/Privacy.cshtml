@@ -1,0 +1,41 @@
+﻿@page
+@model PRN222.RazorWebApp.Pages.PrivacyModel
+@{
+    ViewData["Title"] = "Chính sách bảo mật";
+}
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-lg-8 offset-lg-2">
+            <h1 class="mb-4"><i class="bi bi-shield-lock"></i> @ViewData["Title"]</h1>
+            <div class="alert alert-info">
+                <strong><i class="bi bi-info-circle"></i> Thông báo:</strong> Chính sách bảo mật này áp dụng cho Hệ thống quản lý tài liệu PRN222.
+            </div>
+            <h3 class="mt-4">1. Thu thập thông tin</h3>
+            <p>Hệ thống chỉ thu thập thông tin cần thiết để cung cấp dịch vụ quản lý tài liệu:
+                <ul>
+                    <li>Tên đăng nhập và mật khẩu</li>
+                    <li>Tên đầy đủ của người dùng</li>
+                    <li>Vai trò (Admin/Student)</li>
+                    <li>Thông tin về các tài liệu được tải lên</li>
+                </ul>
+            </p>
+            <h3 class="mt-4">2. Quyền riêng tư người dùng</h3>
+            <p>Hệ thống tuân thủ các quy tắc sau:
+                <ul>
+                    <li><strong>Student:</strong> Chỉ xem được tài liệu của chính mình</li>
+                    <li><strong>Admin:</strong> Có quyền xem tất cả các tài liệu trong hệ thống</li>
+                    <li>Mật khẩu được mã hóa và không được lưu trữ dưới dạng văn bản thuần túy</li>
+                </ul>
+            </p>
+            <h3 class="mt-4">3. Bảo mật tài liệu</h3>
+            <p>Tất cả các tài liệu được lưu trữ an toàn trên máy chủ. Người dùng chỉ có thể truy cập các tài liệu mà mình có quyền xem.</p>
+            <h3 class="mt-4">4. Liên hệ hỗ trợ</h3>
+            <p>Nếu bạn có bất kỳ câu hỏi nào về chính sách bảo mật hoặc hệ thống, vui lòng liên hệ với người quản trị.</p>
+            <hr class="my-5" />
+            <p class="text-muted text-center small">
+                <i class="bi bi-clock-history"></i> Cập nhật lần cuối: <strong>13/05/2026</strong>
+            </p>
+        </div>
+    </div>
+</div>

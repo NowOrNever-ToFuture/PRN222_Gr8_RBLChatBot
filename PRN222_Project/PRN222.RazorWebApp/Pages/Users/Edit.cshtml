@@ -1,0 +1,56 @@
+@page "{id:guid}"
+@model PRN222.RazorWebApp.Pages.Users.EditModel
+@{
+    ViewData["Title"] = "Sửa tài khoản";
+}
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card border-0 shadow-lg" style="border-radius: 12px;">
+                <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px 12px 0 0;">
+                    <h3 class="mb-0"><i class="bi bi-pencil-fill"></i> Sửa tài khoản</h3>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post">
+                        @if (!ViewData.ModelState.IsValid && ViewData.ModelState.Values.Any(v => v.Errors.Any()))
+                        {
+                            <div class="alert alert-danger alert-dismissible fade show">
+                                <i class="bi bi-exclamation-circle"></i>
+                                @foreach (var ms in ViewData.ModelState.Values) { @foreach (var e in ms.Errors) { <div>@e.ErrorMessage</div> } }
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        }
+                        <input type="hidden" asp-for="Input.Id" />
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold"><i class="bi bi-person-circle"></i> Tên đăng nhập</label>
+                            <input asp-for="Input.Username" class="form-control form-control-lg" style="border-radius: 8px; border: 2px solid #e0e0e0;" />
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold"><i class="bi bi-shield-lock"></i> Vai trò</label>
+                            <select asp-for="Input.Role" class="form-control form-control-lg" style="border-radius: 8px; border: 2px solid #e0e0e0;">
+                                <option value="Student">Student (Sinh viên)</option>
+                                <option value="Admin">Admin (Quản trị viên)</option>
+                            </select>
+                        </div>
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> <strong>Lưu ý:</strong> Để thay đổi mật khẩu, hãy xóa tài khoản và tạo lại.
+                        </div>
+                        <div class="row mt-5">
+                            <div class="col-md-6">
+                                <button type="submit" class="btn btn-lg w-100 fw-semibold text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 8px;">
+                                    <i class="bi bi-check-circle"></i> Cập nhật
+                                </button>
+                            </div>
+                            <div class="col-md-6">
+                                <a asp-page="/Users/Index" class="btn btn-lg w-100 fw-semibold" style="background-color: #e9ecef; border: none; border-radius: 8px;">
+                                    <i class="bi bi-arrow-left"></i> Quay lại
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

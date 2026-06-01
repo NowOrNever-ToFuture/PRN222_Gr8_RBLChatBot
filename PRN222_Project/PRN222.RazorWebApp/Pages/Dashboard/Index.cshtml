@@ -1,0 +1,316 @@
+@page
+@model PRN222.RazorWebApp.Pages.Dashboard.IndexModel
+@using PRN222.Services.Interfaces
+@{
+    ViewData["Title"] = "Dashboard Benchmark";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+        <div>
+            <h2 class="fw-bold text-dark mb-0"><i class="bi bi-speedometer2 text-primary"></i> Chào mừng trở lại, Admin!</h2>
+            <p class="text-muted mb-0 mt-1">Quản lý và đánh giá hệ thống AI Chatbot RBL</p>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <span class="badge bg-success rounded-pill px-3 py-2 shadow-sm fs-6">
+                <i class="bi bi-record-circle-fill text-white"></i> Active Model: @Model.ActiveModel
+            </span>
+        </div>
+    </div>
+
+    @if (Model.Stats != null)
+    {
+        <div class="row g-4 mb-4">
+            <div class="col-xl-3 col-md-6">
+                <div class="card bg-white border-0 shadow-sm h-100 py-2" style="border-left: 5px solid #0d6efd !important;">
+                    <div class="card-body">
+                        <div class="text-xs fw-bold text-primary text-uppercase mb-1">Tổng Môn Học</div>
+                        <div class="h3 mb-0 fw-bold text-dark">@Model.Stats.TotalCourses <small class="text-muted fs-6 fw-normal">môn</small></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="card bg-white border-0 shadow-sm h-100 py-2" style="border-left: 5px solid #198754 !important;">
+                    <div class="card-body">
+                        <div class="text-xs fw-bold text-success text-uppercase mb-1">Kho Tri Thức</div>
+                        <div class="h3 mb-0 fw-bold text-dark">@Model.Stats.TotalDocuments <small class="text-muted fs-6 fw-normal">files</small></div>
+                        <div class="text-xs mt-1 text-muted"><i class="bi bi-diagram-3"></i> @Model.Stats.TotalChunks chunks (vectors)</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="card bg-white border-0 shadow-sm h-100 py-2" style="border-left: 5px solid #0dcaf0 !important;">
+                    <div class="card-body">
+                        <div class="text-xs fw-bold text-info text-uppercase mb-1">Ngân Hàng Câu Hỏi</div>
+                        <div class="h3 mb-0 fw-bold text-dark">@Model.Stats.TotalQuestions <small class="text-muted fs-6 fw-normal">câu</small></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="card bg-white border-0 shadow-sm h-100 py-2" style="border-left: 5px solid #ffc107 !important;">
+                    <div class="card-body">
+                        <div class="text-xs fw-bold text-warning text-uppercase mb-1">Đã Benchmark</div>
+                        <div class="h3 mb-0 fw-bold text-dark">@Model.Stats.TotalBenchmarkRuns <small class="text-muted fs-6 fw-normal">lần chạy</small></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white border-bottom py-3">
+            <h6 class="m-0 fw-bold text-dark"><i class="bi bi-sliders2-vertical me-2"></i>Chạy Benchmark Theo Chunking Strategy</h6>
+        </div>
+        <div class="card-body">
+            <form id="benchmarkForm" class="row g-3 align-items-end">
+                <div class="col-lg-4 col-md-6">
+                    <label class="form-label fw-bold">Embedding model</label>
+                    <select id="embeddingModel" name="embeddingModel" class="form-select">
+                        <option value="bge-m3">BGE-M3</option>
+                        <option value="e5">Multilingual E5</option>
+                        <option value="phobert">PhoBERT / Vietnamese SBERT</option>
+                    </select>
+                </div>
+                <div class="col-lg-4 col-md-6">
+                    <label class="form-label fw-bold">Chunking strategy</label>
+                    <select id="chunkingStrategy" name="chunkingStrategy" class="form-select">
+                        <option value="markdown_header">Markdown header</option>
+                        <option value="paragraph">Paragraph window</option>
+                        <option value="sentence">Sentence window</option>
+                        <option value="fixed_size">Fixed size</option>
+                        <option value="fixed_size_overlap">Fixed size + overlap</option>
+                    </select>
+                </div>
+                <div class="col-lg-4">
+                    <button type="submit" id="runBenchmarkBtn" class="btn btn-warning btn-lg w-100">
+                        <i class="bi bi-play-fill"></i> Re-index & Benchmark
+                    </button>
+                </div>
+            </form>
+            <div id="benchmarkStatus" class="alert alert-secondary mt-3 mb-0 d-none">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span id="benchmarkStatusText">Đang chuẩn bị benchmark...</span>
+                    <span id="benchmarkPercent" class="fw-bold">0%</span>
+                </div>
+                <div class="progress" style="height: 8px;">
+                    <div id="benchmarkProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                </div>
+                <div id="benchmarkLiveResult" class="small text-muted mt-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h6 class="m-0 fw-bold text-primary"><i class="bi bi-bar-chart-fill me-2"></i>Chất Lượng Model (Faithfulness & Relevance)</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-area" style="position: relative; height:300px; width:100%">
+                        <canvas id="barChart"></canvas>
+                        <div id="noBarData" class="position-absolute top-50 start-50 translate-middle text-center w-100" style="display: none;">
+                            <i class="bi bi-inbox fs-1 text-muted mb-2 d-block"></i>
+                            <p class="text-muted mb-0">Chưa có dữ liệu. Hãy chạy Benchmark trước.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h6 class="m-0 fw-bold text-success"><i class="bi bi-graph-up-arrow me-2"></i>Hiệu Năng Model (Latency ms)</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-area" style="position: relative; height:300px; width:100%">
+                        <canvas id="lineChart"></canvas>
+                        <div id="noLineData" class="position-absolute top-50 start-50 translate-middle text-center w-100" style="display: none;">
+                            <i class="bi bi-inbox fs-1 text-muted mb-2 d-block"></i>
+                            <p class="text-muted mb-0">Chưa có dữ liệu. Hãy chạy Benchmark trước.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-5">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h6 class="m-0 fw-bold text-dark"><i class="bi bi-clock-history me-2"></i>Lịch Sử Test Gần Đây</h6>
+                </div>
+                <div class="card-body p-0">
+                    @if (!Model.BenchmarkRuns.Any())
+                    {
+                        <div class="text-center py-4"><p class="text-muted mb-0">Chưa có lịch sử benchmark nào.</p></div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="ps-3 border-0">Thời Gian</th>
+                                        <th class="border-0">Model</th>
+                                        <th class="border-0">Chunking</th>
+                                        <th class="pe-3 border-0">Tổng TG</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var run in Model.BenchmarkRuns)
+                                    {
+                                        <tr>
+                                            <td class="ps-3 text-muted small">@run.RunDate.ToString("dd/MM HH:mm")</td>
+                                            <td><span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2">@run.EmbeddingModel</span></td>
+                                            <td class="small">@run.ChunkingStrategy</td>
+                                            <td class="pe-3 fw-medium">@(run.TotalTimeMs / 1000.0)s</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 fw-bold text-dark"><i class="bi bi-file-earmark-arrow-up me-2"></i>Tài Liệu Mới Upload</h6>
+                    <a asp-page="/Documents/Index" class="btn btn-sm btn-link text-decoration-none">Xem tất cả</a>
+                </div>
+                <div class="card-body p-0">
+                    @if (!Model.RecentUploads.Any())
+                    {
+                        <div class="text-center py-4"><p class="text-muted mb-0">Chưa có tài liệu nào.</p></div>
+                    }
+                    else
+                    {
+                        <ul class="list-group list-group-flush">
+                            @foreach (var doc in Model.RecentUploads)
+                            {
+                                <li class="list-group-item d-flex justify-content-between align-items-center px-3 py-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-light rounded p-2 me-3">
+                                            @if (doc.FileName.EndsWith(".pdf")) { <i class="bi bi-file-earmark-pdf fs-4 text-danger"></i> }
+                                            else if (doc.FileName.EndsWith(".docx")) { <i class="bi bi-file-earmark-word fs-4 text-primary"></i> }
+                                            else { <i class="bi bi-file-earmark fs-4 text-secondary"></i> }
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0 text-truncate" style="max-width: 150px;" title="@doc.FileName">@doc.FileName</h6>
+                                            <small class="text-muted">@doc.CourseName</small>
+                                        </div>
+                                    </div>
+                                    <span class="badge @(doc.Status == "Completed" ? "bg-success" : (doc.Status == "Failed" ? "bg-danger" : "bg-warning text-dark")) rounded-pill">@doc.Status</span>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3">
+            <div class="card shadow-sm border-0 h-100 bg-light">
+                <div class="card-header bg-transparent border-0 pt-4 pb-0">
+                    <h6 class="m-0 fw-bold text-dark text-uppercase">Thao Tác Nhanh</h6>
+                </div>
+                <div class="card-body d-flex flex-column gap-3 justify-content-center">
+                    <a asp-page="/TestQuestions/Index" class="btn btn-primary btn-lg shadow-sm text-start">
+                        <div class="d-flex align-items-center"><i class="bi bi-question-circle fs-4 me-3"></i><div><div class="fw-bold">Câu hỏi Test</div><div class="small fw-normal text-white-50">Quản lý & Import câu hỏi</div></div></div>
+                    </a>
+                    <a asp-page="/Chat/Index" class="btn btn-info btn-lg shadow-sm text-start text-white">
+                        <div class="d-flex align-items-center"><i class="bi bi-chat-dots fs-4 me-3"></i><div><div class="fw-bold">Test Chat AI</div><div class="small fw-normal text-white-50">Thử nghiệm RAG</div></div></div>
+                    </a>
+                    <a asp-page="/Documents/Upload" class="btn btn-success btn-lg shadow-sm text-start">
+                        <div class="d-flex align-items-center"><i class="bi bi-cloud-arrow-up fs-4 me-3"></i><div><div class="fw-bold">Tải lên Tài liệu</div><div class="small fw-normal text-white-50">Thêm tri thức mới</div></div></div>
+                    </a>
+                    <a asp-page="/SystemSettings/Index" class="btn btn-dark btn-lg shadow-sm text-start">
+                        <div class="d-flex align-items-center"><i class="bi bi-sliders fs-4 me-3"></i><div><div class="fw-bold">Đổi Model AI</div><div class="small fw-normal text-white-50">Cấu hình hệ thống</div></div></div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+<script>
+    let barChart = null, lineChart = null;
+    const activeModel = '@Model.ActiveModel';
+    const activeChunkingStrategy = '@Model.ActiveChunkingStrategy';
+    document.getElementById('embeddingModel').value = activeModel || 'bge-m3';
+    document.getElementById('chunkingStrategy').value = activeChunkingStrategy || 'markdown_header';
+
+    const benchmarkConnection = new signalR.HubConnectionBuilder().withUrl("/hubs/benchmark").withAutomaticReconnect().build();
+    benchmarkConnection.on("ReceiveProgress", (percent, message) => {
+        const status = document.getElementById('benchmarkStatus');
+        status.classList.remove('d-none', 'alert-danger');
+        status.classList.add('alert-secondary');
+        document.getElementById('benchmarkStatusText').textContent = message;
+        document.getElementById('benchmarkPercent').textContent = percent + '%';
+        document.getElementById('benchmarkProgressBar').style.width = percent + '%';
+        if (percent >= 100) { document.getElementById('runBenchmarkBtn').disabled = false; setTimeout(loadChartData, 1000); }
+    });
+    benchmarkConnection.on("ReceiveLiveResult", (index, question, answer, faithfulness, relevance) => {
+        document.getElementById('benchmarkLiveResult').textContent = `Câu ${index}: Faithfulness ${Number(faithfulness).toFixed(2)}, Relevance ${Number(relevance).toFixed(2)}`;
+    });
+    benchmarkConnection.start().catch(err => console.error("Benchmark SignalR Error:", err));
+
+    document.getElementById('benchmarkForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.currentTarget);
+        const status = document.getElementById('benchmarkStatus');
+        const runButton = document.getElementById('runBenchmarkBtn');
+        runButton.disabled = true;
+        status.classList.remove('d-none', 'alert-danger');
+        status.classList.add('alert-secondary');
+        document.getElementById('benchmarkStatusText').textContent = 'Đang re-index tài liệu...';
+        document.getElementById('benchmarkPercent').textContent = '0%';
+        document.getElementById('benchmarkProgressBar').style.width = '0%';
+        document.getElementById('benchmarkLiveResult').textContent = '';
+        try {
+            const response = await fetch('/Dashboard/Index?handler=RunBenchmark', { method: 'POST', body: formData, headers: { 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '' } });
+            const result = await response.json();
+            if (!result.success) throw new Error(result.message || 'Không chạy được benchmark.');
+            document.getElementById('benchmarkStatusText').textContent = result.message;
+        } catch (err) {
+            runButton.disabled = false;
+            status.classList.remove('alert-secondary');
+            status.classList.add('alert-danger');
+            document.getElementById('benchmarkStatusText').textContent = err.message;
+        }
+    });
+
+    async function loadChartData() {
+        try {
+            const res = await fetch('/Dashboard/Index?handler=ChartData');
+            const data = await res.json();
+            if (data.length === 0) { document.getElementById('noBarData').style.display = 'block'; document.getElementById('noLineData').style.display = 'block'; return; }
+            document.getElementById('noBarData').style.display = 'none';
+            document.getElementById('noLineData').style.display = 'none';
+            const labels = data.map(d => d.model);
+            const faithfulness = data.map(d => d.avgFaithfulness);
+            const relevance = data.map(d => d.avgRelevance);
+            const latency = data.map(d => d.avgLatency);
+            if (barChart) barChart.destroy();
+            barChart = new Chart(document.getElementById('barChart').getContext('2d'), {
+                type: 'bar',
+                data: { labels, datasets: [{ label: 'Faithfulness', data: faithfulness, backgroundColor: 'rgba(54,162,235,0.8)', borderColor: 'rgba(54,162,235,1)', borderWidth: 1, borderRadius: 4 }, { label: 'Relevance', data: relevance, backgroundColor: 'rgba(255,193,7,0.8)', borderColor: 'rgba(255,193,7,1)', borderWidth: 1, borderRadius: 4 }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 1.0 } } }
+            });
+            if (lineChart) lineChart.destroy();
+            lineChart = new Chart(document.getElementById('lineChart').getContext('2d'), {
+                type: 'line',
+                data: { labels, datasets: [{ label: 'Latency (ms)', data: latency, borderColor: '#198754', backgroundColor: 'rgba(25,135,84,0.1)', fill: true, tension: 0.4, pointRadius: 5 }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+            });
+        } catch (err) { console.error("Lỗi load chart data:", err); }
+    }
+    document.addEventListener('DOMContentLoaded', loadChartData);
+</script>
+@Html.AntiForgeryToken()
+}

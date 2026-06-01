@@ -1,0 +1,207 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - PRN222 Assistant</title>
+    <script type="importmap"></script>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <style>
+        .premium-navbar {
+            background: rgba(255, 255, 255, 0.85) !important;
+            backdrop-filter: blur(12px) !important;
+            -webkit-backdrop-filter: blur(12px) !important;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03) !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .navbar-nav .nav-link {
+            font-weight: 600 !important;
+            color: #4b5563 !important;
+            padding: 8px 16px !important;
+            border-radius: 8px !important;
+            transition: all 0.2s ease !important;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .navbar-nav .nav-link:hover {
+            color: #764ba2 !important;
+            background-color: rgba(118, 75, 162, 0.06) !important;
+        }
+        .avatar-circle {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white !important;
+            display: grid;
+            place-items: center;
+            font-weight: 700;
+            font-size: 14px;
+            box-shadow: 0 2px 8px rgba(118, 75, 162, 0.25);
+            transition: all 0.2s ease;
+        }
+        .avatar-circle:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(118, 75, 162, 0.35);
+        }
+        .premium-dropdown-menu {
+            border-radius: 10px !important;
+            border: 1px solid rgba(0,0,0,0.05) !important;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08) !important;
+            padding: 8px 0 !important;
+        }
+        .premium-dropdown-menu .dropdown-item {
+            padding: 8px 16px !important;
+            font-weight: 500 !important;
+            color: #4b5563 !important;
+            transition: all 0.2s ease !important;
+        }
+        .premium-dropdown-menu .dropdown-item:hover {
+            background-color: rgba(118, 75, 162, 0.05) !important;
+            color: #764ba2 !important;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-md navbar-light premium-navbar sticky-top mb-4 py-3">
+            <div class="container-fluid">
+                <a class="navbar-brand fw-bold d-flex align-items-center gap-2" asp-page="/Index">
+                    <span style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; font-size: 20px;">
+                        <i class="bi bi-robot" style="color: #764ba2;"></i> PRN222 Assistant
+                    </span>
+                </a>
+                <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse"
+                        aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse d-md-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1">
+                        <li class="nav-item">
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <a class="nav-link" asp-page="/Dashboard/Index">
+                                    <i class="bi bi-speedometer2"></i> Dashboard
+                                </a>
+                            }
+                            else
+                            {
+                                <a class="nav-link" asp-page="/Index">
+                                    <i class="bi bi-house-door"></i> Home
+                                </a>
+                            }
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-page="/Documents/Index">
+                                <i class="bi bi-file-earmark-pdf"></i> Tài liệu
+                            </a>
+                        </li>
+                        @if (User.Identity?.IsAuthenticated ?? false)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-page="/Chat/Index">
+                                    <i class="bi bi-chat-dots"></i> Thử nghiệm Chat
+                                </a>
+                            </li>
+                        }
+                        <li class="nav-item">
+                            <a class="nav-link" asp-page="/Privacy">
+                                <i class="bi bi-shield-lock"></i> Privacy
+                            </a>
+                        </li>
+                    </ul>
+                    <ul class="navbar-nav align-items-center">
+                        @if (User.Identity?.IsAuthenticated ?? false)
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" id="userDropdown"
+                                   role="button" data-bs-toggle="dropdown" aria-expanded="false"
+                                   style="padding-top: 4px !important; padding-bottom: 4px !important;">
+                                    <div class="avatar-circle">
+                                        @User.Identity?.Name?[0].ToString().ToUpper()
+                                    </div>
+                                    <span class="fw-semibold">@User.Identity?.Name</span>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end premium-dropdown-menu border-0 shadow-lg" aria-labelledby="userDropdown">
+                                    <li>
+                                        <div class="dropdown-item-text px-3 py-2">
+                                            <div class="fw-bold text-dark text-truncate" style="max-width: 200px;">
+                                                @User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
+                                            </div>
+                                            <span class="badge rounded-pill text-xs mt-1 px-2 py-1"
+                                                  style="font-size: 11px; background-color: rgba(118, 75, 162, 0.1); color: #764ba2;">
+                                                <i class="bi bi-shield-check"></i> @User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value
+                                            </span>
+                                        </div>
+                                    </li>
+                                    @if (User.IsInRole("Admin"))
+                                    {
+                                        <li><hr class="dropdown-divider my-2"></li>
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center gap-2" asp-page="/Users/Index">
+                                                <i class="bi bi-people-fill text-muted"></i> Quản lý nhân sự
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center gap-2" asp-page="/Courses/Index">
+                                                <i class="bi bi-book text-muted"></i> Quản lý Môn học
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center gap-2" asp-page="/TestQuestions/Index">
+                                                <i class="bi bi-question-circle text-muted"></i> Quản lý Câu hỏi Test
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item d-flex align-items-center gap-2" asp-page="/SystemSettings/Index">
+                                                <i class="bi bi-sliders text-muted"></i> Cấu hình Hệ thống
+                                            </a>
+                                        </li>
+                                    }
+                                    <li><hr class="dropdown-divider my-2"></li>
+                                    <li>
+                                        <a class="dropdown-item d-flex align-items-center gap-2 text-danger fw-semibold" asp-page="/Account/Logout">
+                                            <i class="bi bi-box-arrow-right text-danger"></i> Đăng xuất
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-page="/Account/Login">
+                                    <i class="bi bi-box-arrow-in-right"></i> Đăng nhập
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-page="/Account/Register">
+                                    <i class="bi bi-person-plus"></i> Đăng ký
+                                </a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+    <div class="container">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+    <footer class="border-top footer text-muted">
+        <div class="container">
+            &copy; 2026 - PRN222 Assistant - <a asp-page="/Privacy">Privacy</a>
+        </div>
+    </footer>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
