@@ -59,7 +59,7 @@ cls
 echo === DANG KHOI CHAY C# .NET WEB APPLICATION ===
 echo [INFO] Web App se chay tai dia chi: http://localhost:5004
 echo.
-cd /d "%~dp0PRN222_Project\PRN222.WebApp"
+cd /d "%~dp0PRN222_Project\PRN222.RazorWebApp"
 dotnet run
 pause
 goto menu
@@ -74,7 +74,7 @@ echo [INFO] Cho 3 giay de Python AI Server san sang...
 timeout /t 3 /nobreak > nul
 
 echo [INFO] Buoc 2: Bat dau khoi chay C# .NET Web App...
-start "C# .NET Core WebApp" cmd /k "cd /d "%~dp0PRN222_Project\PRN222.WebApp" && dotnet run"
+start "C# .NET Core WebApp" cmd /k "cd /d "%~dp0PRN222_Project\PRN222.RazorWebApp" && dotnet run"
 
 echo [INFO] Cho 4 giay de Web App khoi dong...
 timeout /t 4 /nobreak > nul
