@@ -98,6 +98,51 @@ using (var scope = app.Services.CreateScope())
         dbContext.SaveChanges();
     }
 
+    if (!dbContext.Users.Any(u => u.Username == "student"))
+    {
+        byte[] salt = new byte[16] { 80, 82, 78, 50, 50, 50, 95, 83, 65, 76, 84, 95, 75, 69, 89, 33 };
+        using var pbkdf2 = new System.Security.Cryptography.Rfc2898DeriveBytes("student123", salt, 10000, System.Security.Cryptography.HashAlgorithmName.SHA256);
+        byte[] hash = pbkdf2.GetBytes(32);
+        byte[] hashWithSalt = new byte[48];
+        System.Buffer.BlockCopy(salt, 0, hashWithSalt, 0, 16);
+        System.Buffer.BlockCopy(hash, 0, hashWithSalt, 16, 32);
+        string passwordHash = Convert.ToBase64String(hashWithSalt);
+
+        dbContext.Users.Add(new User
+        {
+            Id = Guid.NewGuid(),
+            Username = "student",
+            FullName = "Student User",
+            PasswordHash = passwordHash,
+            Role = "Student"
+        });
+        dbContext.SaveChanges();
+    }
+
+    if (!dbContext.Users.Any(u => u.Username == "lecturer"))
+    {
+        byte[] salt = new byte[16] { 80, 82, 78, 50, 50, 50, 95, 83, 65, 76, 84, 95, 75, 69, 89, 33 };
+        using var pbkdf2 = new System.Security.Cryptography.Rfc2898DeriveBytes("lecturer123", salt, 10000, System.Security.Cryptography.HashAlgorithmName.SHA256);
+        byte[] hash = pbkdf2.GetBytes(32);
+        byte[] hashWithSalt = new byte[48];
+        System.Buffer.BlockCopy(salt, 0, hashWithSalt, 0, 16);
+        System.Buffer.BlockCopy(hash, 0, hashWithSalt, 16, 32);
+        string passwordHash = Convert.ToBase64String(hashWithSalt);
+
+        var firstCourse = dbContext.Courses.FirstOrDefault();
+
+        dbContext.Users.Add(new User
+        {
+            Id = Guid.NewGuid(),
+            Username = "lecturer",
+            FullName = "Head Lecturer",
+            PasswordHash = passwordHash,
+            Role = "Lecturer",
+            CourseId = firstCourse?.Id
+        });
+        dbContext.SaveChanges();
+    }
+
     if (!dbContext.SystemSettings.Any())
     {
         dbContext.SystemSettings.AddRange(
@@ -133,5 +178,6 @@ app.MapRazorPages();
 // SignalR Hubs
 app.MapHub<TestQuestionHub>("/hubs/testquestion");
 app.MapHub<BenchmarkHub>("/hubs/benchmark");
+app.MapHub<DocumentUploadHub>("/hubs/documentupload");
 
 app.Run();

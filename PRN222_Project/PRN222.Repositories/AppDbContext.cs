@@ -114,6 +114,13 @@ namespace PRN222.Repositories
                 .HasForeignKey(d => d.OwnerId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // User - Course relationship (1 to Many)
+            modelBuilder.Entity<User>()
+                .HasOne(u => u.Course)
+                .WithMany()
+                .HasForeignKey(u => u.CourseId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             // Document - DocumentChunk relationship (1 to Many)
             modelBuilder.Entity<DocumentChunk>()
                 .HasOne(dc => dc.Document)

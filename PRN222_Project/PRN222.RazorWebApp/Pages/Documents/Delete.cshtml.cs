@@ -6,7 +6,7 @@ using System.Security.Claims;
 
 namespace PRN222.RazorWebApp.Pages.Documents
 {
-    [Authorize]
+    [Authorize(Roles = "Admin,Lecturer")]
     public class DeleteModel : PageModel
     {
         private readonly IDocumentService _documentService;

@@ -6,7 +6,7 @@ using System.Security.Claims;
 
 namespace PRN222.RazorWebApp.Pages.Documents
 {
-    [Authorize]
+    [Authorize(Roles = "Admin,Lecturer,Student")]
     public class IndexModel : PageModel
     {
         private readonly IDocumentService _documentService;
@@ -21,6 +21,12 @@ namespace PRN222.RazorWebApp.Pages.Documents
             var roleClaim = User.FindFirst(ClaimTypes.Role);
             if (userIdClaim == null || roleClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId)) return;
             Documents = await _documentService.GetDocumentsAsync(userId, roleClaim.Value);
+        }
+        public async Task<IActionResult> OnGetRowHtmlAsync(Guid id)
+        {
+            var doc = await _documentService.GetDocumentWithDetailsAsync(id);
+            if (doc == null) return NotFound();
+            return Partial("_DocumentRow", doc);
         }
         public async Task<IActionResult> OnPostIndexDocumentAsync(Guid id, string? chunkingStrategy)
         {

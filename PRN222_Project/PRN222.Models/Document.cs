@@ -11,6 +11,7 @@ namespace PRN222.Models
         public Guid OwnerId { get; set; } // User who uploaded
         public string Status { get; set; } = "Pending";
         public bool IsIndexed { get; set; } = false;
+        public string? FileHash { get; set; }
 
         // Navigation properties
         public Course Course { get; set; }

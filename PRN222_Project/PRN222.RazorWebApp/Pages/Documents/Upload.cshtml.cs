@@ -7,7 +7,7 @@ using System.Security.Claims;
 
 namespace PRN222.RazorWebApp.Pages.Documents
 {
-    [Authorize]
+    [Authorize(Roles = "Admin,Lecturer")]
     public class UploadModel : PageModel
     {
         private readonly IDocumentService _documentService;
@@ -23,25 +23,34 @@ namespace PRN222.RazorWebApp.Pages.Documents
         public UploadDocumentDTO Input { get; set; } = new();
         public List<PRN222.Models.Course> Courses { get; set; } = new();
         public async Task OnGetAsync() => Courses = await _courseService.GetAllCoursesAsync();
-        public async Task<IActionResult> OnPostAsync()
+
+        /// <summary>
+        /// Nhận file qua AJAX (XHR) để client có thể theo dõi tiến độ tải lên thực tế (byte đã gửi)
+        /// và nhận log xử lý server-side theo thời gian thực qua SignalR (connectionId).
+        /// </summary>
+        public async Task<IActionResult> OnPostAsync([FromForm] string? connectionId)
         {
-            Courses = await _courseService.GetAllCoursesAsync();
             if (Input?.File == null || Input.File.Length == 0)
             {
-                ModelState.AddModelError("", "Vui lòng chọn tệp để tải lên.");
-                return Page();
+                return new JsonResult(new { success = false, message = "Vui lòng chọn tệp để tải lên." });
             }
             try
             {
                 var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-                if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId)) return Unauthorized();
+                if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
+                    return new JsonResult(new { success = false, message = "Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại." });
+
                 string uploadsPath = Path.Combine(_environment.WebRootPath, "uploads");
-                var document = await _documentService.UploadDocumentAsync(Input, uploadsPath, userId);
-                TempData["SuccessMessage"] = $"Tải lên tệp '{document.FileName}' thành công! Trạng thái: {document.Status}";
-                return RedirectToPage("/Documents/Index");
+                var document = await _documentService.UploadDocumentAsync(Input, uploadsPath, userId, connectionId);
+                return new JsonResult(new
+                {
+                    success = true,
+                    message = $"Tải lên tệp '{document.FileName}' thành công! Trạng thái: {document.Status}",
+                    redirectUrl = Url.Content("~/Documents/Index")
+                });
             }
-            catch (InvalidOperationException ex) { ModelState.AddModelError("", $"Lỗi: {ex.Message}"); return Page(); }
-            catch (Exception ex) { ModelState.AddModelError("", $"Lỗi không mong muốn: {ex.Message}"); return Page(); }
+            catch (InvalidOperationException ex) { return new JsonResult(new { success = false, message = $"Lỗi: {ex.Message}" }); }
+            catch (Exception ex) { return new JsonResult(new { success = false, message = $"Lỗi không mong muốn: {ex.Message}" }); }
         }
     }
 }

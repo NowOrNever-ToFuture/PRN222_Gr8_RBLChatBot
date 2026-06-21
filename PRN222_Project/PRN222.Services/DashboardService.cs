@@ -41,6 +41,7 @@ namespace PRN222.Services
         {
             return await _dbContext.Documents
                 .Include(d => d.Course)
+                .Include(d => d.Owner)
                 .OrderByDescending(d => d.UploadDate)
                 .Take(count)
                 .Select(d => new RecentUploadDto
@@ -48,7 +49,8 @@ namespace PRN222.Services
                     FileName = d.FileName,
                     CourseName = d.Course != null ? d.Course.Name : "N/A",
                     Status = d.Status,
-                    UploadDate = d.UploadDate
+                    UploadDate = d.UploadDate,
+                    UploadedBy = d.Owner != null ? d.Owner.FullName : "N/A"
                 })
                 .ToListAsync();
         }

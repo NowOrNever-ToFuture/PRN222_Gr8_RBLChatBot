@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using PRN222.Models;
 using PRN222.Repositories;
@@ -7,6 +8,9 @@ using PRN222.Services.Interfaces;
 
 namespace PRN222.Services
 {
+    // Hub rỗng — logic bắn event nằm trong DocumentService qua IHubContext
+    public class DocumentUploadHub : Hub { }
+
     public class DocumentService : IDocumentService
     {
         private readonly AppDbContext _dbContext;
@@ -14,6 +18,7 @@ namespace PRN222.Services
         private readonly IDocumentProcessingService _docProcessing;
         private readonly AiModelFactory _aiModelFactory;
         private readonly ISystemSettingService _systemSettingService;
+        private readonly IHubContext<DocumentUploadHub> _uploadHubContext;
         private static readonly string[] AllowedExtensions = { ".pdf", ".docx", ".pptx" };
         private const long MaxFileSizeInBytes = 10 * 1024 * 1024; // 10MB
 
@@ -21,15 +26,31 @@ namespace PRN222.Services
             AppDbContext dbContext,
             IDocumentProcessingService docProcessing,
             AiModelFactory aiModelFactory,
-            ISystemSettingService systemSettingService)
+            ISystemSettingService systemSettingService,
+            IHubContext<DocumentUploadHub> uploadHubContext)
         {
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
             _docProcessing = docProcessing ?? throw new ArgumentNullException(nameof(docProcessing));
             _aiModelFactory = aiModelFactory ?? throw new ArgumentNullException(nameof(aiModelFactory));
             _systemSettingService = systemSettingService ?? throw new ArgumentNullException(nameof(systemSettingService));
+            _uploadHubContext = uploadHubContext ?? throw new ArgumentNullException(nameof(uploadHubContext));
         }
 
-        public async Task<Document> UploadDocumentAsync(UploadDocumentDTO dto, string uploadBasePath, Guid ownerId)
+        /// <summary>
+        /// Gửi tiến độ (%) và thông điệp xử lý hiện tại tới client đang theo dõi qua SignalR.
+        /// </summary>
+        private async Task ReportUploadProgressAsync(string? connectionId, int percent, string message)
+        {
+            Console.WriteLine($"[DocumentService:Upload] [{percent}%] {message}");
+
+            if (string.IsNullOrEmpty(connectionId))
+                return;
+
+            await _uploadHubContext.Clients.Client(connectionId)
+                .SendAsync("ReceiveUploadProgress", percent, message);
+        }
+
+        public async Task<Document> UploadDocumentAsync(UploadDocumentDTO dto, string uploadBasePath, Guid ownerId, string? connectionId = null)
         {
             // Validation: Check if DTO is valid
             if (dto == null)
@@ -38,25 +59,47 @@ namespace PRN222.Services
             if (dto.File == null || dto.File.Length == 0)
                 throw new InvalidOperationException("File không được để trống.");
 
+            await ReportUploadProgressAsync(connectionId, 72, $"Đã nhận tệp '{dto.File.FileName}' trên server. Bắt đầu kiểm tra...");
+
             // BR1: Validate file format
+            await ReportUploadProgressAsync(connectionId, 76, "Đang kiểm tra định dạng tệp (.pdf, .docx, .pptx)...");
             ValidateFileFormat(dto.File.FileName);
 
             // BR2: Validate file size
+            await ReportUploadProgressAsync(connectionId, 80, "Đang kiểm tra dung lượng tệp (tối đa 10MB)...");
             ValidateFileSize(dto.File.Length);
 
             // Verify Course exists
+            await ReportUploadProgressAsync(connectionId, 84, "Đang kiểm tra môn học áp dụng...");
             var course = await _dbContext.Courses.FindAsync(dto.CourseId);
             if (course == null)
                 throw new InvalidOperationException($"Course với ID {dto.CourseId} không tồn tại.");
 
             // Verify owner user exists (after DB reset, cookie may have stale user ID)
+            await ReportUploadProgressAsync(connectionId, 87, "Đang xác thực người dùng tải lên...");
             var owner = await _dbContext.Users.FindAsync(ownerId);
             if (owner == null)
                 throw new InvalidOperationException(
                     "Phiên đăng nhập không hợp lệ (User ID không tồn tại trong hệ thống). " +
                     "Vui lòng đăng xuất rồi đăng nhập lại.");
 
+            // Check for duplicate content (SHA-256 hash check)
+            await ReportUploadProgressAsync(connectionId, 88, "Đang kiểm tra trùng lặp nội dung tệp...");
+            string fileHash;
+            using (var stream = dto.File.OpenReadStream())
+            {
+                fileHash = CalculateSHA256(stream);
+            }
+
+            var duplicateDoc = await _dbContext.Documents
+                .FirstOrDefaultAsync(d => d.FileHash == fileHash);
+            if (duplicateDoc != null)
+            {
+                throw new InvalidOperationException($"Tài liệu này đã tồn tại trên hệ thống (Tên tệp: '{duplicateDoc.FileName}').");
+            }
+
             // BR4: Check for duplicate filenames and generate unique name if needed
+            await ReportUploadProgressAsync(connectionId, 90, "Đang kiểm tra tên tệp trùng lặp...");
             string uniqueFileName = await GenerateUniqueFileNameAsync(dto.CourseId, dto.File.FileName);
 
             // Ensure upload directory exists
@@ -64,6 +107,7 @@ namespace PRN222.Services
                 Directory.CreateDirectory(uploadBasePath);
 
             // Save file physically
+            await ReportUploadProgressAsync(connectionId, 94, $"Đang lưu tệp '{uniqueFileName}' vào hệ thống...");
             string filePath = Path.Combine(uploadBasePath, uniqueFileName);
             await using (var fileStream = new FileStream(filePath, FileMode.Create))
             {
@@ -71,6 +115,7 @@ namespace PRN222.Services
             }
 
             // Create Document record in database
+            await ReportUploadProgressAsync(connectionId, 98, "Đang tạo bản ghi tài liệu trong cơ sở dữ liệu...");
             var document = new Document
             {
                 Id = Guid.NewGuid(),
@@ -80,12 +125,28 @@ namespace PRN222.Services
                 UploadDate = DateTime.UtcNow,
                 CourseId = dto.CourseId,
                 OwnerId = ownerId,
-                Status = "Pending"
+                Status = "Pending",
+                FileHash = fileHash
             };
 
             // Save to database
             _dbContext.Documents.Add(document);
             await _dbContext.SaveChangesAsync();
+
+            await ReportUploadProgressAsync(connectionId, 100, $"Hoàn tất! Tệp '{document.FileName}' đã được tải lên thành công.");
+
+            await _uploadHubContext.Clients.All.SendAsync("DocumentAdded", new
+            {
+                id = document.Id,
+                fileName = document.FileName,
+                fileSize = document.FileSize,
+                uploadDate = document.UploadDate,
+                status = document.Status,
+                courseCode = course.Code,
+                courseName = course.Name,
+                ownerName = owner.FullName,
+                ownerId = document.OwnerId
+            });
 
             return document;
         }
@@ -150,6 +211,15 @@ namespace PRN222.Services
 
             if (!System.IO.File.Exists(document.FilePath))
                 throw new InvalidOperationException($"Không tìm thấy file tại {document.FilePath}");
+
+            document.Status = "Processing";
+            await _dbContext.SaveChangesAsync();
+            await _uploadHubContext.Clients.All.SendAsync("DocumentUpdated", new
+            {
+                id = document.Id,
+                status = document.Status,
+                isIndexed = document.IsIndexed
+            });
 
             Console.WriteLine();
             Console.WriteLine("=================================================================================");
@@ -220,6 +290,13 @@ namespace PRN222.Services
                 Console.WriteLine($"[DocumentService] 💾 Đang cập nhật trạng thái Document sang 'Completed' và lưu DbContext...");
                 await _dbContext.SaveChangesAsync();
 
+                await _uploadHubContext.Clients.All.SendAsync("DocumentUpdated", new
+                {
+                    id = document.Id,
+                    status = document.Status,
+                    isIndexed = document.IsIndexed
+                });
+
                 Console.WriteLine("=================================================================================");
                 Console.WriteLine($"[DocumentService] 🎉 HOÀN TẤT LẬP CHỈ MỤC TÀI LIỆU THÀNH CÔNG: {document.FileName}!");
                 Console.WriteLine("=================================================================================");
@@ -234,6 +311,14 @@ namespace PRN222.Services
 
                 document.Status = "Failed";
                 await _dbContext.SaveChangesAsync();
+
+                await _uploadHubContext.Clients.All.SendAsync("DocumentUpdated", new
+                {
+                    id = document.Id,
+                    status = document.Status,
+                    isIndexed = document.IsIndexed
+                });
+
                 throw new InvalidOperationException($"Lỗi lập chỉ mục tài liệu: {ex.Message}", ex);
             }
         }
@@ -276,7 +361,16 @@ namespace PRN222.Services
                 return await query.OrderByDescending(d => d.UploadDate).ToListAsync();
             }
 
-            // Student: see only their own documents
+            // Student: see all completed documents
+            if (role == "Student")
+            {
+                return await query
+                    .Where(d => d.Status == "Completed")
+                    .OrderByDescending(d => d.UploadDate)
+                    .ToListAsync();
+            }
+
+            // Lecturer: see only their own documents
             return await query
                 .Where(d => d.OwnerId == userId)
                 .OrderByDescending(d => d.UploadDate)
@@ -286,6 +380,14 @@ namespace PRN222.Services
         public async Task<Document?> GetDocumentByIdAsync(Guid id)
         {
             return await _dbContext.Documents.FindAsync(id);
+        }
+
+        public async Task<Document?> GetDocumentWithDetailsAsync(Guid id)
+        {
+            return await _dbContext.Documents
+                .Include(d => d.Course)
+                .Include(d => d.Owner)
+                .FirstOrDefaultAsync(d => d.Id == id);
         }
 
         public async Task<(bool Success, string ErrorMessage)> DeleteDocumentAsync(Guid id, Guid currentUserId, string role)
@@ -308,8 +410,16 @@ namespace PRN222.Services
                     File.Delete(document.FilePath);
                 }
 
+                string mdFilePath = Path.ChangeExtension(document.FilePath, ".md");
+                if (File.Exists(mdFilePath))
+                {
+                    File.Delete(mdFilePath);
+                }
+
                 _dbContext.Documents.Remove(document);
                 await _dbContext.SaveChangesAsync();
+
+                await _uploadHubContext.Clients.All.SendAsync("DocumentDeleted", id);
 
                 return (true, string.Empty);
             }
@@ -347,6 +457,13 @@ namespace PRN222.Services
                 .ToListAsync();
 
             return (chunks, totalCount);
+        }
+
+        private string CalculateSHA256(Stream stream)
+        {
+            using var sha256 = System.Security.Cryptography.SHA256.Create();
+            byte[] hashBytes = sha256.ComputeHash(stream);
+            return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
         }
     }
 }

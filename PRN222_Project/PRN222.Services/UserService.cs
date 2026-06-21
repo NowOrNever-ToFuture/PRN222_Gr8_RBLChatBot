@@ -26,7 +26,7 @@ namespace PRN222.Services
             return await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == id);
         }
 
-        public async Task<(bool Success, string ErrorMessage)> CreateUserAsync(string username, string password, string role)
+        public async Task<(bool Success, string ErrorMessage)> CreateUserAsync(string username, string password, string role, Guid? courseId = null)
         {
             if (await _dbContext.Users.AnyAsync(u => u.Username == username))
             {
@@ -41,7 +41,8 @@ namespace PRN222.Services
                     Username = username,
                     FullName = username,
                     PasswordHash = _accountService.HashPassword(password),
-                    Role = role
+                    Role = role,
+                    CourseId = role == "Lecturer" ? courseId : null
                 };
 
                 _dbContext.Users.Add(user);
@@ -55,7 +56,7 @@ namespace PRN222.Services
             }
         }
 
-        public async Task<(bool Success, string ErrorMessage)> UpdateUserAsync(Guid id, string username, string role)
+        public async Task<(bool Success, string ErrorMessage)> UpdateUserAsync(Guid id, string username, string role, Guid? courseId = null)
         {
             var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == id);
             if (user == null)
@@ -73,6 +74,7 @@ namespace PRN222.Services
                 user.Username = username;
                 user.FullName = username;
                 user.Role = role;
+                user.CourseId = role == "Lecturer" ? courseId : null;
 
                 _dbContext.Users.Update(user);
                 await _dbContext.SaveChangesAsync();
