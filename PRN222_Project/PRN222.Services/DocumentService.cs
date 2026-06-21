@@ -370,9 +370,20 @@ namespace PRN222.Services
                     .ToListAsync();
             }
 
-            // Lecturer: see only their own documents
+            // Lecturer: see all documents of their assigned course, including documents
+            // retained after a previous lecturer account was deleted.
+            Guid? courseId = await _dbContext.Users
+                .Where(u => u.Id == userId)
+                .Select(u => u.CourseId)
+                .FirstOrDefaultAsync();
+
+            if (!courseId.HasValue)
+            {
+                return new List<Document>();
+            }
+
             return await query
-                .Where(d => d.OwnerId == userId)
+                .Where(d => d.CourseId == courseId.Value)
                 .OrderByDescending(d => d.UploadDate)
                 .ToListAsync();
         }

@@ -14,17 +14,17 @@
                 <div class="card-body p-5">
                     <div class="alert alert-warning">
                         <i class="bi bi-exclamation-circle"></i>
-                        <strong> Cảnh báo!</strong> Bạn đang định xóa tài khoản <strong>@Model.UserToDelete?.Username</strong>.
-                        <br />Hành động này <strong>KHÔNG thể hoàn tác</strong>.
+                        <strong>Cảnh báo!</strong> Bạn đang định xóa tài khoản <strong>@Model.UserToDelete?.Username</strong>.
+                        <br />Hành động này <strong>không thể hoàn tác</strong>.
                     </div>
                     <div class="card bg-light mb-4">
                         <div class="card-body">
                             <p class="mb-2"><strong>Tên đăng nhập:</strong> @Model.UserToDelete?.Username</p>
                             <p class="mb-2"><strong>Vai trò:</strong> @Model.UserToDelete?.Role</p>
-                            <p class="mb-0"><strong>Tất cả tài liệu liên quan sẽ bị xóa theo quy tắc CASCADE.</strong></p>
+                            <p class="mb-0"><strong>Tài liệu của môn học sẽ được giữ lại để lecturer được phân công sau này vẫn có thể sử dụng.</strong></p>
                         </div>
                     </div>
-                    <form method="post">
+                    <form method="post" onsubmit="return confirm('Bạn có chắc muốn xóa tài khoản này? Tài khoản sẽ không thể khôi phục.');">
                         @Html.AntiForgeryToken()
                         <div class="row mt-5">
                             <div class="col-md-6">

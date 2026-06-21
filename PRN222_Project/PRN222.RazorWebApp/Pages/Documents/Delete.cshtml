@@ -25,7 +25,7 @@
                             <p class="mb-0"><strong>Trạng thái:</strong><br /><span class="badge bg-warning">@Model.Document?.Status</span></p>
                         </div>
                     </div>
-                    <form method="post">
+                    <form method="post" onsubmit="return confirm('Bạn có chắc muốn xóa tài liệu này? Hành động này không thể hoàn tác.');">
                         @Html.AntiForgeryToken()
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                             <a asp-page="/Documents/Index" class="btn btn-secondary btn-lg">

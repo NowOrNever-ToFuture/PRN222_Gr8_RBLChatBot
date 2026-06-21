@@ -10,9 +10,11 @@ namespace PRN222.RazorWebApp.Pages.Documents
     public class ViewChunksModel : PageModel
     {
         private readonly IDocumentService _documentService;
-        public ViewChunksModel(IDocumentService documentService)
+        private readonly IUserService _userService;
+        public ViewChunksModel(IDocumentService documentService, IUserService userService)
         {
             _documentService = documentService ?? throw new ArgumentNullException(nameof(documentService));
+            _userService = userService ?? throw new ArgumentNullException(nameof(userService));
         }
         public PRN222.Models.Document? Document { get; set; }
         public List<PRN222.Models.DocumentChunk> Chunks { get; set; } = new();
@@ -28,7 +30,11 @@ namespace PRN222.RazorWebApp.Pages.Documents
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
             var roleClaim = User.FindFirst(ClaimTypes.Role);
             if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId)) return Unauthorized();
-            if (roleClaim?.Value != "Admin" && Document.OwnerId != userId) return Forbid();
+            if (roleClaim?.Value != "Admin")
+            {
+                var lecturer = await _userService.GetUserByIdAsync(userId);
+                if (lecturer?.CourseId != Document.CourseId) return Forbid();
+            }
             if (page < 1) page = 1;
             CurrentPage = page;
             DocumentId = id;

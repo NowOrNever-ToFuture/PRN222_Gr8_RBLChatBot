@@ -82,12 +82,44 @@ namespace PRN222.Services
 
         public async Task DeleteCourseAsync(Guid courseId)
         {
-            var course = await _dbContext.Courses.FindAsync(courseId);
+            var course = await _dbContext.Courses
+                .Include(c => c.Documents)
+                .FirstOrDefaultAsync(c => c.Id == courseId);
             if (course == null)
                 throw new InvalidOperationException($"Course with ID {courseId} not found.");
 
+            var filePaths = course.Documents
+                .Select(d => d.FilePath)
+                .Where(path => !string.IsNullOrWhiteSpace(path))
+                .ToList();
+
             _dbContext.Courses.Remove(course);
             await _dbContext.SaveChangesAsync();
+
+            foreach (var filePath in filePaths)
+            {
+                try
+                {
+                    if (File.Exists(filePath))
+                    {
+                        File.Delete(filePath);
+                    }
+
+                    var markdownPath = Path.ChangeExtension(filePath, ".md");
+                    if (File.Exists(markdownPath))
+                    {
+                        File.Delete(markdownPath);
+                    }
+                }
+                catch (IOException ex)
+                {
+                    Console.Error.WriteLine($"Unable to delete course document file '{filePath}': {ex.Message}");
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    Console.Error.WriteLine($"Unable to delete course document file '{filePath}': {ex.Message}");
+                }
+            }
         }
     }
 }
