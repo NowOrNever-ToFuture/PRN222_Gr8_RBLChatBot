@@ -1,0 +1,23 @@
+﻿@model PRN222.Models.User
+<tr id="user-@Model.Id">
+    <td><strong>@Model.Username</strong></td>
+    <td>
+        @if (Model.Role == "Admin")
+        {
+            <span class="badge bg-danger"><i class="bi bi-shield-lock"></i> Admin</span>
+        }
+        else if (Model.Role == "Lecturer")
+        {
+            <span class="badge bg-success"><i class="bi bi-person-workspace"></i> Lecturer</span>
+        }
+        else
+        {
+            <span class="badge bg-info"><i class="bi bi-person"></i> Student</span>
+        }
+    </td>
+    <td><small class="text-muted">@DateTime.Now.ToString("dd/MM/yyyy")</small></td>
+    <td class="text-center">
+        <a asp-page="/Users/Edit" asp-route-id="@Model.Id" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i></a>
+        <a asp-page="/Users/Delete" asp-route-id="@Model.Id" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></a>
+    </td>
+</tr>

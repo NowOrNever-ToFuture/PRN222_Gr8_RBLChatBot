@@ -101,6 +101,11 @@
                         @if (User.Identity?.IsAuthenticated ?? false)
                         {
                             <li class="nav-item">
+                                <a class="nav-link" asp-page="/Courses/Index">
+                                    <i class="bi bi-book"></i> Môn học
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a class="nav-link" asp-page="/Documents/Index">
                                     <i class="bi bi-file-earmark-pdf"></i> Tài liệu
                                 </a>

@@ -1,4 +1,4 @@
-@page "{id:guid}"
+﻿@page "{id:guid}"
 @model PRN222.RazorWebApp.Pages.Users.EditModel
 @{
     ViewData["Title"] = "Sửa tài khoản";
@@ -17,58 +17,66 @@
                         {
                             <div class="alert alert-danger alert-dismissible fade show">
                                 <i class="bi bi-exclamation-circle"></i>
-                                @foreach (var ms in ViewData.ModelState.Values) { @foreach (var e in ms.Errors) { <div>@e.ErrorMessage</div> } }
+                                @foreach (var ms in ViewData.ModelState.Values)
+                                {
+                                    foreach (var e in ms.Errors)
+                                    {
+                                        <div>@e.ErrorMessage</div>
+                                    }
+                                }
                                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                             </div>
                         }
+
                         <input type="hidden" asp-for="Input.Id" />
+
                         <div class="mb-4">
                             <label class="form-label fw-semibold"><i class="bi bi-person-circle"></i> Tên đăng nhập</label>
                             <input asp-for="Input.Username" class="form-control form-control-lg" style="border-radius: 8px; border: 2px solid #e0e0e0;" />
                         </div>
+
                         <div class="mb-4">
                             <label class="form-label fw-semibold"><i class="bi bi-shield-lock"></i> Vai trò</label>
                             <select asp-for="Input.Role" class="form-control form-control-lg" style="border-radius: 8px; border: 2px solid #e0e0e0;">
                                 <option value="Student">Student (Sinh viên)</option>
-                                <option value="Lecturer">Lecturer (Giảng viên phụ trách)</option>
+                                <option value="Lecturer">Lecturer (Giảng viên)</option>
                                 <option value="Admin">Admin (Quản trị viên)</option>
                             </select>
                         </div>
+
                         <div class="mb-4" id="courseSelectionDiv" style="display: none;">
-                            <label class="form-label fw-semibold"><i class="bi bi-book"></i> Môn học phụ trách</label>
+                            <label class="form-label fw-semibold"><i class="bi bi-book"></i> Môn mặc định cho giảng viên</label>
                             <select asp-for="Input.CourseId" class="form-control form-control-lg" style="border-radius: 8px; border: 2px solid #e0e0e0;">
-                                <option value="">-- Chọn môn học --</option>
+                                <option value="">-- Chọn môn mặc định --</option>
                                 @foreach (var course in Model.Courses)
                                 {
                                     <option value="@course.Id">@course.Code - @course.Name</option>
                                 }
                             </select>
+                            <div class="form-text mt-2">
+                                Trường này không cấp quyền CRUD. Quyền quản lý tài liệu được kiểm tra riêng theo <code>Courses.ManagedById</code>.
+                            </div>
                         </div>
 
-                        <script>
-                            document.addEventListener("DOMContentLoaded", function() {
-                                const roleSelect = document.querySelector('select[name="Input.Role"]');
-                                const courseDiv = document.getElementById('courseSelectionDiv');
-                                const courseSelect = document.querySelector('select[name="Input.CourseId"]');
-
-                                function toggleCourseField() {
-                                    if (roleSelect.value === 'Lecturer') {
-                                        courseDiv.style.display = 'block';
-                                        courseSelect.required = true;
-                                    } else {
-                                        courseDiv.style.display = 'none';
-                                        courseSelect.required = false;
-                                        courseSelect.value = '';
+                        @if (Model.ManagedCourseCount > 0)
+                        {
+                            <div class="alert alert-warning" id="managed-course-warning" data-managed-count="@Model.ManagedCourseCount">
+                                <div class="fw-semibold mb-2"><i class="bi bi-exclamation-triangle"></i> Người dùng này đang là trưởng bộ môn của @Model.ManagedCourseCount môn học.</div>
+                                <div class="small mb-2">Nếu đổi role khỏi <code>Lecturer</code>, hệ thống sẽ tự động gỡ các gán trưởng bộ môn sau:</div>
+                                <ul class="mb-0 ps-3">
+                                    @foreach (var course in Model.ManagedCourses)
+                                    {
+                                        <li>@course.Code - @course.Name</li>
                                     }
-                                }
+                                </ul>
+                            </div>
+                        }
 
-                                roleSelect.addEventListener('change', toggleCourseField);
-                                toggleCourseField();
-                            });
-                        </script>
                         <div class="alert alert-info">
-                            <i class="bi bi-info-circle"></i> <strong>Lưu ý:</strong> Để thay đổi mật khẩu, hãy xóa tài khoản và tạo lại.
+                            <i class="bi bi-info-circle"></i>
+                            Nếu sau này chuyển người dùng này trở lại role <code>Lecturer</code>, Admin phải gán lại môn học tại phần quản lý môn học. Hệ thống không tự khôi phục Head Lecturer cũ.
                         </div>
+
                         <div class="row mt-5">
                             <div class="col-md-6">
                                 <button type="submit" class="btn btn-lg w-100 fw-semibold text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 8px;">
@@ -87,3 +95,31 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const roleSelect = document.querySelector('select[name="Input.Role"]');
+            const courseDiv = document.getElementById('courseSelectionDiv');
+            const courseSelect = document.querySelector('select[name="Input.CourseId"]');
+            const warningBox = document.getElementById('managed-course-warning');
+
+            function syncRoleUi() {
+                const isLecturer = roleSelect.value === 'Lecturer';
+                courseDiv.style.display = isLecturer ? 'block' : 'none';
+                courseSelect.required = false;
+
+                if (!isLecturer) {
+                    courseSelect.value = '';
+                }
+
+                if (warningBox) {
+                    warningBox.classList.toggle('d-none', isLecturer);
+                }
+            }
+
+            roleSelect.addEventListener('change', syncRoleUi);
+            syncRoleUi();
+        });
+    </script>
+}

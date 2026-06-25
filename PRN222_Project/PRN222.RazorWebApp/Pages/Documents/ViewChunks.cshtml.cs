@@ -25,16 +25,12 @@ namespace PRN222.RazorWebApp.Pages.Documents
         public Guid DocumentId { get; set; }
         public async Task<IActionResult> OnGetAsync(Guid id, int page = 1)
         {
-            Document = await _documentService.GetDocumentByIdAsync(id);
+            Document = await _documentService.GetDocumentWithDetailsAsync(id);
             if (Document == null) return NotFound();
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
             var roleClaim = User.FindFirst(ClaimTypes.Role);
             if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId)) return Unauthorized();
-            if (roleClaim?.Value != "Admin")
-            {
-                var lecturer = await _userService.GetUserByIdAsync(userId);
-                if (lecturer?.CourseId != Document.CourseId) return Forbid();
-            }
+            if (roleClaim?.Value != "Admin" && Document.Course?.ManagedById != userId) return Forbid();
             if (page < 1) page = 1;
             CurrentPage = page;
             DocumentId = id;

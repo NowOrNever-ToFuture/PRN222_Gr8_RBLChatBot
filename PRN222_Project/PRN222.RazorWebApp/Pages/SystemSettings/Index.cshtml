@@ -1,4 +1,4 @@
-@page
+﻿@page
 @model PRN222.RazorWebApp.Pages.SystemSettings.IndexModel
 @{
     ViewData["Title"] = "Cấu Hình Hệ Thống";
@@ -24,6 +24,11 @@
                 </div>
             }
 
+            <div id="settings-live-alert" class="alert alert-info d-none" role="alert">
+                <i class="bi bi-broadcast"></i>
+                <span id="settings-live-alert-text"></span>
+            </div>
+
             <div class="card shadow">
                 <div class="card-header bg-dark text-white">
                     <h5 class="mb-0"><i class="bi bi-cpu"></i> Mô hình Embedding & Chatbot Mặc Định</h5>
@@ -33,30 +38,57 @@
                         Thiết lập này sẽ thay đổi <strong>ngay lập tức</strong> (Live Swapping) mô hình AI được sử dụng bởi Chatbot RAG cho sinh viên,
                         nhờ vào kiến trúc <code>Factory Pattern</code>.
                     </p>
-                    <form method="post" asp-page-handler="UpdateActiveModel">
+                    <form method="post" asp-page-handler="UpdateActiveSettings">
                         @Html.AntiForgeryToken()
                         <div class="mb-4">
-                            <label class="form-label fw-bold">Chọn mô hình mặc định:</label>
-                            <div class="form-check mb-3">
+                            <label class="form-label fw-bold text-primary"><i class="bi bi-cpu-fill"></i> 1. Chọn mô hình mặc định:</label>
+                            <div class="form-check mb-3 ms-3">
                                 <input class="form-check-input" type="radio" name="activeModel" id="model-bgem3" value="bge-m3" @(Model.ActiveModel == "bge-m3" ? "checked" : "") />
                                 <label class="form-check-label" for="model-bgem3"><strong>BGE-M3</strong> (Mô hình Local đa ngôn ngữ, tối ưu cho tiếng Việt)</label>
                             </div>
-                            <div class="form-check mb-3">
+                            <div class="form-check mb-3 ms-3">
                                 <input class="form-check-input" type="radio" name="activeModel" id="model-e5" value="e5" @(Model.ActiveModel == "e5" ? "checked" : "") />
                                 <label class="form-check-label" for="model-e5"><strong>Multilingual E5</strong> (Mô hình Local tốt cho hỏi đáp)</label>
                             </div>
-                            <div class="form-check mb-3">
+                            <div class="form-check mb-3 ms-3">
                                 <input class="form-check-input" type="radio" name="activeModel" id="model-phobert" value="phobert" @(Model.ActiveModel == "phobert" ? "checked" : "") />
                                 <label class="form-check-label" for="model-phobert"><strong>PhoBERT</strong> (Mô hình chuyên biệt tiếng Việt)</label>
                             </div>
-                            <div class="form-check mb-3">
+                            <div class="form-check mb-3 ms-3">
                                 <input class="form-check-input" type="radio" name="activeModel" id="model-openai" value="OpenAI" @(Model.ActiveModel == "OpenAI" ? "checked" : "") />
                                 <label class="form-check-label" for="model-openai"><strong>OpenAI (text-embedding-3-small)</strong> (Cloud, yêu cầu kết nối mạng)</label>
                             </div>
                         </div>
+
+                        <hr class="my-4">
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-primary"><i class="bi bi-scissors"></i> 2. Chọn chế độ chặt chunk (Phân đoạn tài liệu):</label>
+                            <div class="form-check mb-3 ms-3">
+                                <input class="form-check-input" type="radio" name="activeStrategy" id="strat-mdheader" value="markdown_header" @(Model.ActiveStrategy == "markdown_header" ? "checked" : "") />
+                                <label class="form-check-label" for="strat-mdheader"><strong>Markdown Header</strong> (Phân đoạn theo tiêu đề Markdown - Khuyên dùng)</label>
+                            </div>
+                            <div class="form-check mb-3 ms-3">
+                                <input class="form-check-input" type="radio" name="activeStrategy" id="strat-para" value="paragraph" @(Model.ActiveStrategy == "paragraph" ? "checked" : "") />
+                                <label class="form-check-label" for="strat-para"><strong>Paragraph</strong> (Phân đoạn theo đoạn văn bản)</label>
+                            </div>
+                            <div class="form-check mb-3 ms-3">
+                                <input class="form-check-input" type="radio" name="activeStrategy" id="strat-sent" value="sentence" @(Model.ActiveStrategy == "sentence" ? "checked" : "") />
+                                <label class="form-check-label" for="strat-sent"><strong>Sentence</strong> (Phân đoạn theo từng câu đơn lẻ)</label>
+                            </div>
+                            <div class="form-check mb-3 ms-3">
+                                <input class="form-check-input" type="radio" name="activeStrategy" id="strat-fixed" value="fixed_size" @(Model.ActiveStrategy == "fixed_size" ? "checked" : "") />
+                                <label class="form-check-label" for="strat-fixed"><strong>Fixed Size</strong> (Kích thước đoạn cố định)</label>
+                            </div>
+                            <div class="form-check mb-3 ms-3">
+                                <input class="form-check-input" type="radio" name="activeStrategy" id="strat-fixed-overlap" value="fixed_size_overlap" @(Model.ActiveStrategy == "fixed_size_overlap" ? "checked" : "") />
+                                <label class="form-check-label" for="strat-fixed-overlap"><strong>Fixed Size + Overlap</strong> (Kích thước cố định kèm phần chồng lấp)</label>
+                            </div>
+                        </div>
+
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="bi bi-save"></i> Lưu Cấu Hình
+                            <button type="submit" class="btn btn-primary btn-lg shadow-sm">
+                                <i class="bi bi-save"></i> Lưu Cấu Hình Hệ Thống
                             </button>
                         </div>
                     </form>
@@ -76,3 +108,41 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+<script>
+    $(document).ready(function () {
+        const connection = new signalR.HubConnectionBuilder().withUrl("/hubs/systemsettings").withAutomaticReconnect().build();
+        const alertBox = $('#settings-live-alert');
+        const alertText = $('#settings-live-alert-text');
+
+        function showAlert(message) {
+            alertText.text(message);
+            alertBox.removeClass('d-none');
+            clearTimeout(window.__settingsAlertTimer);
+            window.__settingsAlertTimer = setTimeout(() => alertBox.addClass('d-none'), 4000);
+        }
+
+        connection.on('ReceiveSettingChanged', function (setting) {
+            if (!setting || !setting.key) return;
+
+            if (setting.key === 'ActiveEmbeddingModel') {
+                $(`input[name="activeModel"][value="${setting.value}"]`).prop('checked', true);
+            }
+
+            if (setting.key === 'ActiveChunkingStrategy') {
+                $(`input[name="activeStrategy"][value="${setting.value}"]`).prop('checked', true);
+            }
+
+            showAlert(`Cấu hình '${setting.key}' vừa được cập nhật realtime thành '${setting.value}'.`);
+        });
+
+        connection.on('ReceiveSettingDeleted', function (settingKey) {
+            showAlert(`Cấu hình '${settingKey}' vừa bị xóa khỏi hệ thống.`);
+        });
+
+        connection.start().catch(err => console.error('SignalR SystemSettingsHub Connection Error:', err));
+    });
+</script>
+}

@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authentication.Cookies;
+﻿using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using PRN222.Models;
 using PRN222.Repositories;
@@ -7,14 +7,11 @@ using PRN222.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add Razor Pages
 builder.Services.AddRazorPages();
 
-// Add DbContext
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Add Authentication (Cookie-based)
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
@@ -23,22 +20,17 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.ExpireTimeSpan = TimeSpan.FromHours(24);
     });
 
-// Add Application Services
 builder.Services.AddApplicationServices();
-
-// LLM Service
 builder.Services.AddScoped<ILlmService, OpenAiService>();
-
-// Embedding Services
 builder.Services.AddScoped<IEmbeddingService, OpenAiService>();
 
-// HttpClient for Python Server
 var pythonBaseUrl = builder.Configuration["AIProviders:PythonMicroservice:BaseUrl"];
 builder.Services.AddHttpClient("PythonApi").ConfigureHttpClient(c =>
 {
     c.BaseAddress = new Uri(pythonBaseUrl ?? "http://localhost:8000");
     c.Timeout = TimeSpan.FromMinutes(30);
 });
+
 builder.Services.AddScoped<IEmbeddingService>(sp =>
     new LocalPythonEmbeddingService(sp.GetRequiredService<IHttpClientFactory>().CreateClient("PythonApi"), "bge-m3"));
 builder.Services.AddScoped<IEmbeddingService>(sp =>
@@ -46,20 +38,15 @@ builder.Services.AddScoped<IEmbeddingService>(sp =>
 builder.Services.AddScoped<IEmbeddingService>(sp =>
     new LocalPythonEmbeddingService(sp.GetRequiredService<IHttpClientFactory>().CreateClient("PythonApi"), "phobert"));
 
-// AI Model Factory
 builder.Services.AddScoped<AiModelFactory>();
-
-// SignalR
 builder.Services.AddSignalR();
 
 var app = builder.Build();
 
-// Create uploads directory
 var uploadsPath = Path.Combine(app.Environment.WebRootPath, "uploads");
 if (!Directory.Exists(uploadsPath))
     Directory.CreateDirectory(uploadsPath);
 
-// Data Seeding
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -155,7 +142,6 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// Configure pipeline
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
@@ -164,7 +150,6 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Static files with .md support
 var provider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
 provider.Mappings[".md"] = "text/markdown";
 app.UseStaticFiles(new StaticFileOptions { ContentTypeProvider = provider });
@@ -174,10 +159,11 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapRazorPages();
-
-// SignalR Hubs
 app.MapHub<TestQuestionHub>("/hubs/testquestion");
 app.MapHub<BenchmarkHub>("/hubs/benchmark");
 app.MapHub<DocumentUploadHub>("/hubs/documentupload");
+app.MapHub<CourseHub>("/hubs/course");
+app.MapHub<UserHub>("/hubs/user");
+app.MapHub<SystemSettingsHub>("/hubs/systemsettings");
 
 app.Run();

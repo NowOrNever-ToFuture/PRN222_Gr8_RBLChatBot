@@ -1,0 +1,32 @@
+@model PRN222.Models.Course
+@{
+    var isAdmin = User.IsInRole("Admin");
+}
+<a asp-page="/Documents/Index" asp-route-courseId="@Model.Id" class="course-card-main">
+    <div class="course-card-top">
+        <span class="course-code">@Model.Code</span>
+        <span class="course-doc-count"><i class="bi bi-folder2-open"></i> @(Model.Documents?.Count ?? 0)</span>
+    </div>
+    <div class="course-card-body">
+        <h3>@Model.Name</h3>
+        <p>@Model.Description</p>
+    </div>
+    <div class="course-card-footer">
+        <span><i class="bi bi-person-badge"></i> @(Model.ManagedBy?.FullName ?? "Chưa gán trưởng bộ môn")</span>
+        <span class="open-link">Xem tài liệu <i class="bi bi-arrow-right"></i></span>
+    </div>
+</a>
+@if (isAdmin)
+{
+    <div class="course-card-actions">
+        <button class="btn btn-outline-primary btn-sm btn-edit"
+                data-id="@Model.Id" data-code="@Model.Code"
+                data-name="@Model.Name" data-desc="@Model.Description"
+                data-managedby="@(Model.ManagedById?.ToString() ?? "")">
+            <i class="bi bi-pencil"></i>
+        </button>
+        <button class="btn btn-outline-danger btn-sm btn-delete" data-id="@Model.Id">
+            <i class="bi bi-trash"></i>
+        </button>
+    </div>
+}

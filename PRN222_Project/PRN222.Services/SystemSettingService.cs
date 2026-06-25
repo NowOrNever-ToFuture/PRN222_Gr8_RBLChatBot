@@ -1,3 +1,4 @@
+﻿using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using PRN222.Models;
 using PRN222.Repositories;
@@ -5,13 +6,17 @@ using PRN222.Services.Interfaces;
 
 namespace PRN222.Services
 {
+    public class SystemSettingsHub : Hub { }
+
     public class SystemSettingService : ISystemSettingService
     {
         private readonly AppDbContext _dbContext;
+        private readonly IHubContext<SystemSettingsHub> _hubContext;
 
-        public SystemSettingService(AppDbContext dbContext)
+        public SystemSettingService(AppDbContext dbContext, IHubContext<SystemSettingsHub> hubContext)
         {
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+            _hubContext = hubContext ?? throw new ArgumentNullException(nameof(hubContext));
         }
 
         public async Task<string> GetSettingValueAsync(string settingKey)
@@ -45,21 +50,21 @@ namespace PRN222.Services
 
         public async Task SetSettingAsync(string settingKey, string settingValue, string description = "", string settingType = "String")
         {
+            SystemSetting setting;
             var existingSetting = await _dbContext.SystemSettings
                 .FirstOrDefaultAsync(s => s.SettingKey == settingKey);
 
             if (existingSetting != null)
             {
-                // Update existing setting
                 existingSetting.SettingValue = settingValue;
                 existingSetting.Description = description;
                 existingSetting.SettingType = settingType;
                 existingSetting.LastModifiedDate = DateTime.UtcNow;
+                setting = existingSetting;
             }
             else
             {
-                // Create new setting
-                var newSetting = new SystemSetting
+                setting = new SystemSetting
                 {
                     Id = Guid.NewGuid(),
                     SettingKey = settingKey,
@@ -69,10 +74,20 @@ namespace PRN222.Services
                     CreatedDate = DateTime.UtcNow
                 };
 
-                _dbContext.SystemSettings.Add(newSetting);
+                _dbContext.SystemSettings.Add(setting);
             }
 
             await _dbContext.SaveChangesAsync();
+
+            await _hubContext.Clients.All.SendAsync("ReceiveSettingChanged", new
+            {
+                key = setting.SettingKey,
+                value = setting.SettingValue,
+                description = setting.Description,
+                settingType = setting.SettingType,
+                lastModifiedDate = setting.LastModifiedDate,
+                createdDate = setting.CreatedDate
+            });
         }
 
         public async Task DeleteSettingAsync(string settingKey)
@@ -85,6 +100,8 @@ namespace PRN222.Services
 
             _dbContext.SystemSettings.Remove(setting);
             await _dbContext.SaveChangesAsync();
+
+            await _hubContext.Clients.All.SendAsync("ReceiveSettingDeleted", settingKey);
         }
 
         public async Task<bool> SettingExistsAsync(string settingKey)

@@ -9,7 +9,7 @@ namespace PRN222.Services.Interfaces
     {
         Task<Guid?> SmartRouteAsync(string query);
         Task<List<(DocumentChunk Chunk, double Score)>> SearchChunksByVectorAsync(string query, Guid? courseId = null);
-        Task<RagResponse> GenerateRagResponseAsync(string query);
+        Task<RagResponse> GenerateRagResponseAsync(string query, Guid? selectedCourseId = null);
         Task<List<DocumentChunk>> SearchChunksAsync(string query);
         string FormatSearchResults(List<DocumentChunk> chunks);
         Task<List<Message>> GetChatHistoryAsync(Guid userId);

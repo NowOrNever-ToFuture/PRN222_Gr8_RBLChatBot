@@ -83,6 +83,23 @@ namespace PRN222.Services
                     "Phiên đăng nhập không hợp lệ (User ID không tồn tại trong hệ thống). " +
                     "Vui lòng đăng xuất rồi đăng nhập lại.");
 
+            // Verify upload permissions
+            if (owner.Role == "Lecturer")
+            {
+                if (course.ManagedById != ownerId)
+                {
+                    throw new InvalidOperationException("Bạn không phải Trưởng bộ môn của môn học này nên không được phép tải lên tài liệu.");
+                }
+            }
+            else if (owner.Role == "Admin")
+            {
+                throw new InvalidOperationException("Quản trị viên (Admin) không được phép tải lên tài liệu học tập.");
+            }
+            else
+            {
+                throw new InvalidOperationException("Bạn không có quyền tải lên tài liệu học tập.");
+            }
+
             // Check for duplicate content (SHA-256 hash check)
             await ReportUploadProgressAsync(connectionId, 88, "Đang kiểm tra trùng lặp nội dung tệp...");
             string fileHash;
@@ -144,6 +161,7 @@ namespace PRN222.Services
                 status = document.Status,
                 courseCode = course.Code,
                 courseName = course.Name,
+                courseId = document.CourseId,
                 ownerName = owner.FullName,
                 ownerId = document.OwnerId
             });
@@ -215,11 +233,12 @@ namespace PRN222.Services
             document.Status = "Processing";
             await _dbContext.SaveChangesAsync();
             await _uploadHubContext.Clients.All.SendAsync("DocumentUpdated", new
-            {
-                id = document.Id,
-                status = document.Status,
-                isIndexed = document.IsIndexed
-            });
+                {
+                    id = document.Id,
+                    status = document.Status,
+                    isIndexed = document.IsIndexed,
+                    courseId = document.CourseId
+                });
 
             Console.WriteLine();
             Console.WriteLine("=================================================================================");
@@ -294,7 +313,8 @@ namespace PRN222.Services
                 {
                     id = document.Id,
                     status = document.Status,
-                    isIndexed = document.IsIndexed
+                    isIndexed = document.IsIndexed,
+                    courseId = document.CourseId
                 });
 
                 Console.WriteLine("=================================================================================");
@@ -316,7 +336,8 @@ namespace PRN222.Services
                 {
                     id = document.Id,
                     status = document.Status,
-                    isIndexed = document.IsIndexed
+                    isIndexed = document.IsIndexed,
+                    courseId = document.CourseId
                 });
 
                 throw new InvalidOperationException($"Lỗi lập chỉ mục tài liệu: {ex.Message}", ex);
@@ -351,10 +372,16 @@ namespace PRN222.Services
         /// <summary>
         /// Get documents with role-based access control
         /// </summary>
-        public async Task<List<Document>> GetDocumentsAsync(Guid userId, string role)
+        public async Task<List<Document>> GetDocumentsAsync(Guid userId, string role, Guid? courseId = null)
         {
             IQueryable<Document> query = _dbContext.Documents.Include(d => d.Course).Include(d => d.Owner);
 
+            if (!courseId.HasValue)
+            {
+                return new List<Document>();
+            }
+
+            query = query.Where(d => d.CourseId == courseId.Value);
             // Admin: see all documents
             if (role == "Admin")
             {
@@ -370,22 +397,8 @@ namespace PRN222.Services
                     .ToListAsync();
             }
 
-            // Lecturer: see all documents of their assigned course, including documents
-            // retained after a previous lecturer account was deleted.
-            Guid? courseId = await _dbContext.Users
-                .Where(u => u.Id == userId)
-                .Select(u => u.CourseId)
-                .FirstOrDefaultAsync();
-
-            if (!courseId.HasValue)
-            {
-                return new List<Document>();
-            }
-
-            return await query
-                .Where(d => d.CourseId == courseId.Value)
-                .OrderByDescending(d => d.UploadDate)
-                .ToListAsync();
+            // Lecturer: see all documents
+            return await query.OrderByDescending(d => d.UploadDate).ToListAsync();
         }
 
         public async Task<Document?> GetDocumentByIdAsync(Guid id)
@@ -403,15 +416,24 @@ namespace PRN222.Services
 
         public async Task<(bool Success, string ErrorMessage)> DeleteDocumentAsync(Guid id, Guid currentUserId, string role)
         {
-            var document = await _dbContext.Documents.FindAsync(id);
+            var document = await _dbContext.Documents
+                .Include(d => d.Course)
+                .FirstOrDefaultAsync(d => d.Id == id);
             if (document == null)
             {
                 return (false, "Không tìm thấy tài liệu.");
             }
 
-            if (role != "Admin" && document.OwnerId != currentUserId)
+            if (role == "Lecturer")
             {
-                return (false, "Bạn không có quyền xóa tài liệu này.");
+                if (document.Course?.ManagedById != currentUserId)
+                {
+                    return (false, "Bạn không phải Trưởng bộ môn của môn học này nên không được phép xóa tài liệu.");
+                }
+            }
+            else
+            {
+                return (false, "Bạn không có quyền xóa tài liệu học tập.");
             }
 
             try
@@ -478,3 +500,8 @@ namespace PRN222.Services
         }
     }
 }
+
+
+
+
+
