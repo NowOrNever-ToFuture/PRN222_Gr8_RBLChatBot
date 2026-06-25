@@ -1,7 +1,7 @@
-@page
+﻿@page
 @model PRN222.RazorWebApp.Pages.Documents.UploadModel
 @{
-    ViewData["Title"] = "Tải Lên Tài Liệu";
+    ViewData["Title"] = "Tải lên tài liệu";
 }
 
 <div class="container mt-5">
@@ -13,7 +13,7 @@
                         <i class="bi bi-cloud-arrow-up fs-5"></i>
                     </div>
                     <div>
-                        <h4 class="card-title mb-0 fw-bold">Tải Lên Tài Liệu Mới</h4>
+                        <h4 class="card-title mb-0 fw-bold">Tải lên tài liệu mới</h4>
                         <small class="text-white-50">Cung cấp tri thức cho hệ thống RAG Assistant</small>
                     </div>
                 </div>
@@ -79,7 +79,7 @@
                             </div>
                         </div>
                         <div class="d-flex gap-2 justify-content-end align-items-center mt-4">
-                            <a asp-page="/Documents/Index" class="btn btn-light px-4 py-2 border fw-semibold" style="border-radius: 8px;">
+                            <a asp-page="/Documents/Index" asp-route-courseId="@Model.Input.CourseId" class="btn btn-light px-4 py-2 border fw-semibold" style="border-radius: 8px;">
                                 <i class="bi bi-arrow-left"></i> Quay lại
                             </a>
                             <button type="submit" class="btn text-white px-5 py-2 fw-bold" id="submitBtn" style="border-radius: 8px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
@@ -146,7 +146,6 @@
             submitBtn.disabled = false;
         }
     }
-    // --- Kết nối SignalR để nhận log xử lý server-side theo thời gian thực ---
     const uploadConnection = new signalR.HubConnectionBuilder()
         .withUrl("/hubs/documentupload")
         .withAutomaticReconnect()
@@ -180,7 +179,6 @@
         return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
     }
 
-    // Log xử lý server-side (validate, lưu file, ghi DB...) bắn về qua SignalR (70% -> 100%)
     uploadConnection.on("ReceiveUploadProgress", (percent, message) => {
         setProgress(percent, message);
         appendLog(message);
@@ -203,7 +201,6 @@
         setProgress(0, 'Đang chuẩn bị tải lên...');
         appendLog(`Bắt đầu tải lên tệp '${fileInput.files[0].name}' (${formatBytes(fileInput.files[0].size)})...`);
 
-        // Đảm bảo đã có connection để server biết gửi log xử lý về đâu
         await uploadConnectionStart;
 
         const formData = new FormData(this);
@@ -217,7 +214,7 @@
         xhr.upload.onprogress = function (evt) {
             if (!evt.lengthComputable) return;
             const uploadPercent = (evt.loaded / evt.total) * 100;
-            const scaledPercent = uploadPercent * 0.7; // 0% - 70%: tiến độ truyền dữ liệu thật lên server
+            const scaledPercent = uploadPercent * 0.7;
             setProgress(scaledPercent, `Đang tải lên... ${Math.round(uploadPercent)}% (${formatBytes(evt.loaded)}/${formatBytes(evt.total)})`);
             const roundedPercent = Math.floor(uploadPercent / 10) * 10;
             if (roundedPercent !== lastLoggedPercent) {
@@ -265,6 +262,7 @@
 
         xhr.send(formData);
     });
+
     const dragDropArea = document.getElementById('dragDropArea');
     const fileInput = document.getElementById('File');
     dragDropArea.addEventListener('click', () => fileInput.click());

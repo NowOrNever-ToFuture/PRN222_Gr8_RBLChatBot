@@ -7,7 +7,7 @@ using System.Security.Claims;
 
 namespace PRN222.RazorWebApp.Pages.Documents
 {
-    [Authorize(Roles = "Admin,Lecturer")]
+    [Authorize(Roles = "Lecturer")]
     public class UploadModel : PageModel
     {
         private readonly IDocumentService _documentService;
@@ -22,7 +22,20 @@ namespace PRN222.RazorWebApp.Pages.Documents
         [BindProperty]
         public UploadDocumentDTO Input { get; set; } = new();
         public List<PRN222.Models.Course> Courses { get; set; } = new();
-        public async Task OnGetAsync() => Courses = await _courseService.GetAllCoursesAsync();
+        
+        public async Task OnGetAsync(Guid? courseId)
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out var userId))
+            {
+                var allCourses = await _courseService.GetAllCoursesAsync();
+                Courses = allCourses.Where(c => c.ManagedById == userId || User.IsInRole("Admin")).ToList();
+                if (courseId.HasValue && Courses.Any(c => c.Id == courseId.Value))
+                {
+                    Input.CourseId = courseId.Value;
+                }
+            }
+        }
 
         /// <summary>
         /// Nhận file qua AJAX (XHR) để client có thể theo dõi tiến độ tải lên thực tế (byte đã gửi)
@@ -46,7 +59,7 @@ namespace PRN222.RazorWebApp.Pages.Documents
                 {
                     success = true,
                     message = $"Tải lên tệp '{document.FileName}' thành công! Trạng thái: {document.Status}",
-                    redirectUrl = Url.Content("~/Documents/Index")
+                    redirectUrl = Url.Content($"~/Documents/Index?courseId={Input.CourseId}")
                 });
             }
             catch (InvalidOperationException ex) { return new JsonResult(new { success = false, message = $"Lỗi: {ex.Message}" }); }
@@ -54,3 +67,4 @@ namespace PRN222.RazorWebApp.Pages.Documents
         }
     }
 }
+

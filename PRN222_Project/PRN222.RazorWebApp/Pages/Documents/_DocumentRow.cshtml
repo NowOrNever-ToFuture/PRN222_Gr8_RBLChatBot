@@ -1,9 +1,13 @@
-@model PRN222.Models.Document
+﻿@model PRN222.Models.Document
 @{
     var isAdmin = User.IsInRole("Admin");
     var currentUserIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
     var currentUserId = !string.IsNullOrEmpty(currentUserIdStr) && Guid.TryParse(currentUserIdStr, out var id) ? id : Guid.Empty;
-    bool canEdit = isAdmin || Model.OwnerId == currentUserId;
+    var isLecturer = User.IsInRole("Lecturer");
+    var isCourseManager = isLecturer && Model.Course?.ManagedById == currentUserId;
+
+    bool canViewChunks = isAdmin || isCourseManager;
+    bool canManage = isCourseManager;
 }
 
 <td class="px-4 row-num"></td>
@@ -59,72 +63,66 @@
     </span>
 </td>
 <td class="px-4 text-end" style="padding-right: 24px;">
-    @if (canEdit)
+    @if (canManage || (canViewChunks && Model.IsIndexed))
     {
-        <div class="dropdown d-inline-block">
+        <div class="dropdown d-inline-block doc-actions-dropdown">
             <button class="btn btn-sm btn-outline-secondary dropdown-toggle d-flex align-items-center gap-1 ms-auto"
-                    type="button" data-bs-toggle="dropdown" aria-expanded="false" style="border-radius: 6px; padding: 6px 12px; font-weight: 500;">
+                    type="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="bi bi-gear-fill text-muted"></i> Thao tác
             </button>
-            <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-2" style="border-radius: 10px; min-width: 240px; font-size: 14px;">
-                @if (!Model.IsIndexed)
+            <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 py-3 doc-actions-menu">
+                @if (!Model.IsIndexed && canManage)
                 {
-                    <li class="dropdown-header text-xs text-uppercase fw-bold text-muted px-3 pb-1">⚡ Lập chỉ mục</li>
+                    <li class="dropdown-header text-xs text-uppercase fw-bold text-muted px-3 pb-1">Lập chỉ mục</li>
                     <li class="px-3 py-2">
                         <form method="post" asp-page-handler="IndexDocument" asp-route-id="@Model.Id">
                             @Html.AntiForgeryToken()
-                            <div class="mb-2">
-                                <select name="chunkingStrategy" class="form-select form-select-sm" style="font-size: 13px; border-radius: 6px;">
-                                    <option value="markdown_header">Markdown header</option>
-                                    <option value="paragraph">Paragraph</option>
-                                    <option value="sentence">Sentence</option>
-                                    <option value="fixed_size">Fixed size</option>
-                                    <option value="fixed_size_overlap">Fixed + overlap</option>
-                                </select>
-                            </div>
-                            <button type="submit" class="btn btn-sm btn-info w-100 text-white fw-semibold" style="border-radius: 6px;">
+                            <button type="submit" class="btn btn-sm btn-info w-100 text-white fw-semibold doc-menu-btn">
                                 <i class="bi bi-lightning-charge-fill"></i> Lập chỉ mục
                             </button>
                         </form>
                     </li>
                 }
-                else
+
+                @if (Model.IsIndexed)
                 {
-                    <li class="dropdown-header text-xs text-uppercase fw-bold text-muted px-3 pb-1">📈 Khai thác</li>
+                    @if (canViewChunks)
+                    {
+                        <li class="dropdown-header text-xs text-uppercase fw-bold text-muted px-3 pb-1">Khai thác</li>
+                        <li>
+                            <a asp-page="/Documents/ViewChunks" asp-route-id="@Model.Id" class="dropdown-item py-2 px-3 d-flex align-items-center gap-2">
+                                <i class="bi bi-eye text-success"></i> Xem Vector Chunks
+                            </a>
+                        </li>
+                    }
+
+                    @if (canManage)
+                    {
+                        <li><hr class="dropdown-divider my-2"></li>
+                        <li class="dropdown-header text-xs text-uppercase fw-bold text-muted px-3 pb-1">Tái lập chỉ mục</li>
+                        <li class="px-3 py-2">
+                            <form method="post" asp-page-handler="IndexDocument" asp-route-id="@Model.Id">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-outline-warning w-100 fw-semibold doc-menu-btn">
+                                    <i class="bi bi-arrow-repeat"></i> Re-index
+                                </button>
+                            </form>
+                        </li>
+                    }
+                }
+
+                @if (canManage)
+                {
+                    <li><hr class="dropdown-divider my-2"></li>
+                    <li class="dropdown-header text-xs text-uppercase fw-bold text-muted px-3 pb-1">Nguy hiểm</li>
                     <li>
-                        <a asp-page="/Documents/ViewChunks" asp-route-id="@Model.Id" class="dropdown-item py-2 px-3 d-flex align-items-center gap-2">
-                            <i class="bi bi-eye text-success"></i> Xem Vector Chunks
+                        <a asp-page="/Documents/Delete" asp-route-id="@Model.Id"
+                           class="dropdown-item py-2 px-3 text-danger d-flex align-items-center gap-2 fw-semibold"
+                           onclick="return confirm('Bạn chắc chắn muốn xóa tệp này?');">
+                            <i class="bi bi-trash-fill"></i> Xóa tài liệu
                         </a>
                     </li>
-                    <li><hr class="dropdown-divider my-2"></li>
-                    <li class="dropdown-header text-xs text-uppercase fw-bold text-muted px-3 pb-1">🔄 Tái lập chỉ mục</li>
-                    <li class="px-3 py-2">
-                        <form method="post" asp-page-handler="IndexDocument" asp-route-id="@Model.Id">
-                            @Html.AntiForgeryToken()
-                            <div class="mb-2">
-                                <select name="chunkingStrategy" class="form-select form-select-sm" style="font-size: 13px; border-radius: 6px;">
-                                    <option value="markdown_header">Markdown header</option>
-                                    <option value="paragraph">Paragraph</option>
-                                    <option value="sentence">Sentence</option>
-                                    <option value="fixed_size">Fixed size</option>
-                                    <option value="fixed_size_overlap">Fixed + overlap</option>
-                                </select>
-                            </div>
-                            <button type="submit" class="btn btn-sm btn-outline-warning w-100 fw-semibold" style="border-radius: 6px;">
-                                <i class="bi bi-arrow-repeat"></i> Re-index
-                            </button>
-                        </form>
-                    </li>
                 }
-                <li><hr class="dropdown-divider my-2"></li>
-                <li class="dropdown-header text-xs text-uppercase fw-bold text-muted px-3 pb-1">⚠️ Nguy hiểm</li>
-                <li>
-                    <a asp-page="/Documents/Delete" asp-route-id="@Model.Id"
-                       class="dropdown-item py-2 px-3 text-danger d-flex align-items-center gap-2 fw-semibold"
-                       onclick="return confirm('Bạn chắc chắn muốn xóa tệp này?');">
-                        <i class="bi bi-trash-fill"></i> Xóa tài liệu
-                    </a>
-                </li>
             </ul>
         </div>
     }
@@ -144,3 +142,4 @@
         else return $"{fileSize / (1024.0 * 1024.0):F2} MB";
     }
 }
+

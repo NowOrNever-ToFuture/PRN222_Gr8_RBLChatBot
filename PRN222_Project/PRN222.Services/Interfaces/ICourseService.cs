@@ -9,8 +9,8 @@ namespace PRN222.Services.Interfaces
     {
         Task<Course> GetCourseByIdAsync(Guid courseId);
         Task<List<Course>> GetAllCoursesAsync();
-        Task<Course> CreateCourseAsync(string name, string code, string description);
-        Task UpdateCourseAsync(Guid courseId, string name, string code, string description);
+        Task<Course> CreateCourseAsync(string name, string code, string description, Guid? managedById = null);
+        Task UpdateCourseAsync(Guid courseId, string name, string code, string description, Guid? managedById = null);
         Task DeleteCourseAsync(Guid courseId);
     }
 }

@@ -1,145 +1,290 @@
 @page
 @model PRN222.RazorWebApp.Pages.Courses.IndexModel
 @{
-    ViewData["Title"] = "Quản Lý Môn Học";
+    ViewData["Title"] = "Danh Sách Môn Học";
+    var isAdmin = User.IsInRole("Admin");
 }
 
-<div class="container-fluid mt-4">
-    <div class="row mb-3">
-        <div class="col-md-6">
-            <h2><i class="bi bi-journal-bookmark-fill"></i> Quản Lý Môn Học</h2>
+<div class="course-shell">
+    <div class="course-hero">
+        <div>
+            <div class="eyebrow">Browse by subject</div>
+            <h1>Danh Sách Môn Học</h1>
+            
         </div>
-        <div class="col-md-6 text-end">
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createModal">
-                <i class="bi bi-plus-circle"></i> Thêm Môn Học
-            </button>
+        <div class="course-hero-actions">
+            @if (isAdmin)
+            {
+                <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#createModal">
+                    <i class="bi bi-plus-circle"></i> Thêm Môn Học Mới
+                </button>
+            }
         </div>
     </div>
 
-    <div class="card shadow">
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover table-striped">
-                    <thead class="table-dark">
-                        <tr>
-                            <th style="width: 5%">#</th>
-                            <th style="width: 15%">Mã Môn</th>
-                            <th style="width: 30%">Tên Môn</th>
-                            <th style="width: 30%">Mô Tả</th>
-                            <th style="width: 10%">Số Tài Liệu</th>
-                            <th style="width: 10%">Thao Tác</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (!Model.Courses.Any())
-                        {
-                            <tr><td colspan="6" class="text-center text-muted">Chưa có môn học nào.</td></tr>
-                        }
-                        else
-                        {
-                            for (int i = 0; i < Model.Courses.Count; i++)
-                            {
-                                var course = Model.Courses[i];
-                                <tr>
-                                    <td>@(i + 1)</td>
-                                    <td><span class="badge bg-info text-dark">@course.Code</span></td>
-                                    <td class="fw-bold">@course.Name</td>
-                                    <td>@course.Description</td>
-                                    <td><span class="badge bg-secondary">@(course.Documents?.Count ?? 0)</span></td>
-                                    <td>
-                                        <button class="btn btn-sm btn-outline-primary btn-edit"
-                                                data-id="@course.Id" data-code="@course.Code"
-                                                data-name="@course.Name" data-desc="@course.Description">
-                                            <i class="bi bi-pencil"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-danger btn-delete" data-id="@course.Id">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                            }
-                        }
-                    </tbody>
-                </table>
-            </div>
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show mt-4" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show mt-4" role="alert">
+            @Html.Raw(TempData["ErrorMessage"])
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    <div class="course-grid">
+        @foreach (var course in Model.Courses)
+        {
+            <div class="course-card" id="course-@course.Id">
+                <partial name="_CourseCard" model="course" />
+            </div>
+        }
     </div>
 </div>
 
-<!-- Modal Thêm Mới -->
-<div class="modal fade" id="createModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title">Thêm Môn Học Mới</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3"><label class="form-label">Mã Môn Học <span class="text-danger">*</span></label><input type="text" id="create-code" class="form-control" placeholder="VD: PRN222" required /></div>
-                <div class="mb-3"><label class="form-label">Tên Môn Học <span class="text-danger">*</span></label><input type="text" id="create-name" class="form-control" placeholder="VD: Lập trình C#" required /></div>
-                <div class="mb-3"><label class="form-label">Mô Tả</label><textarea id="create-desc" class="form-control" rows="3"></textarea></div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                <button type="button" class="btn btn-primary" id="btnCreate">Lưu</button>
+@if (isAdmin)
+{
+    <div class="modal fade" id="createModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg course-modal">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-journal-plus"></i> Thêm Môn Học Mới</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Mã môn học</label>
+                            <input type="text" id="create-code" class="form-control" placeholder="VD: PRN222" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Tên môn học</label>
+                            <input type="text" id="create-name" class="form-control" placeholder="VD: Lập trình C#" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Trưởng bộ môn</label>
+                            <select id="create-managedby" class="form-select">
+                                <option value="">-- Chưa gán trưởng bộ môn --</option>
+                                @foreach (var lecturer in Model.Lecturers)
+                                {
+                                    <option value="@lecturer.Id">@lecturer.FullName (@lecturer.Username)</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Mô tả</label>
+                            <textarea id="create-desc" class="form-control" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 px-4 pb-4 pt-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-primary px-4" id="btnCreate">Lưu</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Modal Sửa -->
-<div class="modal fade" id="editModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-warning">
-                <h5 class="modal-title">Sửa Môn Học</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <input type="hidden" id="edit-id" />
-                <div class="mb-3"><label class="form-label">Mã Môn Học <span class="text-danger">*</span></label><input type="text" id="edit-code" class="form-control" required /></div>
-                <div class="mb-3"><label class="form-label">Tên Môn Học <span class="text-danger">*</span></label><input type="text" id="edit-name" class="form-control" required /></div>
-                <div class="mb-3"><label class="form-label">Mô Tả</label><textarea id="edit-desc" class="form-control" rows="3"></textarea></div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                <button type="button" class="btn btn-warning" id="btnUpdate">Cập Nhật</button>
+    <div class="modal fade" id="editModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg course-modal edit-modal">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-pencil-square"></i> Cập Nhật Môn Học</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <input type="hidden" id="edit-id" />
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Mã môn học</label>
+                            <input type="text" id="edit-code" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Tên môn học</label>
+                            <input type="text" id="edit-name" class="form-control" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Trưởng bộ môn</label>
+                            <select id="edit-managedby" class="form-select">
+                                <option value="">-- Chưa gán trưởng bộ môn --</option>
+                                @foreach (var lecturer in Model.Lecturers)
+                                {
+                                    <option value="@lecturer.Id">@lecturer.FullName (@lecturer.Username)</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Mô tả</label>
+                            <textarea id="edit-desc" class="form-control" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 px-4 pb-4 pt-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-warning px-4 text-dark fw-semibold" id="btnUpdate">Cập Nhật</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
+}
+
+<style>
+    .course-shell { max-width: 1320px; margin: 0 auto; padding-bottom: 24px; }
+    .course-hero { display: flex; justify-content: space-between; gap: 24px; padding: 32px; border-radius: 28px; color: #fff; background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 48%, #7c3aed 100%); box-shadow: 0 24px 80px rgba(15,23,42,.24); }
+    .course-hero h1 { font-size: clamp(30px, 4vw, 46px); font-weight: 800; margin: 6px 0 10px; }
+    .course-hero p { max-width: 780px; color: rgba(255,255,255,.85); margin-bottom: 0; }
+    .eyebrow { text-transform: uppercase; letter-spacing: .18em; font-weight: 700; font-size: 12px; opacity: .85; }
+    .course-hero-actions { display: flex; align-items: end; }
+    .course-hero .btn { border-radius: 999px; font-weight: 700; padding: 12px 18px; }
+    .section-title h2 { font-weight: 800; margin-bottom: 6px; }
+    .section-title p { color: #64748b; margin-bottom: 0; }
+    .course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; margin-top: 18px; }
+    .course-card { position: relative; border-radius: 24px; background: linear-gradient(180deg, #fff 0%, #f8fafc 100%); border: 1px solid #e2e8f0; box-shadow: 0 10px 30px rgba(15,23,42,.06); overflow: hidden; transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+    .course-card:hover { transform: translateY(-4px); border-color: #93c5fd; box-shadow: 0 20px 42px rgba(15,23,42,.12); }
+    .course-card-main { display: block; text-decoration: none; color: inherit; padding: 20px; }
+    .course-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; gap: 12px; }
+    .course-code { display: inline-flex; align-items: center; padding: 6px 10px; border-radius: 999px; background: rgba(59,130,246,.1); color: #2563eb; font-weight: 800; }
+    .course-doc-count { font-size: 13px; color: #64748b; font-weight: 600; }
+    .course-card-body h3 { font-size: 21px; font-weight: 800; color: #0f172a; margin-bottom: 8px; }
+    .course-card-body p { color: #475569; min-height: 48px; margin-bottom: 16px; }
+    .course-card-footer { display: flex; justify-content: space-between; gap: 12px; align-items: center; color: #64748b; font-size: 13px; flex-wrap: wrap; }
+    .open-link { color: #2563eb; font-weight: 700; }
+    .course-card-actions { display: flex; gap: 8px; padding: 0 20px 20px; }
+    .course-modal .modal-header { background: linear-gradient(135deg, #1d4ed8, #7c3aed); color: #fff; }
+    .course-modal .modal-header .btn-close { filter: brightness(0) invert(1); }
+</style>
 
 @section Scripts {
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
 <script>
-    document.getElementById('btnCreate').addEventListener('click', async () => {
-        const data = { code: document.getElementById('create-code').value, name: document.getElementById('create-name').value, description: document.getElementById('create-desc').value };
-        const res = await fetch('/Courses/Index?handler=Create', { method: 'POST', headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '' }, body: JSON.stringify(data) });
-        const result = await res.json();
-        if (result.success) location.reload(); else alert('Lỗi: ' + result.message);
+    document.addEventListener("DOMContentLoaded", function() {
+        const connection = new signalR.HubConnectionBuilder().withUrl("/hubs/course").withAutomaticReconnect().build();
+        connection.start().catch(err => console.error("SignalR CourseHub Connection Error: ", err));
+
+        connection.on("ReceiveNewCourse", (course) => {
+            if (document.getElementById(`course-${course.id}`)) return;
+            $.get(`/Courses/Index?handler=CardHtml&id=${course.id}`, function(html) {
+                if (!document.getElementById(`course-${course.id}`)) {
+                    const grid = document.querySelector('.course-grid');
+                    const cardDiv = document.createElement('div');
+                    cardDiv.className = 'course-card';
+                    cardDiv.id = `course-${course.id}`;
+                    cardDiv.innerHTML = html;
+                    grid.appendChild(cardDiv);
+                }
+            });
+        });
+
+        connection.on("ReceiveUpdatedCourse", (course) => {
+            const card = document.getElementById(`course-${course.id}`);
+            if (card) {
+                $.get(`/Courses/Index?handler=CardHtml&id=${course.id}`, function(html) {
+                    card.innerHTML = html;
+                });
+            }
+        });
+
+        connection.on("ReceiveDeletedCourse", (courseId) => {
+            const card = document.getElementById(`course-${courseId}`);
+            if (card) {
+                $(card).fadeOut(200, function() {
+                    $(this).remove();
+                });
+            }
+        });
     });
-    document.addEventListener('click', (e) => {
-        const btn = e.target.closest('.btn-edit');
-        if (!btn) return;
-        document.getElementById('edit-id').value = btn.dataset.id;
-        document.getElementById('edit-code').value = btn.dataset.code;
-        document.getElementById('edit-name').value = btn.dataset.name;
-        document.getElementById('edit-desc').value = btn.dataset.desc;
-        new bootstrap.Modal(document.getElementById('editModal')).show();
-    });
-    document.getElementById('btnUpdate').addEventListener('click', async () => {
-        const data = { id: document.getElementById('edit-id').value, code: document.getElementById('edit-code').value, name: document.getElementById('edit-name').value, description: document.getElementById('edit-desc').value };
-        const res = await fetch('/Courses/Index?handler=Edit', { method: 'POST', headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '' }, body: JSON.stringify(data) });
-        const result = await res.json();
-        if (result.success) location.reload(); else alert('Lỗi: ' + result.message);
-    });
-    document.addEventListener('click', async (e) => {
-        const btn = e.target.closest('.btn-delete');
-        if (!btn) return;
-        if (!confirm('Bạn có chắc muốn xóa môn học này?')) return;
-        const res = await fetch('/Courses/Index?handler=Delete', { method: 'POST', headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '' }, body: JSON.stringify({ id: btn.dataset.id }) });
-        const result = await res.json();
-        if (result.success) location.reload(); else alert('Lỗi: ' + result.message);
-    });
+
+    @if (isAdmin)
+    {
+        <text>
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('.btn-edit');
+            if (!btn) return;
+            document.getElementById('edit-id').value = btn.dataset.id;
+            document.getElementById('edit-code').value = btn.dataset.code;
+            document.getElementById('edit-name').value = btn.dataset.name;
+            document.getElementById('edit-desc').value = btn.dataset.desc;
+            document.getElementById('edit-managedby').value = btn.dataset.managedby || "";
+            new bootstrap.Modal(document.getElementById('editModal')).show();
+        });
+
+        document.getElementById('btnCreate').addEventListener('click', async () => {
+            const data = {
+                code: document.getElementById('create-code').value,
+                name: document.getElementById('create-name').value,
+                description: document.getElementById('create-desc').value,
+                managedById: document.getElementById('create-managedby').value || null
+            };
+            const res = await fetch('/Courses/Index?handler=Create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? ''
+                },
+                body: JSON.stringify(data)
+            });
+            const result = await res.json();
+            if (result.success) {
+                const modalEl = document.getElementById('createModal');
+                const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                modal.hide();
+                document.getElementById('create-code').value = '';
+                document.getElementById('create-name').value = '';
+                document.getElementById('create-desc').value = '';
+                document.getElementById('create-managedby').value = '';
+            } else {
+                alert('Lỗi: ' + result.message);
+            }
+        });
+
+        document.getElementById('btnUpdate').addEventListener('click', async () => {
+            const data = {
+                id: document.getElementById('edit-id').value,
+                code: document.getElementById('edit-code').value,
+                name: document.getElementById('edit-name').value,
+                description: document.getElementById('edit-desc').value,
+                managedById: document.getElementById('edit-managedby').value || null
+            };
+            const res = await fetch('/Courses/Index?handler=Edit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? ''
+                },
+                body: JSON.stringify(data)
+            });
+            const result = await res.json();
+            if (result.success) {
+                const modalEl = document.getElementById('editModal');
+                const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                modal.hide();
+            } else {
+                alert('Lỗi: ' + result.message);
+            }
+        });
+
+        document.addEventListener('click', async (e) => {
+            const btn = e.target.closest('.btn-delete');
+            if (!btn) return;
+            if (!confirm('Bạn có chắc muốn xóa môn học này?')) return;
+            const res = await fetch('/Courses/Index?handler=Delete', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? ''
+                },
+                body: JSON.stringify({ id: btn.dataset.id })
+            });
+            const result = await res.json();
+            if (!result.success) alert('Lỗi: ' + result.message);
+        });
+        </text>
+    }
 </script>
 @Html.AntiForgeryToken()
 }
+

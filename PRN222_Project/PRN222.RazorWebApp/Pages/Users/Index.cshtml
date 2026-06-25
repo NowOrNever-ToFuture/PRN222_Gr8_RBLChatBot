@@ -1,4 +1,4 @@
-@page
+﻿@page
 @model PRN222.RazorWebApp.Pages.Users.IndexModel
 @{
     ViewData["Title"] = "Quản lý nhân sự";
@@ -43,31 +43,10 @@
                             <th class="text-center" style="width: 150px;">Thao tác</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="users-table-body">
                         @foreach (var user in Model.Users)
                         {
-                            <tr>
-                                <td><strong>@user.Username</strong></td>
-                                <td>
-                                    @if (user.Role == "Admin")
-                                    {
-                                        <span class="badge bg-danger"><i class="bi bi-shield-lock"></i> Admin</span>
-                                    }
-                                    else if (user.Role == "Lecturer")
-                                    {
-                                        <span class="badge bg-success"><i class="bi bi-person-workspace"></i> Lecturer</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-info"><i class="bi bi-person"></i> Student</span>
-                                    }
-                                </td>
-                                <td><small class="text-muted">@DateTime.Now.ToString("dd/MM/yyyy")</small></td>
-                                <td class="text-center">
-                                    <a asp-page="/Users/Edit" asp-route-id="@user.Id" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i></a>
-                                    <a asp-page="/Users/Delete" asp-route-id="@user.Id" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></a>
-                                </td>
-                            </tr>
+                            <partial name="_UserRow" model="user" />
                         }
                     </tbody>
                 </table>
@@ -75,3 +54,45 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+<script>
+    $(document).ready(function () {
+        const connection = new signalR.HubConnectionBuilder().withUrl("/hubs/user").withAutomaticReconnect().build();
+        const tbody = $('#users-table-body');
+
+        function upsertRow(userId) {
+            $.get(`/Users/Index?handler=RowHtml&id=${userId}`, function (html) {
+                const existingRow = $(`#user-${userId}`);
+                if (existingRow.length) {
+                    existingRow.replaceWith(html);
+                } else {
+                    tbody.prepend(html);
+                }
+            });
+        }
+
+        connection.on("ReceiveNewUser", function (user) {
+            if (!user || !user.id) return;
+            upsertRow(user.id);
+        });
+
+        connection.on("ReceiveUpdatedUser", function (user) {
+            if (!user || !user.id) return;
+            upsertRow(user.id);
+        });
+
+        connection.on("ReceiveDeletedUser", function (userId) {
+            const row = $(`#user-${userId}`);
+            if (row.length) {
+                row.fadeOut(150, function () {
+                    $(this).remove();
+                });
+            }
+        });
+
+        connection.start().catch(err => console.error("SignalR UserHub Connection Error:", err));
+    });
+</script>
+}
