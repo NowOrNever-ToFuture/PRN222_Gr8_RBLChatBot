@@ -1,0 +1,145 @@
+@page
+@model PRN222.RazorWebApp.Pages.Courses.IndexModel
+@{
+    ViewData["Title"] = "Quản Lý Môn Học";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <h2><i class="bi bi-journal-bookmark-fill"></i> Quản Lý Môn Học</h2>
+        </div>
+        <div class="col-md-6 text-end">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createModal">
+                <i class="bi bi-plus-circle"></i> Thêm Môn Học
+            </button>
+        </div>
+    </div>
+
+    <div class="card shadow">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped">
+                    <thead class="table-dark">
+                        <tr>
+                            <th style="width: 5%">#</th>
+                            <th style="width: 15%">Mã Môn</th>
+                            <th style="width: 30%">Tên Môn</th>
+                            <th style="width: 30%">Mô Tả</th>
+                            <th style="width: 10%">Số Tài Liệu</th>
+                            <th style="width: 10%">Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Courses.Any())
+                        {
+                            <tr><td colspan="6" class="text-center text-muted">Chưa có môn học nào.</td></tr>
+                        }
+                        else
+                        {
+                            for (int i = 0; i < Model.Courses.Count; i++)
+                            {
+                                var course = Model.Courses[i];
+                                <tr>
+                                    <td>@(i + 1)</td>
+                                    <td><span class="badge bg-info text-dark">@course.Code</span></td>
+                                    <td class="fw-bold">@course.Name</td>
+                                    <td>@course.Description</td>
+                                    <td><span class="badge bg-secondary">@(course.Documents?.Count ?? 0)</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary btn-edit"
+                                                data-id="@course.Id" data-code="@course.Code"
+                                                data-name="@course.Name" data-desc="@course.Description">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger btn-delete" data-id="@course.Id">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Thêm Mới -->
+<div class="modal fade" id="createModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Thêm Môn Học Mới</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3"><label class="form-label">Mã Môn Học <span class="text-danger">*</span></label><input type="text" id="create-code" class="form-control" placeholder="VD: PRN222" required /></div>
+                <div class="mb-3"><label class="form-label">Tên Môn Học <span class="text-danger">*</span></label><input type="text" id="create-name" class="form-control" placeholder="VD: Lập trình C#" required /></div>
+                <div class="mb-3"><label class="form-label">Mô Tả</label><textarea id="create-desc" class="form-control" rows="3"></textarea></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" id="btnCreate">Lưu</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Sửa -->
+<div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title">Sửa Môn Học</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="edit-id" />
+                <div class="mb-3"><label class="form-label">Mã Môn Học <span class="text-danger">*</span></label><input type="text" id="edit-code" class="form-control" required /></div>
+                <div class="mb-3"><label class="form-label">Tên Môn Học <span class="text-danger">*</span></label><input type="text" id="edit-name" class="form-control" required /></div>
+                <div class="mb-3"><label class="form-label">Mô Tả</label><textarea id="edit-desc" class="form-control" rows="3"></textarea></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-warning" id="btnUpdate">Cập Nhật</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.getElementById('btnCreate').addEventListener('click', async () => {
+        const data = { code: document.getElementById('create-code').value, name: document.getElementById('create-name').value, description: document.getElementById('create-desc').value };
+        const res = await fetch('/Courses/Index?handler=Create', { method: 'POST', headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '' }, body: JSON.stringify(data) });
+        const result = await res.json();
+        if (result.success) location.reload(); else alert('Lỗi: ' + result.message);
+    });
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('.btn-edit');
+        if (!btn) return;
+        document.getElementById('edit-id').value = btn.dataset.id;
+        document.getElementById('edit-code').value = btn.dataset.code;
+        document.getElementById('edit-name').value = btn.dataset.name;
+        document.getElementById('edit-desc').value = btn.dataset.desc;
+        new bootstrap.Modal(document.getElementById('editModal')).show();
+    });
+    document.getElementById('btnUpdate').addEventListener('click', async () => {
+        const data = { id: document.getElementById('edit-id').value, code: document.getElementById('edit-code').value, name: document.getElementById('edit-name').value, description: document.getElementById('edit-desc').value };
+        const res = await fetch('/Courses/Index?handler=Edit', { method: 'POST', headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '' }, body: JSON.stringify(data) });
+        const result = await res.json();
+        if (result.success) location.reload(); else alert('Lỗi: ' + result.message);
+    });
+    document.addEventListener('click', async (e) => {
+        const btn = e.target.closest('.btn-delete');
+        if (!btn) return;
+        if (!confirm('Bạn có chắc muốn xóa môn học này?')) return;
+        const res = await fetch('/Courses/Index?handler=Delete', { method: 'POST', headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '' }, body: JSON.stringify({ id: btn.dataset.id }) });
+        const result = await res.json();
+        if (result.success) location.reload(); else alert('Lỗi: ' + result.message);
+    });
+</script>
+@Html.AntiForgeryToken()
+}

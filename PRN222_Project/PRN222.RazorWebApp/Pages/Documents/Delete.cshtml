@@ -1,0 +1,47 @@
+@page "{id:guid}"
+@model PRN222.RazorWebApp.Pages.Documents.DeleteModel
+@{
+    ViewData["Title"] = "Xác nhận xóa tài liệu";
+}
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <div class="card border-danger shadow">
+                <div class="card-header bg-danger text-white">
+                    <h3 class="card-title mb-0"><i class="bi bi-exclamation-triangle"></i> Xác nhận xóa</h3>
+                </div>
+                <div class="card-body p-4">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-circle"></i>
+                        <strong>Cảnh báo!</strong> Hành động này không thể hoàn tác.
+                    </div>
+                    <h5 class="mb-3">Bạn có chắc chắn muốn xóa tệp này?</h5>
+                    <div class="card bg-light mb-4">
+                        <div class="card-body">
+                            <p class="mb-2"><strong>Tên tệp:</strong><br /><code>@Model.Document?.FileName</code></p>
+                            <p class="mb-2"><strong>Môn học:</strong><br />@Model.Document?.Course?.Code - @Model.Document?.Course?.Name</p>
+                            <p class="mb-2"><strong>Ngày tải lên:</strong><br />@Model.Document?.UploadDate.ToString("dd/MM/yyyy HH:mm:ss")</p>
+                            <p class="mb-0"><strong>Trạng thái:</strong><br /><span class="badge bg-warning">@Model.Document?.Status</span></p>
+                        </div>
+                    </div>
+                    <form method="post" onsubmit="return confirm('Bạn có chắc muốn xóa tài liệu này? Hành động này không thể hoàn tác.');">
+                        @Html.AntiForgeryToken()
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a asp-page="/Documents/Index" class="btn btn-secondary btn-lg">
+                                <i class="bi bi-arrow-left"></i> Hủy
+                            </a>
+                            <button type="submit" class="btn btn-danger btn-lg">
+                                <i class="bi bi-trash"></i> Xóa
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    code { background-color: #f4f4f4; padding: 4px 8px; border-radius: 3px; color: #c7254e; word-break: break-all; }
+</style>

@@ -1,0 +1,77 @@
+@page
+@model PRN222.RazorWebApp.Pages.Users.IndexModel
+@{
+    ViewData["Title"] = "Quản lý nhân sự";
+}
+
+<div class="container-fluid mt-5">
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h2 class="fw-bold"><i class="bi bi-people-fill" style="color: #667eea;"></i> Quản lý nhân sự</h2>
+        </div>
+        <div class="col-md-6 text-end">
+            <a asp-page="/Users/Create" class="btn btn-primary" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+                <i class="bi bi-person-plus"></i> Tạo tài khoản mới
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-exclamation-circle"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                        <tr>
+                            <th>Tên đăng nhập</th>
+                            <th>Vai trò</th>
+                            <th>Ngày tạo</th>
+                            <th class="text-center" style="width: 150px;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in Model.Users)
+                        {
+                            <tr>
+                                <td><strong>@user.Username</strong></td>
+                                <td>
+                                    @if (user.Role == "Admin")
+                                    {
+                                        <span class="badge bg-danger"><i class="bi bi-shield-lock"></i> Admin</span>
+                                    }
+                                    else if (user.Role == "Lecturer")
+                                    {
+                                        <span class="badge bg-success"><i class="bi bi-person-workspace"></i> Lecturer</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-info"><i class="bi bi-person"></i> Student</span>
+                                    }
+                                </td>
+                                <td><small class="text-muted">@DateTime.Now.ToString("dd/MM/yyyy")</small></td>
+                                <td class="text-center">
+                                    <a asp-page="/Users/Edit" asp-route-id="@user.Id" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i></a>
+                                    <a asp-page="/Users/Delete" asp-route-id="@user.Id" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

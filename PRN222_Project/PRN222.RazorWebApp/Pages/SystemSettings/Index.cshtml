@@ -1,0 +1,78 @@
+@page
+@model PRN222.RazorWebApp.Pages.SystemSettings.IndexModel
+@{
+    ViewData["Title"] = "Cấu Hình Hệ Thống";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h2 class="mb-4"><i class="bi bi-gear"></i> Cấu Hình Hệ Thống (Live Swapping)</h2>
+
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show">
+                    <i class="bi bi-check-circle-fill"></i> @TempData["SuccessMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show">
+                    <i class="bi bi-exclamation-triangle-fill"></i> @TempData["ErrorMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            <div class="card shadow">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="bi bi-cpu"></i> Mô hình Embedding & Chatbot Mặc Định</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-4">
+                        Thiết lập này sẽ thay đổi <strong>ngay lập tức</strong> (Live Swapping) mô hình AI được sử dụng bởi Chatbot RAG cho sinh viên,
+                        nhờ vào kiến trúc <code>Factory Pattern</code>.
+                    </p>
+                    <form method="post" asp-page-handler="UpdateActiveModel">
+                        @Html.AntiForgeryToken()
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Chọn mô hình mặc định:</label>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="radio" name="activeModel" id="model-bgem3" value="bge-m3" @(Model.ActiveModel == "bge-m3" ? "checked" : "") />
+                                <label class="form-check-label" for="model-bgem3"><strong>BGE-M3</strong> (Mô hình Local đa ngôn ngữ, tối ưu cho tiếng Việt)</label>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="radio" name="activeModel" id="model-e5" value="e5" @(Model.ActiveModel == "e5" ? "checked" : "") />
+                                <label class="form-check-label" for="model-e5"><strong>Multilingual E5</strong> (Mô hình Local tốt cho hỏi đáp)</label>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="radio" name="activeModel" id="model-phobert" value="phobert" @(Model.ActiveModel == "phobert" ? "checked" : "") />
+                                <label class="form-check-label" for="model-phobert"><strong>PhoBERT</strong> (Mô hình chuyên biệt tiếng Việt)</label>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="radio" name="activeModel" id="model-openai" value="OpenAI" @(Model.ActiveModel == "OpenAI" ? "checked" : "") />
+                                <label class="form-check-label" for="model-openai"><strong>OpenAI (text-embedding-3-small)</strong> (Cloud, yêu cầu kết nối mạng)</label>
+                            </div>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-save"></i> Lưu Cấu Hình
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mt-4 border-info">
+                <div class="card-body">
+                    <h5 class="card-title text-info"><i class="bi bi-info-circle"></i> Về tính năng Live Swapping</h5>
+                    <p class="mb-0">
+                        Khi bạn nhấn <strong>Lưu Cấu Hình</strong>, hệ thống sẽ lưu thông số này vào bảng <code>SystemSettings</code>.
+                        Tại tầng Service, <code>AiModelFactory</code> sẽ tự động truy xuất giá trị mới này và khởi tạo đúng loại <code>IEmbeddingService</code>
+                        tương ứng mỗi khi sinh viên đặt câu hỏi (không cần khởi động lại server).
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

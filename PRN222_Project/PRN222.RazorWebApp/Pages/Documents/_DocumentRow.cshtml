@@ -1,0 +1,146 @@
+@model PRN222.Models.Document
+@{
+    var isAdmin = User.IsInRole("Admin");
+    var currentUserIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+    var currentUserId = !string.IsNullOrEmpty(currentUserIdStr) && Guid.TryParse(currentUserIdStr, out var id) ? id : Guid.Empty;
+    bool canEdit = isAdmin || Model.OwnerId == currentUserId;
+}
+
+<td class="px-4 row-num"></td>
+<td class="px-4">
+    @{
+        string ext = System.IO.Path.GetExtension(Model.FileName).ToLowerInvariant();
+        string iconClass = ext switch
+        {
+            ".pdf" => "bi-file-pdf text-danger",
+            ".docx" or ".doc" => "bi-file-word text-primary",
+            ".pptx" or ".ppt" => "bi-file-powerpoint text-warning",
+            ".xlsx" or ".xls" => "bi-file-excel text-success",
+            _ => "bi-file-earmark-text text-secondary"
+        };
+    }
+    <div class="d-flex align-items-center gap-2">
+        <i class="bi @iconClass fs-4"></i>
+        <a href="~/uploads/@Model.FileName" target="_blank" class="text-decoration-none" title="Xem/Tải xuống tài liệu gốc">
+            <code class="text-truncate d-inline-block" style="max-width: 250px; cursor: pointer; color: #764ba2; border-color: rgba(118, 75, 162, 0.25);">@Model.FileName</code>
+        </a>
+    </div>
+</td>
+<td class="px-4">
+    <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-2 py-1 mb-1" style="font-size: 11px; font-weight: 600;">@Model.Course?.Code</span>
+    <br />
+    <small class="text-muted d-block text-truncate" style="max-width: 180px;" title="@Model.Course?.Name">@Model.Course?.Name</small>
+</td>
+<td class="px-4"><small class="text-secondary fw-semibold">@GetFileSizeDisplay(Model.FileSize)</small></td>
+<td class="px-4">
+    <small class="text-dark d-flex align-items-center gap-1">
+        <i class="bi bi-person text-muted"></i> @Model.Owner?.FullName
+    </small>
+</td>
+<td class="px-4"><small class="text-muted">@Model.UploadDate.ToString("dd/MM/yyyy HH:mm")</small></td>
+<td class="px-4">
+    @{
+        var statusText = Model.Status;
+        var badgeClass = statusText switch
+        {
+            "Pending" => "bg-warning bg-opacity-10 text-warning border-warning border-opacity-25",
+            "Processing" => "bg-info bg-opacity-10 text-info border-info border-opacity-25 status-processing",
+            "Completed" => "bg-success bg-opacity-10 text-success border-success border-opacity-25",
+            "Failed" => "bg-danger bg-opacity-10 text-danger border-danger border-opacity-25",
+            _ => "bg-secondary bg-opacity-10 text-secondary border-secondary border-opacity-25"
+        };
+    }
+    <span class="badge rounded-pill border px-3 py-2 fw-semibold @badgeClass" style="font-size: 11px;">
+        @if (statusText == "Completed") { <i class="bi bi-check-circle-fill me-1"></i> }
+        else if (statusText == "Processing") { <span class="spinner-border spinner-border-sm me-1" role="status" style="width: 10px; height: 10px; border-width: 2px;"></span> }
+        else if (statusText == "Pending") { <i class="bi bi-hourglass-split me-1"></i> }
+        else if (statusText == "Failed") { <i class="bi bi-exclamation-triangle-fill me-1"></i> }
+        @statusText
+    </span>
+</td>
+<td class="px-4 text-end" style="padding-right: 24px;">
+    @if (canEdit)
+    {
+        <div class="dropdown d-inline-block">
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle d-flex align-items-center gap-1 ms-auto"
+                    type="button" data-bs-toggle="dropdown" aria-expanded="false" style="border-radius: 6px; padding: 6px 12px; font-weight: 500;">
+                <i class="bi bi-gear-fill text-muted"></i> Thao tác
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow border-0 py-2" style="border-radius: 10px; min-width: 240px; font-size: 14px;">
+                @if (!Model.IsIndexed)
+                {
+                    <li class="dropdown-header text-xs text-uppercase fw-bold text-muted px-3 pb-1">⚡ Lập chỉ mục</li>
+                    <li class="px-3 py-2">
+                        <form method="post" asp-page-handler="IndexDocument" asp-route-id="@Model.Id">
+                            @Html.AntiForgeryToken()
+                            <div class="mb-2">
+                                <select name="chunkingStrategy" class="form-select form-select-sm" style="font-size: 13px; border-radius: 6px;">
+                                    <option value="markdown_header">Markdown header</option>
+                                    <option value="paragraph">Paragraph</option>
+                                    <option value="sentence">Sentence</option>
+                                    <option value="fixed_size">Fixed size</option>
+                                    <option value="fixed_size_overlap">Fixed + overlap</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-info w-100 text-white fw-semibold" style="border-radius: 6px;">
+                                <i class="bi bi-lightning-charge-fill"></i> Lập chỉ mục
+                            </button>
+                        </form>
+                    </li>
+                }
+                else
+                {
+                    <li class="dropdown-header text-xs text-uppercase fw-bold text-muted px-3 pb-1">📈 Khai thác</li>
+                    <li>
+                        <a asp-page="/Documents/ViewChunks" asp-route-id="@Model.Id" class="dropdown-item py-2 px-3 d-flex align-items-center gap-2">
+                            <i class="bi bi-eye text-success"></i> Xem Vector Chunks
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider my-2"></li>
+                    <li class="dropdown-header text-xs text-uppercase fw-bold text-muted px-3 pb-1">🔄 Tái lập chỉ mục</li>
+                    <li class="px-3 py-2">
+                        <form method="post" asp-page-handler="IndexDocument" asp-route-id="@Model.Id">
+                            @Html.AntiForgeryToken()
+                            <div class="mb-2">
+                                <select name="chunkingStrategy" class="form-select form-select-sm" style="font-size: 13px; border-radius: 6px;">
+                                    <option value="markdown_header">Markdown header</option>
+                                    <option value="paragraph">Paragraph</option>
+                                    <option value="sentence">Sentence</option>
+                                    <option value="fixed_size">Fixed size</option>
+                                    <option value="fixed_size_overlap">Fixed + overlap</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-outline-warning w-100 fw-semibold" style="border-radius: 6px;">
+                                <i class="bi bi-arrow-repeat"></i> Re-index
+                            </button>
+                        </form>
+                    </li>
+                }
+                <li><hr class="dropdown-divider my-2"></li>
+                <li class="dropdown-header text-xs text-uppercase fw-bold text-muted px-3 pb-1">⚠️ Nguy hiểm</li>
+                <li>
+                    <a asp-page="/Documents/Delete" asp-route-id="@Model.Id"
+                       class="dropdown-item py-2 px-3 text-danger d-flex align-items-center gap-2 fw-semibold"
+                       onclick="return confirm('Bạn chắc chắn muốn xóa tệp này?');">
+                        <i class="bi bi-trash-fill"></i> Xóa tài liệu
+                    </a>
+                </li>
+            </ul>
+        </div>
+    }
+    else
+    {
+        <a href="~/uploads/@Model.FileName" target="_blank" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 ms-auto" style="border-radius: 6px; padding: 6px 12px; font-weight: 500; border-color: #667eea; color: #667eea;">
+            <i class="bi bi-eye"></i> Xem tài liệu
+        </a>
+    }
+</td>
+
+@functions {
+    private string GetFileSizeDisplay(long fileSize)
+    {
+        if (fileSize < 1024) return $"{fileSize} B";
+        else if (fileSize < 1024 * 1024) return $"{fileSize / 1024.0:F2} KB";
+        else return $"{fileSize / (1024.0 * 1024.0):F2} MB";
+    }
+}

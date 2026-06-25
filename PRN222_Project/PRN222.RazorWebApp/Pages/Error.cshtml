@@ -1,0 +1,26 @@
+﻿@page
+@model PRN222.RazorWebApp.Pages.ErrorModel
+@{
+    ViewData["Title"] = "Error";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Error</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+</head>
+<body>
+<div class="container mt-5 text-center">
+    <h1 class="text-danger">Đã xảy ra lỗi</h1>
+    <p class="text-muted">Xin lỗi, đã có lỗi xảy ra khi xử lý yêu cầu của bạn.</p>
+    @if (Model.ShowRequestId)
+    {
+        <p><strong>Request ID:</strong> <code>@Model.RequestId</code></p>
+    }
+    <a href="/" class="btn btn-primary mt-3">Về trang chủ</a>
+</div>
+</body>
+</html>

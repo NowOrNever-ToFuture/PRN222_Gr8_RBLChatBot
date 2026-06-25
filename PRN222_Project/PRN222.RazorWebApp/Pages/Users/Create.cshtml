@@ -1,0 +1,93 @@
+@page
+@model PRN222.RazorWebApp.Pages.Users.CreateModel
+@{
+    ViewData["Title"] = "Tạo tài khoản mới";
+}
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card border-0 shadow-lg" style="border-radius: 12px;">
+                <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px 12px 0 0;">
+                    <h3 class="mb-0"><i class="bi bi-person-plus-fill"></i> Tạo tài khoản mới</h3>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post">
+                        @if (!ViewData.ModelState.IsValid && ViewData.ModelState.Values.Any(v => v.Errors.Any()))
+                        {
+                            <div class="alert alert-danger alert-dismissible fade show">
+                                <i class="bi bi-exclamation-circle"></i>
+                                @foreach (var ms in ViewData.ModelState.Values) { @foreach (var e in ms.Errors) { <div>@e.ErrorMessage</div> } }
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        }
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold"><i class="bi bi-person-circle"></i> Tên đăng nhập</label>
+                            <input asp-for="Input.Username" class="form-control form-control-lg" style="border-radius: 8px; border: 2px solid #e0e0e0;" placeholder="Nhập tên đăng nhập" />
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold"><i class="bi bi-key-fill"></i> Mật khẩu</label>
+                            <input asp-for="Input.Password" type="password" class="form-control form-control-lg" style="border-radius: 8px; border: 2px solid #e0e0e0;" placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)" />
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold"><i class="bi bi-key-fill"></i> Xác nhận mật khẩu</label>
+                            <input asp-for="Input.ConfirmPassword" type="password" class="form-control form-control-lg" style="border-radius: 8px; border: 2px solid #e0e0e0;" placeholder="Xác nhận mật khẩu" />
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold"><i class="bi bi-shield-lock"></i> Vai trò</label>
+                            <select asp-for="Input.Role" class="form-control form-control-lg" style="border-radius: 8px; border: 2px solid #e0e0e0;">
+                                <option value="Student">Student (Sinh viên)</option>
+                                <option value="Lecturer">Lecturer (Giảng viên phụ trách)</option>
+                                <option value="Admin">Admin (Quản trị viên)</option>
+                            </select>
+                        </div>
+                        <div class="mb-4" id="courseSelectionDiv" style="display: none;">
+                            <label class="form-label fw-semibold"><i class="bi bi-book"></i> Môn học phụ trách</label>
+                            <select asp-for="Input.CourseId" class="form-control form-control-lg" style="border-radius: 8px; border: 2px solid #e0e0e0;">
+                                <option value="">-- Chọn môn học --</option>
+                                @foreach (var course in Model.Courses)
+                                {
+                                    <option value="@course.Id">@course.Code - @course.Name</option>
+                                }
+                            </select>
+                        </div>
+
+                        <script>
+                            document.addEventListener("DOMContentLoaded", function() {
+                                const roleSelect = document.querySelector('select[name="Input.Role"]');
+                                const courseDiv = document.getElementById('courseSelectionDiv');
+                                const courseSelect = document.querySelector('select[name="Input.CourseId"]');
+
+                                function toggleCourseField() {
+                                    if (roleSelect.value === 'Lecturer') {
+                                        courseDiv.style.display = 'block';
+                                        courseSelect.required = true;
+                                    } else {
+                                        courseDiv.style.display = 'none';
+                                        courseSelect.required = false;
+                                        courseSelect.value = '';
+                                    }
+                                }
+
+                                roleSelect.addEventListener('change', toggleCourseField);
+                                toggleCourseField();
+                            });
+                        </script>
+                        <div class="row mt-5">
+                            <div class="col-md-6">
+                                <button type="submit" class="btn btn-lg w-100 fw-semibold text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 8px;">
+                                    <i class="bi bi-check-circle"></i> Tạo tài khoản
+                                </button>
+                            </div>
+                            <div class="col-md-6">
+                                <a asp-page="/Users/Index" class="btn btn-lg w-100 fw-semibold" style="background-color: #e9ecef; border: none; border-radius: 8px;">
+                                    <i class="bi bi-arrow-left"></i> Quay lại
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
