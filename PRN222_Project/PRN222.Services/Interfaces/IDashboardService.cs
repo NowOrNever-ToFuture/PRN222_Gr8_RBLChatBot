@@ -55,5 +55,6 @@ namespace PRN222.Services.Interfaces
         public string CourseName { get; set; } = "";
         public string Status { get; set; } = "";
         public DateTime UploadDate { get; set; }
+        public string UploadedBy { get; set; } = "";
     }
 }

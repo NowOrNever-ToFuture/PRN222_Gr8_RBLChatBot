@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PRN222.Repositories;
 
@@ -11,9 +12,11 @@ using PRN222.Repositories;
 namespace PRN222.Repositories.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260621042413_AddCourseIdToUser")]
+    partial class AddCourseIdToUser
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -139,16 +142,11 @@ namespace PRN222.Repositories.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid?>("ManagedById")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ManagedById");
 
                     b.ToTable("Courses");
                 });
@@ -162,9 +160,6 @@ namespace PRN222.Repositories.Migrations
 
                     b.Property<Guid>("CourseId")
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("FileHash")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("FileName")
                         .IsRequired()
@@ -180,7 +175,7 @@ namespace PRN222.Repositories.Migrations
                     b.Property<bool>("IsIndexed")
                         .HasColumnType("bit");
 
-                    b.Property<Guid?>("OwnerId")
+                    b.Property<Guid>("OwnerId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Status")
@@ -401,16 +396,6 @@ namespace PRN222.Repositories.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("PRN222.Models.Course", b =>
-                {
-                    b.HasOne("PRN222.Models.User", "ManagedBy")
-                        .WithMany()
-                        .HasForeignKey("ManagedById")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("ManagedBy");
-                });
-
             modelBuilder.Entity("PRN222.Models.Document", b =>
                 {
                     b.HasOne("PRN222.Models.Course", "Course")
@@ -422,7 +407,8 @@ namespace PRN222.Repositories.Migrations
                     b.HasOne("PRN222.Models.User", "Owner")
                         .WithMany("UploadedDocuments")
                         .HasForeignKey("OwnerId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Course");
 

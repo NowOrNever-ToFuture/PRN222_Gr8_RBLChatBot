@@ -1,7 +1,7 @@
-@page
+﻿@page
 @model PRN222.RazorWebApp.Pages.Documents.UploadModel
 @{
-    ViewData["Title"] = "Tải Lên Tài Liệu";
+    ViewData["Title"] = "Tải lên tài liệu";
 }
 
 <div class="container mt-5">
@@ -13,7 +13,7 @@
                         <i class="bi bi-cloud-arrow-up fs-5"></i>
                     </div>
                     <div>
-                        <h4 class="card-title mb-0 fw-bold">Tải Lên Tài Liệu Mới</h4>
+                        <h4 class="card-title mb-0 fw-bold">Tải lên tài liệu mới</h4>
                         <small class="text-white-50">Cung cấp tri thức cho hệ thống RAG Assistant</small>
                     </div>
                 </div>
@@ -79,7 +79,7 @@
                             </div>
                         </div>
                         <div class="d-flex gap-2 justify-content-end align-items-center mt-4">
-                            <a asp-page="/Documents/Index" class="btn btn-light px-4 py-2 border fw-semibold" style="border-radius: 8px;">
+                            <a asp-page="/Documents/Index" asp-route-courseId="@Model.Input.CourseId" class="btn btn-light px-4 py-2 border fw-semibold" style="border-radius: 8px;">
                                 <i class="bi bi-arrow-left"></i> Quay lại
                             </a>
                             <button type="submit" class="btn text-white px-5 py-2 fw-bold" id="submitBtn" style="border-radius: 8px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
@@ -88,12 +88,13 @@
                         </div>
                         <div id="uploadProgress" class="d-none mt-4 p-3 bg-light rounded" style="border-radius: 12px; border: 1px solid #e9ecef;">
                             <div class="d-flex align-items-center gap-2 mb-2">
-                                <span class="spinner-border spinner-border-sm" role="status" style="color: #764ba2;"></span>
-                                <span id="progressText" class="fw-semibold text-secondary small">Đang mã hóa dữ liệu & đẩy tệp tin lên RAG Server...</span>
+                                <span id="progressSpinner" class="spinner-border spinner-border-sm" role="status" style="color: #764ba2;"></span>
+                                <span id="progressText" class="fw-semibold text-secondary small">Đang chuẩn bị tải lên...</span>
                             </div>
-                            <div class="progress" style="height: 6px; border-radius: 3px;">
-                                <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                            <div class="progress" style="height: 18px; border-radius: 3px;">
+                                <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%">0%</div>
                             </div>
+                            <div id="progressLog" class="mt-3 p-2 small font-monospace text-light" style="height: 150px; overflow-y: auto; border-radius: 8px; background-color: #1e1e2e; line-height: 1.6;"></div>
                         </div>
                     </form>
                 </div>
@@ -109,6 +110,7 @@
 </style>
 
 @section Scripts {
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
 <script>
     function displayFileInfo() {
         const fileInput = document.getElementById('File');
@@ -144,18 +146,123 @@
             submitBtn.disabled = false;
         }
     }
-    document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    const uploadConnection = new signalR.HubConnectionBuilder()
+        .withUrl("/hubs/documentupload")
+        .withAutomaticReconnect()
+        .build();
+    const uploadConnectionStart = uploadConnection.start().catch(err => console.error('SignalR (upload) error:', err));
+
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    const progressSpinner = document.getElementById('progressSpinner');
+    const progressLog = document.getElementById('progressLog');
+
+    function appendLog(message) {
+        const now = new Date();
+        const time = now.toLocaleTimeString('vi-VN');
+        const line = document.createElement('div');
+        line.textContent = `[${time}] ${message}`;
+        progressLog.appendChild(line);
+        progressLog.scrollTop = progressLog.scrollHeight;
+    }
+
+    function setProgress(percent, message) {
+        percent = Math.max(0, Math.min(100, Math.round(percent)));
+        progressBar.style.width = percent + '%';
+        progressBar.textContent = percent + '%';
+        if (message) progressText.textContent = message;
+    }
+
+    function formatBytes(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+
+    uploadConnection.on("ReceiveUploadProgress", (percent, message) => {
+        setProgress(percent, message);
+        appendLog(message);
+    });
+
+    document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
         const courseSelect = document.querySelector('select[name="Input.CourseId"]');
         const fileInput = document.getElementById('File');
         const submitBtn = document.getElementById('submitBtn');
         const progressDiv = document.getElementById('uploadProgress');
-        if (!courseSelect.value || !fileInput.files.length) { e.preventDefault(); alert('Vui lòng chọn môn học và tệp tài liệu'); return; }
+
+        if (!courseSelect.value || !fileInput.files.length) { alert('Vui lòng chọn môn học và tệp tài liệu'); return; }
+
         submitBtn.disabled = true;
         progressDiv.classList.remove('d-none');
-        let progress = 0;
-        const interval = setInterval(() => { progress += Math.random() * 25; if (progress > 90) progress = 95; document.getElementById('progressBar').style.width = progress + '%'; }, 250);
-        setTimeout(() => clearInterval(interval), 30000);
+        progressLog.innerHTML = '';
+        progressBar.classList.remove('bg-danger');
+        progressSpinner.classList.remove('d-none');
+        setProgress(0, 'Đang chuẩn bị tải lên...');
+        appendLog(`Bắt đầu tải lên tệp '${fileInput.files[0].name}' (${formatBytes(fileInput.files[0].size)})...`);
+
+        await uploadConnectionStart;
+
+        const formData = new FormData(this);
+        formData.set('connectionId', uploadConnection.connectionId || '');
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', window.location.href, true);
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+
+        let lastLoggedPercent = -1;
+        xhr.upload.onprogress = function (evt) {
+            if (!evt.lengthComputable) return;
+            const uploadPercent = (evt.loaded / evt.total) * 100;
+            const scaledPercent = uploadPercent * 0.7;
+            setProgress(scaledPercent, `Đang tải lên... ${Math.round(uploadPercent)}% (${formatBytes(evt.loaded)}/${formatBytes(evt.total)})`);
+            const roundedPercent = Math.floor(uploadPercent / 10) * 10;
+            if (roundedPercent !== lastLoggedPercent) {
+                lastLoggedPercent = roundedPercent;
+                appendLog(`Đã gửi ${formatBytes(evt.loaded)}/${formatBytes(evt.total)} (${Math.round(uploadPercent)}%)`);
+            }
+        };
+
+        xhr.onload = function () {
+            progressSpinner.classList.add('d-none');
+            if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                    const result = JSON.parse(xhr.responseText);
+                    if (result.success) {
+                        setProgress(100, result.message);
+                        appendLog('✅ ' + result.message);
+                        setTimeout(() => { window.location.href = result.redirectUrl; }, 800);
+                    } else {
+                        progressBar.classList.add('bg-danger');
+                        progressText.textContent = result.message;
+                        appendLog('❌ ' + result.message);
+                        submitBtn.disabled = false;
+                    }
+                } catch (err) {
+                    progressBar.classList.add('bg-danger');
+                    progressText.textContent = 'Lỗi xử lý phản hồi từ server.';
+                    appendLog('❌ Lỗi xử lý phản hồi từ server: ' + err.message);
+                    submitBtn.disabled = false;
+                }
+            } else {
+                progressBar.classList.add('bg-danger');
+                progressText.textContent = `Lỗi server (HTTP ${xhr.status}).`;
+                appendLog(`❌ Lỗi server (HTTP ${xhr.status}).`);
+                submitBtn.disabled = false;
+            }
+        };
+
+        xhr.onerror = function () {
+            progressSpinner.classList.add('d-none');
+            progressBar.classList.add('bg-danger');
+            progressText.textContent = 'Lỗi kết nối tới server.';
+            appendLog('❌ Lỗi kết nối tới server.');
+            submitBtn.disabled = false;
+        };
+
+        xhr.send(formData);
     });
+
     const dragDropArea = document.getElementById('dragDropArea');
     const fileInput = document.getElementById('File');
     dragDropArea.addEventListener('click', () => fileInput.click());

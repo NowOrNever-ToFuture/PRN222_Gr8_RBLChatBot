@@ -1,4 +1,4 @@
-﻿@page
+@page
 @model PRN222.RazorWebApp.Pages.IndexModel
 @{
     ViewData["Title"] = "Trang chủ - Hệ thống quản lý tài liệu môn Triết học (MLN)";
@@ -19,92 +19,158 @@
     </div>
 
     <div class="row g-4 mb-5">
-        <div class="col-md-6">
-            <div class="card border-0 shadow-sm h-100 feature-card">
-                <div class="card-body d-flex flex-column text-center py-5">
-                    <div class="mb-4">
-                        <i class="bi bi-collection" style="font-size: 3.5rem; color: #667eea;"></i>
+        @if (User.IsInRole("Admin") || User.IsInRole("Lecturer"))
+        {
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm h-100 feature-card">
+                    <div class="card-body d-flex flex-column text-center py-5">
+                        <div class="mb-4">
+                            <i class="bi bi-collection" style="font-size: 3.5rem; color: #667eea;"></i>
+                        </div>
+                        <h5 class="card-title fw-bold mb-3">📄 Danh sách tài liệu</h5>
+                        <p class="card-text text-muted mb-4 flex-grow-1">
+                            Xem toàn bộ tài liệu môn Triết học (MLN) đã tải lên, kèm theo ngày tải lên và trạng thái xử lý.
+                        </p>
+                        <a asp-page="/Documents/Index" class="btn btn-lg action-btn mx-auto"
+                           style="width: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;">
+                            <i class="bi bi-arrow-right"></i> Xem danh sách
+                        </a>
                     </div>
-                    <h5 class="card-title fw-bold mb-3">📄 Danh sách tài liệu</h5>
-                    <p class="card-text text-muted mb-4 flex-grow-1">
-                        Xem toàn bộ tài liệu môn Triết học (MLN) đã tải lên, kèm theo ngày tải lên và trạng thái xử lý.
-                    </p>
-                    <a asp-page="/Documents/Index" class="btn btn-lg action-btn mx-auto"
-                       style="width: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;">
-                        <i class="bi bi-arrow-right"></i> Xem danh sách
-                    </a>
                 </div>
             </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card border-0 shadow-sm h-100 feature-card">
-                <div class="card-body d-flex flex-column text-center py-5">
-                    <div class="mb-4">
-                        <i class="bi bi-cloud-arrow-up" style="font-size: 3.5rem; color: #28a745;"></i>
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm h-100 feature-card">
+                    <div class="card-body d-flex flex-column text-center py-5">
+                        <div class="mb-4">
+                            <i class="bi bi-cloud-arrow-up" style="font-size: 3.5rem; color: #28a745;"></i>
+                        </div>
+                        <h5 class="card-title fw-bold mb-3">⬆️ Tải lên tài liệu</h5>
+                        <p class="card-text text-muted mb-4 flex-grow-1">
+                            Tải lên tài liệu (.pdf, .docx, .pptx) cho môn Triết học (MLN). Tối đa 10MB/file.
+                        </p>
+                        <a asp-page="/Documents/Upload" class="btn btn-lg action-btn mx-auto"
+                           style="width: 200px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; border: none;">
+                            <i class="bi bi-cloud-arrow-up"></i> Tải lên ngay
+                        </a>
                     </div>
-                    <h5 class="card-title fw-bold mb-3">⬆️ Tải lên tài liệu</h5>
-                    <p class="card-text text-muted mb-4 flex-grow-1">
-                        Tải lên tài liệu (.pdf, .docx, .pptx) cho môn Triết học (MLN). Tối đa 10MB/file.
-                    </p>
-                    <a asp-page="/Documents/Upload" class="btn btn-lg action-btn mx-auto"
-                       style="width: 200px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; border: none;">
-                        <i class="bi bi-cloud-arrow-up"></i> Tải lên ngay
-                    </a>
                 </div>
             </div>
-        </div>
+        }
+        else if (User.IsInRole("Student"))
+        {
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm h-100 feature-card">
+                    <div class="card-body d-flex flex-column text-center py-5">
+                        <div class="mb-4">
+                            <i class="bi bi-collection" style="font-size: 3.5rem; color: #667eea;"></i>
+                        </div>
+                        <h5 class="card-title fw-bold mb-3">📄 Danh sách tài liệu</h5>
+                        <p class="card-text text-muted mb-4 flex-grow-1">
+                            Xem danh sách tài liệu môn Triết học (MLN) được cung cấp để học tập và tải xuống bản gốc.
+                        </p>
+                        <a asp-page="/Documents/Index" class="btn btn-lg action-btn mx-auto"
+                           style="width: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;">
+                            <i class="bi bi-arrow-right"></i> Xem danh sách
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm h-100 feature-card">
+                    <div class="card-body d-flex flex-column text-center py-5">
+                        <div class="mb-4">
+                            <i class="bi bi-robot" style="font-size: 3.5rem; color: #764ba2;"></i>
+                        </div>
+                        <h5 class="card-title fw-bold mb-3">💬 Trò chuyện với AI</h5>
+                        <p class="card-text text-muted mb-4 flex-grow-1">
+                            Đặt câu hỏi và thảo luận về các kiến thức môn Triết học với trợ lý AI học thuật.
+                        </p>
+                        <a asp-page="/Chat/Index" class="btn btn-lg action-btn mx-auto"
+                           style="width: 200px; background: linear-gradient(135deg, #764ba2 0%, #667eea 100%); color: white; border: none;">
+                            <i class="bi bi-chat-dots-fill"></i> Trò chuyện ngay
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="col-md-8 offset-md-2">
+                <div class="card border-0 shadow-lg feature-card text-center py-5 px-4" style="border-radius: 16px;">
+                    <div class="card-body d-flex flex-column align-items-center">
+                        <div class="mb-4 bg-light rounded-circle p-4" style="width: 100px; height: 100px; display: grid; place-items: center;">
+                            <i class="bi bi-robot" style="font-size: 3rem; color: #764ba2;"></i>
+                        </div>
+                        <h3 class="fw-bold mb-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                            Trò chuyện với Trợ lý AI Học thuật
+                        </h3>
+                        <p class="text-muted mb-4 fs-5" style="max-width: 600px;">
+                            Đặt câu hỏi về nội dung, quy luật, và các khái niệm của môn **Triết học Mác - Lênin**. 
+                            Trợ lý AI sẽ trả lời dựa trên kho tài liệu đã được kiểm chứng và trích dẫn rõ ràng nguồn tham khảo cho bạn.
+                        </p>
+                        <a asp-page="/Chat/Index" class="btn btn-lg px-5 py-3 fw-bold text-white shadow"
+                           style="border-radius: 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; min-width: 220px;">
+                            <i class="bi bi-chat-dots-fill me-2"></i> Trò chuyện ngay
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
     </div>
 
-    <div class="row">
-        <div class="col-lg-8 offset-lg-2">
-            <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 12px;">
-                <div class="card-body p-5">
-                    <h5 class="card-title mb-4 fw-bold">
-                        <i class="bi bi-info-circle text-primary"></i> Thông tin hệ thống
-                    </h5>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <p class="mb-2">
-                                <strong><i class="bi bi-check-circle text-success"></i> Định dạng hỗ trợ:</strong><br />
-                                <small class="text-muted">PDF (.pdf), Word (.docx), PowerPoint (.pptx)</small>
-                            </p>
+    @if (!User.IsInRole("Student"))
+    {
+        <div class="row">
+            <div class="col-lg-8 offset-lg-2">
+                <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 12px;">
+                    <div class="card-body p-5">
+                        <h5 class="card-title mb-4 fw-bold">
+                            <i class="bi bi-info-circle text-primary"></i> Thông tin hệ thống
+                        </h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <p class="mb-2">
+                                    <strong><i class="bi bi-check-circle text-success"></i> Định dạng hỗ trợ:</strong><br />
+                                    <small class="text-muted">PDF (.pdf), Word (.docx), PowerPoint (.pptx)</small>
+                                </p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <p class="mb-2">
+                                    <strong><i class="bi bi-archive text-warning"></i> Dung lượng tối đa:</strong><br />
+                                    <small class="text-muted">10 MB / file</small>
+                                </p>
+                            </div>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <p class="mb-2">
-                                <strong><i class="bi bi-archive text-warning"></i> Dung lượng tối đa:</strong><br />
-                                <small class="text-muted">10 MB / file</small>
-                            </p>
-                        </div>
+                        <hr class="my-4" />
+                        <p class="mb-0 small">
+                            <strong><i class="bi bi-lightbulb text-info"></i> Mẹo:</strong> Nếu tên tệp bị trùng lặp, hệ thống sẽ tự động thêm timestamp vào tên tệp để tránh ghi đè.
+                        </p>
                     </div>
-                    <hr class="my-4" />
-                    <p class="mb-0 small">
-                        <strong><i class="bi bi-lightbulb text-info"></i> Mẹo:</strong> Nếu tên tệp bị trùng lặp, hệ thống sẽ tự động thêm timestamp vào tên tệp để tránh ghi đè.
-                    </p>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="row g-4 mt-5 mb-5">
-        <div class="col-md-4">
-            <div class="stat-box p-4 rounded text-center" style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border-left: 4px solid #667eea;">
-                <h3 class="fw-bold mb-2" style="color: #667eea;">1</h3>
-                <p class="text-muted mb-0">Môn học (Triết học - MLN)</p>
+        <div class="row g-4 mt-5 mb-5">
+            <div class="col-md-4">
+                <div class="stat-box p-4 rounded text-center" style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border-left: 4px solid #667eea;">
+                    <h3 class="fw-bold mb-2" style="color: #667eea;">1</h3>
+                    <p class="text-muted mb-0">Môn học (Triết học - MLN)</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-box p-4 rounded text-center" style="background: linear-gradient(135deg, rgba(40, 167, 69, 0.1) 0%, rgba(32, 201, 151, 0.1) 100%); border-left: 4px solid #28a745;">
+                    <h3 class="fw-bold mb-2" style="color: #28a745;">∞</h3>
+                    <p class="text-muted mb-0">Dung lượng lưu trữ</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-box p-4 rounded text-center" style="background: linear-gradient(135deg, rgba(23, 162, 184, 0.1) 0%, rgba(0, 190, 212, 0.1) 100%); border-left: 4px solid #17a2b8;">
+                    <h3 class="fw-bold mb-2" style="color: #17a2b8;">∞</h3>
+                    <p class="text-muted mb-0">Tài liệu</p>
+                </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="stat-box p-4 rounded text-center" style="background: linear-gradient(135deg, rgba(40, 167, 69, 0.1) 0%, rgba(32, 201, 151, 0.1) 100%); border-left: 4px solid #28a745;">
-                <h3 class="fw-bold mb-2" style="color: #28a745;">∞</h3>
-                <p class="text-muted mb-0">Dung lượng lưu trữ</p>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="stat-box p-4 rounded text-center" style="background: linear-gradient(135deg, rgba(23, 162, 184, 0.1) 0%, rgba(0, 190, 212, 0.1) 100%); border-left: 4px solid #17a2b8;">
-                <h3 class="fw-bold mb-2" style="color: #17a2b8;">∞</h3>
-                <p class="text-muted mb-0">Tài liệu</p>
-            </div>
-        </div>
-    </div>
+    }
 </div>
 
 <style>

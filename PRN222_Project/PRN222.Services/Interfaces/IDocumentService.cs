@@ -15,9 +15,10 @@ namespace PRN222.Services.Interfaces
         /// <param name="dto">Upload document DTO containing CourseId and IFormFile</param>
         /// <param name="uploadBasePath">Physical path to wwwroot/uploads directory</param>
         /// <param name="ownerId">User ID of the uploader</param>
+        /// <param name="connectionId">SignalR connection ID to stream live progress/log messages to (optional)</param>
         /// <returns>The created Document entity</returns>
         /// <exception cref="InvalidOperationException">Thrown when validation fails</exception>
-        Task<Document> UploadDocumentAsync(UploadDocumentDTO dto, string uploadBasePath, Guid ownerId);
+        Task<Document> UploadDocumentAsync(UploadDocumentDTO dto, string uploadBasePath, Guid ownerId, string? connectionId = null);
 
         /// <summary>
         /// Index a document by splitting its content into chunks
@@ -36,10 +37,12 @@ namespace PRN222.Services.Interfaces
         /// </summary>
         /// <param name="userId">Current user ID</param>
         /// <param name="role">User role (Admin/Student)</param>
+        /// <param name="courseId">Optional course ID to filter by</param>
         /// <returns>Filtered list of documents</returns>
-        Task<List<Document>> GetDocumentsAsync(Guid userId, string role);
+        Task<List<Document>> GetDocumentsAsync(Guid userId, string role, Guid? courseId = null);
 
         Task<Document?> GetDocumentByIdAsync(Guid id);
+        Task<Document?> GetDocumentWithDetailsAsync(Guid id);
         Task<(bool Success, string ErrorMessage)> DeleteDocumentAsync(Guid id, Guid currentUserId, string role);
         
         /// <summary>

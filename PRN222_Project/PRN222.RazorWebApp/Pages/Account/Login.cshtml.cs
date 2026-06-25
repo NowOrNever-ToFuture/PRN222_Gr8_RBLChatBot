@@ -39,6 +39,8 @@ namespace PRN222.RazorWebApp.Pages.Account
                 return Page();
             }
 
+
+
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
@@ -61,6 +63,9 @@ namespace PRN222.RazorWebApp.Pages.Account
 
             if (user.Role == "Admin")
                 return RedirectToPage("/Dashboard/Index");
+
+            if (user.Role == "Student")
+                return RedirectToPage("/Chat/Index");
 
             return RedirectToPage("/Index");
         }

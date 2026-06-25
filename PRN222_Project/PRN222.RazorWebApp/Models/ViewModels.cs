@@ -31,6 +31,7 @@ namespace PRN222.RazorWebApp.Models
         public string ConfirmPassword { get; set; } = "";
         [Required]
         public string Role { get; set; } = "Student";
+        public Guid? CourseId { get; set; }
     }
 
     public class EditUserViewModel
@@ -40,5 +41,6 @@ namespace PRN222.RazorWebApp.Models
         public string Username { get; set; } = "";
         [Required]
         public string Role { get; set; } = "Student";
+        public Guid? CourseId { get; set; }
     }
 }

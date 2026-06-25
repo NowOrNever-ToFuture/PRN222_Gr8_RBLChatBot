@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -81,38 +81,54 @@
                 </button>
                 <div class="navbar-collapse collapse d-md-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            @if (User.IsInRole("Admin"))
-                            {
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <li class="nav-item">
                                 <a class="nav-link" asp-page="/Dashboard/Index">
                                     <i class="bi bi-speedometer2"></i> Dashboard
                                 </a>
-                            }
-                            else
-                            {
+                            </li>
+                        }
+                        else if (User.IsInRole("Lecturer"))
+                        {
+                            <li class="nav-item">
                                 <a class="nav-link" asp-page="/Index">
                                     <i class="bi bi-house-door"></i> Home
                                 </a>
-                            }
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-page="/Documents/Index">
-                                <i class="bi bi-file-earmark-pdf"></i> Tài liệu
-                            </a>
-                        </li>
+                            </li>
+                        }
+
+                        @if (User.Identity?.IsAuthenticated ?? false)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-page="/Courses/Index">
+                                    <i class="bi bi-book"></i> Môn học
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-page="/Documents/Index">
+                                    <i class="bi bi-file-earmark-pdf"></i> Tài liệu
+                                </a>
+                            </li>
+                        }
+
                         @if (User.Identity?.IsAuthenticated ?? false)
                         {
                             <li class="nav-item">
                                 <a class="nav-link" asp-page="/Chat/Index">
-                                    <i class="bi bi-chat-dots"></i> Thử nghiệm Chat
+                                    <i class="bi bi-chat-dots"></i> @(User.IsInRole("Student") ? "Trò chuyện" : "Thử nghiệm Chat")
                                 </a>
                             </li>
                         }
-                        <li class="nav-item">
-                            <a class="nav-link" asp-page="/Privacy">
-                                <i class="bi bi-shield-lock"></i> Privacy
-                            </a>
-                        </li>
+
+                        @if (!User.IsInRole("Student"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-page="/Privacy">
+                                    <i class="bi bi-shield-lock"></i> Privacy
+                                </a>
+                            </li>
+                        }
                     </ul>
                     <ul class="navbar-nav align-items-center">
                         @if (User.Identity?.IsAuthenticated ?? false)

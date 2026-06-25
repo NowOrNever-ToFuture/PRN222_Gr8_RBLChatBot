@@ -199,11 +199,14 @@
                                             else { <i class="bi bi-file-earmark fs-4 text-secondary"></i> }
                                         </div>
                                         <div>
-                                            <h6 class="mb-0 text-truncate" style="max-width: 150px;" title="@doc.FileName">@doc.FileName</h6>
-                                            <small class="text-muted">@doc.CourseName</small>
+                                            <h6 class="mb-0 text-truncate font-monospace" style="max-width: 170px; font-size: 13px;" title="@doc.FileName">@doc.FileName</h6>
+                                            <div class="text-muted" style="font-size: 11px;">
+                                                Môn: @doc.CourseName<br />
+                                                Bởi: <span class="fw-semibold text-dark">@doc.UploadedBy</span> | @doc.UploadDate.ToString("dd/MM HH:mm")
+                                            </div>
                                         </div>
                                     </div>
-                                    <span class="badge @(doc.Status == "Completed" ? "bg-success" : (doc.Status == "Failed" ? "bg-danger" : "bg-warning text-dark")) rounded-pill">@doc.Status</span>
+                                    <span class="badge @(doc.Status == "Completed" ? "bg-success" : (doc.Status == "Failed" ? "bg-danger" : "bg-warning text-dark")) rounded-pill" style="font-size: 10px;">@doc.Status</span>
                                 </li>
                             }
                         </ul>

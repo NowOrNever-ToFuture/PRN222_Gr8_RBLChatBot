@@ -13,6 +13,9 @@ namespace PRN222.RazorWebApp.Pages
             if (User.IsInRole("Admin"))
                 return RedirectToPage("/Dashboard/Index");
 
+            if (User.IsInRole("Student"))
+                return RedirectToPage("/Chat/Index");
+
             return Page();
         }
     }

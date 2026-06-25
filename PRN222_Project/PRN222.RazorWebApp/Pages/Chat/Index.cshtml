@@ -16,7 +16,14 @@
                         </div>
                         <div>
                             <h5 class="mb-0 text-white fw-bold">Trợ lý AI Học thuật RBL</h5>
-                            <small class="text-white-50">RAG · Smart Routing · Trích dẫn nguồn</small>
+                            @if (!string.IsNullOrEmpty(Model.CourseName))
+                            {
+                                <small class="text-warning fw-bold"><i class="bi bi-pin-angle-fill"></i> Đang hỏi đáp môn: @Model.CourseName</small>
+                            }
+                            else
+                            {
+                                <small class="text-white-50">RAG · Smart Routing · Trích dẫn nguồn</small>
+                            }
                         </div>
                     </div>
                     <div class="d-flex align-items-center gap-3">
@@ -108,6 +115,7 @@
 @section Scripts {
 <script>
     $(document).ready(function () {
+        const currentCourseId = "@(Model.CourseId?.ToString() ?? "")" || null;
         loadChatHistory();
 
         function loadChatHistory() {
@@ -178,7 +186,7 @@
             appendTyping(typingId);
             $.ajax({
                 url: '/Chat/Index?handler=Ask', type: 'POST',
-                data: { query: query, __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val() },
+                data: { query: query, courseId: currentCourseId, __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val() },
                 timeout: 30000,
                 success: function (result) {
                     $(`#${typingId}`).remove();
@@ -204,6 +212,30 @@
         }
 
         function appendBotMessage(content, sources) {
+            if (sources && sources.length > 0) {
+                const citationMarker = '\n---\n📚 **Nguồn tham khảo:**';
+                const citationMarkerAlt = '\n---\n📚 Nguồn tham khảo:';
+                let markerIndex = content.indexOf(citationMarker);
+                if (markerIndex === -1) {
+                    markerIndex = content.indexOf(citationMarker.replace(/\n/g, '\r\n'));
+                }
+                if (markerIndex === -1) {
+                    markerIndex = content.indexOf(citationMarkerAlt);
+                }
+                if (markerIndex === -1) {
+                    markerIndex = content.indexOf(citationMarkerAlt.replace(/\n/g, '\r\n'));
+                }
+                if (markerIndex === -1) {
+                    const simpleMarker = '\n---';
+                    const simpleIndex = content.lastIndexOf(simpleMarker);
+                    if (simpleIndex !== -1 && simpleIndex > content.length - 400) {
+                        markerIndex = simpleIndex;
+                    }
+                }
+                if (markerIndex !== -1) {
+                    content = content.substring(0, markerIndex).trim();
+                }
+            }
             let formatted = escapeHtml(content);
             formatted = formatted.replace(/^### (.+)$/gm, '<h5 class="mt-2 mb-1" style="color:#5a3e8e;">$1</h5>');
             formatted = formatted.replace(/^## (.+)$/gm, '<h4 class="mt-2 mb-1" style="color:#4a2d7a;">$1</h4>');
