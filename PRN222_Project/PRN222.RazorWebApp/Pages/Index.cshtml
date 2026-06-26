@@ -1,183 +1,121 @@
-@page
+﻿@page
 @model PRN222.RazorWebApp.Pages.IndexModel
 @{
-    ViewData["Title"] = "Trang chủ - Hệ thống quản lý tài liệu môn Triết học (MLN)";
+    ViewData["Title"] = "Trang chủ";
+    var isAdmin = User.IsInRole("Admin");
+    var isLecturer = User.IsInRole("Lecturer");
+    var isStudent = User.IsInRole("Student");
 }
 
-<div class="container mt-5">
-    <div class="row mb-5">
-        <div class="col-lg-8 offset-lg-2 text-center">
-            <h1 class="display-4 fw-bold mb-4">
-                <i class="bi bi-file-earmark-text" style="color: #667eea; font-size: 3rem;"></i>
-                <br />
-                Hệ thống quản lý tài liệu môn Triết học
-            </h1>
-            <p class="lead text-muted mb-4">
-                Triết học Mác - Lênin (MLN) - Quản lý, tải lên và chia sẻ tài liệu học tập một cách dễ dàng
+<div class="app-page">
+    <section class="app-hero">
+        <div class="app-hero-content">
+            <div class="app-eyebrow"><i class="bi bi-stars"></i> AI learning companion</div>
+            <h1>Không gian học tập gọn gàng cho từng vai trò</h1>
+            <p>
+                Quản lý môn học, tài liệu và hỏi đáp AI trong cùng một trải nghiệm rõ ràng, dễ dùng và thân thiện hơn cho admin, giảng viên lẫn sinh viên.
             </p>
         </div>
-    </div>
+        <div class="app-hero-actions">
+            @if (User.Identity?.IsAuthenticated ?? false)
+            {
+                <a asp-page="/Courses/Index" class="app-btn-secondary"><i class="bi bi-journal-richtext"></i> Mở môn học</a>
+                <a asp-page="/Chat/Index" class="app-btn-ghost"><i class="bi bi-chat-dots-fill"></i> Vào AI Workspace</a>
+            }
+            else
+            {
+                <a asp-page="/Account/Login" class="app-btn-secondary"><i class="bi bi-box-arrow-in-right"></i> Đăng nhập</a>
+                <a asp-page="/Account/Register" class="app-btn-ghost"><i class="bi bi-person-plus"></i> Tạo tài khoản</a>
+            }
+        </div>
+    </section>
 
-    <div class="row g-4 mb-5">
-        @if (User.IsInRole("Admin") || User.IsInRole("Lecturer"))
+    <section class="app-grid-3">
+        @if (isAdmin)
         {
-            <div class="col-md-6">
-                <div class="card border-0 shadow-sm h-100 feature-card">
-                    <div class="card-body d-flex flex-column text-center py-5">
-                        <div class="mb-4">
-                            <i class="bi bi-collection" style="font-size: 3.5rem; color: #667eea;"></i>
-                        </div>
-                        <h5 class="card-title fw-bold mb-3">📄 Danh sách tài liệu</h5>
-                        <p class="card-text text-muted mb-4 flex-grow-1">
-                            Xem toàn bộ tài liệu môn Triết học (MLN) đã tải lên, kèm theo ngày tải lên và trạng thái xử lý.
-                        </p>
-                        <a asp-page="/Documents/Index" class="btn btn-lg action-btn mx-auto"
-                           style="width: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;">
-                            <i class="bi bi-arrow-right"></i> Xem danh sách
-                        </a>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card border-0 shadow-sm h-100 feature-card">
-                    <div class="card-body d-flex flex-column text-center py-5">
-                        <div class="mb-4">
-                            <i class="bi bi-cloud-arrow-up" style="font-size: 3.5rem; color: #28a745;"></i>
-                        </div>
-                        <h5 class="card-title fw-bold mb-3">⬆️ Tải lên tài liệu</h5>
-                        <p class="card-text text-muted mb-4 flex-grow-1">
-                            Tải lên tài liệu (.pdf, .docx, .pptx) cho môn Triết học (MLN). Tối đa 10MB/file.
-                        </p>
-                        <a asp-page="/Documents/Upload" class="btn btn-lg action-btn mx-auto"
-                           style="width: 200px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; border: none;">
-                            <i class="bi bi-cloud-arrow-up"></i> Tải lên ngay
-                        </a>
-                    </div>
-                </div>
-            </div>
+            <article class="app-card">
+                <div class="app-card-title"><i class="bi bi-speedometer2 text-primary"></i> Điều hành hệ thống</div>
+                <p class="app-muted">Theo dõi benchmark, cấu hình model và kiểm tra chất lượng trả lời AI từ một nơi tập trung.</p>
+                <a asp-page="/Dashboard/Index" class="app-btn-primary mt-3">Mở dashboard</a>
+            </article>
+            <article class="app-card">
+                <div class="app-card-title"><i class="bi bi-people-fill text-success"></i> Quản trị nhân sự</div>
+                <p class="app-muted">Tạo tài khoản, phân vai trò và giữ luồng vận hành rõ ràng giữa admin, lecturer và student.</p>
+                <a asp-page="/Users/Index" class="app-btn-primary mt-3">Quản lý người dùng</a>
+            </article>
+            <article class="app-card">
+                <div class="app-card-title"><i class="bi bi-journal-bookmark-fill text-warning"></i> Điều phối môn học</div>
+                <p class="app-muted">Gắn trưởng bộ môn, kiểm soát tài liệu theo môn và tạo điểm vào chat theo từng course.</p>
+                <a asp-page="/Courses/Index" class="app-btn-primary mt-3">Xem môn học</a>
+            </article>
         }
-        else if (User.IsInRole("Student"))
+        else if (isLecturer)
         {
-            <div class="col-md-6">
-                <div class="card border-0 shadow-sm h-100 feature-card">
-                    <div class="card-body d-flex flex-column text-center py-5">
-                        <div class="mb-4">
-                            <i class="bi bi-collection" style="font-size: 3.5rem; color: #667eea;"></i>
-                        </div>
-                        <h5 class="card-title fw-bold mb-3">📄 Danh sách tài liệu</h5>
-                        <p class="card-text text-muted mb-4 flex-grow-1">
-                            Xem danh sách tài liệu môn Triết học (MLN) được cung cấp để học tập và tải xuống bản gốc.
-                        </p>
-                        <a asp-page="/Documents/Index" class="btn btn-lg action-btn mx-auto"
-                           style="width: 200px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;">
-                            <i class="bi bi-arrow-right"></i> Xem danh sách
-                        </a>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card border-0 shadow-sm h-100 feature-card">
-                    <div class="card-body d-flex flex-column text-center py-5">
-                        <div class="mb-4">
-                            <i class="bi bi-robot" style="font-size: 3.5rem; color: #764ba2;"></i>
-                        </div>
-                        <h5 class="card-title fw-bold mb-3">💬 Trò chuyện với AI</h5>
-                        <p class="card-text text-muted mb-4 flex-grow-1">
-                            Đặt câu hỏi và thảo luận về các kiến thức môn Triết học với trợ lý AI học thuật.
-                        </p>
-                        <a asp-page="/Chat/Index" class="btn btn-lg action-btn mx-auto"
-                           style="width: 200px; background: linear-gradient(135deg, #764ba2 0%, #667eea 100%); color: white; border: none;">
-                            <i class="bi bi-chat-dots-fill"></i> Trò chuyện ngay
-                        </a>
-                    </div>
-                </div>
-            </div>
+            <article class="app-card">
+                <div class="app-card-title"><i class="bi bi-journal-richtext text-primary"></i> Quản lý môn bạn phụ trách</div>
+                <p class="app-muted">Đi từ danh sách môn học vào đúng kho tài liệu, chat theo môn và các quyền thao tác bạn được giao.</p>
+                <a asp-page="/Courses/Index" class="app-btn-primary mt-3">Vào môn học</a>
+            </article>
+            <article class="app-card">
+                <div class="app-card-title"><i class="bi bi-cloud-arrow-up-fill text-success"></i> Cập nhật học liệu</div>
+                <p class="app-muted">Tải lên tài liệu, theo dõi trạng thái xử lý và re-index dễ hơn mà không phải đi qua nhiều bước.</p>
+                <a asp-page="/Courses/Index" class="app-btn-primary mt-3">Mở kho tài liệu</a>
+            </article>
+            <article class="app-card">
+                <div class="app-card-title"><i class="bi bi-chat-square-dots-fill text-warning"></i> Kiểm thử AI theo môn</div>
+                <p class="app-muted">Hỏi thử nội dung thực tế để đánh giá chất lượng tìm kiếm và câu trả lời dựa trên tài liệu đã tải lên.</p>
+                <a asp-page="/Chat/Index" class="app-btn-primary mt-3">Bắt đầu chat</a>
+            </article>
+        }
+        else if (isStudent)
+        {
+            <article class="app-card">
+                <div class="app-card-title"><i class="bi bi-journal-text text-primary"></i> Học theo môn</div>
+                <p class="app-muted">Chọn đúng môn học trước, sau đó xem tài liệu và đặt câu hỏi trong bối cảnh rõ ràng hơn.</p>
+                <a asp-page="/Courses/Index" class="app-btn-primary mt-3">Chọn môn học</a>
+            </article>
+            <article class="app-card">
+                <div class="app-card-title"><i class="bi bi-robot text-success"></i> Hỏi AI có nguồn</div>
+                <p class="app-muted">Nhận câu trả lời dựa trên dữ liệu thật, kèm nguồn tham khảo để học nhanh mà vẫn tin cậy.</p>
+                <a asp-page="/Chat/Index" class="app-btn-primary mt-3">Trò chuyện ngay</a>
+            </article>
+            <article class="app-card">
+                <div class="app-card-title"><i class="bi bi-compass text-warning"></i> Trải nghiệm ít nhiễu hơn</div>
+                <p class="app-muted">Navigation đã được tinh gọn để tập trung vào hai việc chính: vào môn học và hỏi đáp AI.</p>
+            </article>
         }
         else
         {
-            <div class="col-md-8 offset-md-2">
-                <div class="card border-0 shadow-lg feature-card text-center py-5 px-4" style="border-radius: 16px;">
-                    <div class="card-body d-flex flex-column align-items-center">
-                        <div class="mb-4 bg-light rounded-circle p-4" style="width: 100px; height: 100px; display: grid; place-items: center;">
-                            <i class="bi bi-robot" style="font-size: 3rem; color: #764ba2;"></i>
-                        </div>
-                        <h3 class="fw-bold mb-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                            Trò chuyện với Trợ lý AI Học thuật
-                        </h3>
-                        <p class="text-muted mb-4 fs-5" style="max-width: 600px;">
-                            Đặt câu hỏi về nội dung, quy luật, và các khái niệm của môn **Triết học Mác - Lênin**. 
-                            Trợ lý AI sẽ trả lời dựa trên kho tài liệu đã được kiểm chứng và trích dẫn rõ ràng nguồn tham khảo cho bạn.
-                        </p>
-                        <a asp-page="/Chat/Index" class="btn btn-lg px-5 py-3 fw-bold text-white shadow"
-                           style="border-radius: 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; min-width: 220px;">
-                            <i class="bi bi-chat-dots-fill me-2"></i> Trò chuyện ngay
-                        </a>
-                    </div>
-                </div>
-            </div>
+            <article class="app-card">
+                <div class="app-card-title"><i class="bi bi-lightning-charge-fill text-primary"></i> Truy cập nhanh</div>
+                <p class="app-muted">Đăng nhập để vào không gian học tập theo vai trò, hoặc tạo tài khoản mới để bắt đầu.</p>
+            </article>
+            <article class="app-card">
+                <div class="app-card-title"><i class="bi bi-shield-check text-success"></i> Nội dung có kiểm soát</div>
+                <p class="app-muted">AI trả lời dựa trên học liệu được quản trị thay vì dữ liệu ngẫu nhiên ngoài luồng.</p>
+            </article>
+            <article class="app-card">
+                <div class="app-card-title"><i class="bi bi-layout-text-sidebar-reverse text-warning"></i> Luồng dùng dễ hiểu</div>
+                <p class="app-muted">Giao diện mới ưu tiên ít điểm chạm hơn, dễ định hướng hơn trên cả desktop và mobile.</p>
+            </article>
         }
-    </div>
+    </section>
 
-    @if (!User.IsInRole("Student"))
-    {
-        <div class="row">
-            <div class="col-lg-8 offset-lg-2">
-                <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 12px;">
-                    <div class="card-body p-5">
-                        <h5 class="card-title mb-4 fw-bold">
-                            <i class="bi bi-info-circle text-primary"></i> Thông tin hệ thống
-                        </h5>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <p class="mb-2">
-                                    <strong><i class="bi bi-check-circle text-success"></i> Định dạng hỗ trợ:</strong><br />
-                                    <small class="text-muted">PDF (.pdf), Word (.docx), PowerPoint (.pptx)</small>
-                                </p>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <p class="mb-2">
-                                    <strong><i class="bi bi-archive text-warning"></i> Dung lượng tối đa:</strong><br />
-                                    <small class="text-muted">10 MB / file</small>
-                                </p>
-                            </div>
-                        </div>
-                        <hr class="my-4" />
-                        <p class="mb-0 small">
-                            <strong><i class="bi bi-lightbulb text-info"></i> Mẹo:</strong> Nếu tên tệp bị trùng lặp, hệ thống sẽ tự động thêm timestamp vào tên tệp để tránh ghi đè.
-                        </p>
-                    </div>
-                </div>
-            </div>
+    <section class="app-grid-3">
+        <div class="app-kpi">
+            <div class="app-kpi-label">Điểm mạnh 01</div>
+            <div class="app-kpi-value">Theo vai trò</div>
+            <div class="app-kpi-meta">Mỗi nhóm người dùng nhìn thấy đúng hành động quan trọng nhất.</div>
         </div>
-
-        <div class="row g-4 mt-5 mb-5">
-            <div class="col-md-4">
-                <div class="stat-box p-4 rounded text-center" style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border-left: 4px solid #667eea;">
-                    <h3 class="fw-bold mb-2" style="color: #667eea;">1</h3>
-                    <p class="text-muted mb-0">Môn học (Triết học - MLN)</p>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="stat-box p-4 rounded text-center" style="background: linear-gradient(135deg, rgba(40, 167, 69, 0.1) 0%, rgba(32, 201, 151, 0.1) 100%); border-left: 4px solid #28a745;">
-                    <h3 class="fw-bold mb-2" style="color: #28a745;">∞</h3>
-                    <p class="text-muted mb-0">Dung lượng lưu trữ</p>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="stat-box p-4 rounded text-center" style="background: linear-gradient(135deg, rgba(23, 162, 184, 0.1) 0%, rgba(0, 190, 212, 0.1) 100%); border-left: 4px solid #17a2b8;">
-                    <h3 class="fw-bold mb-2" style="color: #17a2b8;">∞</h3>
-                    <p class="text-muted mb-0">Tài liệu</p>
-                </div>
-            </div>
+        <div class="app-kpi">
+            <div class="app-kpi-label">Điểm mạnh 02</div>
+            <div class="app-kpi-value">Theo môn học</div>
+            <div class="app-kpi-meta">Luồng điều hướng xoay quanh course để giảm lạc hướng và nhầm dữ liệu.</div>
         </div>
-    }
+        <div class="app-kpi">
+            <div class="app-kpi-label">Điểm mạnh 03</div>
+            <div class="app-kpi-value">Theo ngữ cảnh</div>
+            <div class="app-kpi-meta">Chat, tài liệu và quản trị được gắn với ngữ cảnh sử dụng thay vì dàn trải.</div>
+        </div>
+    </section>
 </div>
-
-<style>
-    .feature-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 12px !important; overflow: hidden; }
-    .feature-card:hover { transform: translateY(-8px); box-shadow: 0 12px 32px rgba(102, 126, 234, 0.15) !important; }
-    .action-btn { border-radius: 8px !important; font-weight: 600 !important; padding: 12px 24px !important; transition: all 0.3s ease !important; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2) !important; }
-    .action-btn:hover { transform: translateY(-2px) !important; box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3) !important; }
-    .stat-box { transition: all 0.3s ease; }
-    .stat-box:hover { transform: translateY(-4px); }
-</style>

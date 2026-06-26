@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -10,77 +10,116 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <style>
         .premium-navbar {
-            background: rgba(255, 255, 255, 0.85) !important;
-            backdrop-filter: blur(12px) !important;
-            -webkit-backdrop-filter: blur(12px) !important;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03) !important;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(255, 255, 255, 0.78) !important;
+            backdrop-filter: blur(16px) !important;
+            -webkit-backdrop-filter: blur(16px) !important;
+            border: 1px solid rgba(120, 138, 170, 0.14) !important;
+            border-radius: 22px !important;
+            box-shadow: 0 18px 40px rgba(18, 39, 74, 0.08) !important;
+            margin: 18px auto 24px !important;
+            max-width: 1340px;
+            transition: all 0.3s ease;
+        }
+        .navbar-shell {
+            padding-left: 12px;
+            padding-right: 12px;
+        }
+        .navbar-brand-mark {
+            width: 42px;
+            height: 42px;
+            border-radius: 14px;
+            display: grid;
+            place-items: center;
+            color: white;
+            background: linear-gradient(135deg, #1f6feb 0%, #0f9d7a 100%);
+            box-shadow: 0 12px 24px rgba(31, 111, 235, 0.22);
+        }
+        .navbar-brand-text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.1;
+        }
+        .navbar-brand-text strong {
+            color: #172033;
+            font-size: 1rem;
+            letter-spacing: -0.02em;
+        }
+        .navbar-brand-text span {
+            color: #5f6b85;
+            font-size: 0.78rem;
+            font-weight: 600;
         }
         .navbar-nav .nav-link {
-            font-weight: 600 !important;
-            color: #4b5563 !important;
-            padding: 8px 16px !important;
-            border-radius: 8px !important;
+            font-weight: 700 !important;
+            color: #4a5874 !important;
+            padding: 10px 14px !important;
+            border-radius: 12px !important;
             transition: all 0.2s ease !important;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
         }
-        .navbar-nav .nav-link:hover {
-            color: #764ba2 !important;
-            background-color: rgba(118, 75, 162, 0.06) !important;
+        .navbar-nav .nav-link:hover,
+        .navbar-nav .nav-link:focus {
+            color: #1456b8 !important;
+            background-color: rgba(31, 111, 235, 0.08) !important;
         }
         .avatar-circle {
-            width: 34px;
-            height: 34px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            width: 38px;
+            height: 38px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #1f6feb 0%, #0f9d7a 100%);
             color: white !important;
             display: grid;
             place-items: center;
-            font-weight: 700;
-            font-size: 14px;
-            box-shadow: 0 2px 8px rgba(118, 75, 162, 0.25);
+            font-weight: 800;
+            font-size: 15px;
+            box-shadow: 0 10px 20px rgba(31, 111, 235, 0.22);
             transition: all 0.2s ease;
         }
-        .avatar-circle:hover {
-            transform: scale(1.05);
-            box-shadow: 0 4px 12px rgba(118, 75, 162, 0.35);
-        }
         .premium-dropdown-menu {
-            border-radius: 10px !important;
-            border: 1px solid rgba(0,0,0,0.05) !important;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.08) !important;
+            border-radius: 16px !important;
+            border: 1px solid rgba(120, 138, 170, 0.12) !important;
+            box-shadow: 0 20px 38px rgba(18, 39, 74, 0.10) !important;
             padding: 8px 0 !important;
         }
         .premium-dropdown-menu .dropdown-item {
-            padding: 8px 16px !important;
-            font-weight: 500 !important;
-            color: #4b5563 !important;
+            padding: 10px 16px !important;
+            font-weight: 600 !important;
+            color: #46526b !important;
             transition: all 0.2s ease !important;
         }
         .premium-dropdown-menu .dropdown-item:hover {
-            background-color: rgba(118, 75, 162, 0.05) !important;
-            color: #764ba2 !important;
+            background-color: rgba(31, 111, 235, 0.06) !important;
+            color: #1456b8 !important;
+        }
+        @@media (max-width: 767.98px) {
+            .premium-navbar {
+                margin: 12px 12px 18px !important;
+                border-radius: 18px !important;
+            }
         }
     </style>
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-md navbar-light premium-navbar sticky-top mb-4 py-3">
-            <div class="container-fluid">
-                <a class="navbar-brand fw-bold d-flex align-items-center gap-2" asp-page="/Index">
-                    <span style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; font-size: 20px;">
-                        <i class="bi bi-robot" style="color: #764ba2;"></i> PRN222 Assistant
+    <header class="navbar-shell">
+        <nav class="navbar navbar-expand-md navbar-light premium-navbar sticky-top py-3">
+            <div class="container-fluid px-2 px-md-3">
+                <a class="navbar-brand fw-bold d-flex align-items-center gap-3" asp-page="/Index">
+                    <span class="navbar-brand-mark">
+                        <i class="bi bi-robot fs-5"></i>
+                    </span>
+                    <span class="navbar-brand-text">
+                        <strong>PRN222 Assistant</strong>
+                        <span>Learning workspace for every role</span>
                     </span>
                 </a>
-                <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse"
+                <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse"
                         aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="navbar-collapse collapse d-md-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
+                    <ul class="navbar-nav flex-grow-1 gap-md-1">
                         @if (User.IsInRole("Admin"))
                         {
                             <li class="nav-item">
@@ -102,12 +141,7 @@
                         {
                             <li class="nav-item">
                                 <a class="nav-link" asp-page="/Courses/Index">
-                                    <i class="bi bi-book"></i> Môn học
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-page="/Documents/Index">
-                                    <i class="bi bi-file-earmark-pdf"></i> Tài liệu
+                                    <i class="bi bi-journal-richtext"></i> Môn học
                                 </a>
                             </li>
                         }
@@ -116,7 +150,7 @@
                         {
                             <li class="nav-item">
                                 <a class="nav-link" asp-page="/Chat/Index">
-                                    <i class="bi bi-chat-dots"></i> @(User.IsInRole("Student") ? "Trò chuyện" : "Thử nghiệm Chat")
+                                    <i class="bi bi-chat-dots"></i> @(User.IsInRole("Student") ? "Trò chuyện" : "AI Workspace")
                                 </a>
                             </li>
                         }
@@ -148,8 +182,8 @@
                                             <div class="fw-bold text-dark text-truncate" style="max-width: 200px;">
                                                 @User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
                                             </div>
-                                            <span class="badge rounded-pill text-xs mt-1 px-2 py-1"
-                                                  style="font-size: 11px; background-color: rgba(118, 75, 162, 0.1); color: #764ba2;">
+                                            <span class="badge rounded-pill mt-1 px-2 py-1"
+                                                  style="font-size: 11px; background-color: rgba(31, 111, 235, 0.1); color: #1456b8;">
                                                 <i class="bi bi-shield-check"></i> @User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value
                                             </span>
                                         </div>
@@ -164,17 +198,17 @@
                                         </li>
                                         <li>
                                             <a class="dropdown-item d-flex align-items-center gap-2" asp-page="/Courses/Index">
-                                                <i class="bi bi-book text-muted"></i> Quản lý Môn học
+                                                <i class="bi bi-book text-muted"></i> Quản lý môn học
                                             </a>
                                         </li>
                                         <li>
                                             <a class="dropdown-item d-flex align-items-center gap-2" asp-page="/TestQuestions/Index">
-                                                <i class="bi bi-question-circle text-muted"></i> Quản lý Câu hỏi Test
+                                                <i class="bi bi-question-circle text-muted"></i> Quản lý câu hỏi test
                                             </a>
                                         </li>
                                         <li>
                                             <a class="dropdown-item d-flex align-items-center gap-2" asp-page="/SystemSettings/Index">
-                                                <i class="bi bi-sliders text-muted"></i> Cấu hình Hệ thống
+                                                <i class="bi bi-sliders text-muted"></i> Cấu hình hệ thống
                                             </a>
                                         </li>
                                     }
@@ -205,13 +239,13 @@
             </div>
         </nav>
     </header>
-    <div class="container">
+    <div class="container app-shell">
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
     </div>
     <footer class="border-top footer text-muted">
-        <div class="container">
+        <div class="container app-shell">
             &copy; 2026 - PRN222 Assistant - <a asp-page="/Privacy">Privacy</a>
         </div>
     </footer>

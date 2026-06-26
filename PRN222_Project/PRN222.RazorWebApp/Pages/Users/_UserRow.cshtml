@@ -1,23 +1,42 @@
 ﻿@model PRN222.Models.User
 <tr id="user-@Model.Id">
-    <td><strong>@Model.Username</strong></td>
+    <td>
+        <div class="fw-bold text-dark">@Model.Username</div>
+        <div class="small text-muted">@Model.FullName</div>
+    </td>
     <td>
         @if (Model.Role == "Admin")
         {
-            <span class="badge bg-danger"><i class="bi bi-shield-lock"></i> Admin</span>
+            <span class="app-badge-soft app-badge-rose"><i class="bi bi-shield-lock"></i> Admin</span>
         }
         else if (Model.Role == "Lecturer")
         {
-            <span class="badge bg-success"><i class="bi bi-person-workspace"></i> Lecturer</span>
+            <span class="app-badge-soft app-badge-green"><i class="bi bi-person-workspace"></i> Lecturer</span>
         }
         else
         {
-            <span class="badge bg-info"><i class="bi bi-person"></i> Student</span>
+            <span class="app-badge-soft app-badge-blue"><i class="bi bi-mortarboard"></i> Student</span>
         }
     </td>
-    <td><small class="text-muted">@DateTime.Now.ToString("dd/MM/yyyy")</small></td>
+    <td>
+        @if (Model.Role == "Lecturer")
+        {
+            <span class="text-dark fw-semibold">@(Model.Course?.Name ?? "Có thể phụ trách nhiều môn")</span>
+            <div class="small text-muted">Dùng để quản lý tài liệu và hỗ trợ học phần</div>
+        }
+        else if (Model.Role == "Student")
+        {
+            <span class="text-dark fw-semibold">@(Model.Course?.Name ?? "Chưa gán môn")</span>
+            <div class="small text-muted">Bối cảnh học tập mặc định của sinh viên</div>
+        }
+        else
+        {
+            <span class="text-dark fw-semibold">Toàn hệ thống</span>
+            <div class="small text-muted">Toàn quyền cấu hình và điều phối</div>
+        }
+    </td>
     <td class="text-center">
-        <a asp-page="/Users/Edit" asp-route-id="@Model.Id" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i></a>
-        <a asp-page="/Users/Delete" asp-route-id="@Model.Id" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></a>
+        <a asp-page="/Users/Edit" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-warning rounded-pill px-3"><i class="bi bi-pencil"></i></a>
+        <a asp-page="/Users/Delete" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-danger rounded-pill px-3"><i class="bi bi-trash"></i></a>
     </td>
 </tr>

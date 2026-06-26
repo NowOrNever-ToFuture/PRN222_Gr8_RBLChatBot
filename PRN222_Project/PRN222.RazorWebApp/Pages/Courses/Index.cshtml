@@ -1,22 +1,22 @@
-@page
+﻿@page
 @model PRN222.RazorWebApp.Pages.Courses.IndexModel
 @{
-    ViewData["Title"] = "Danh Sách Môn Học";
+    ViewData["Title"] = "Danh sách môn học";
     var isAdmin = User.IsInRole("Admin");
 }
 
-<div class="course-shell">
-    <div class="course-hero">
-        <div>
-            <div class="eyebrow">Browse by subject</div>
-            <h1>Danh Sách Môn Học</h1>
-            
+<div class="course-shell app-page">
+    <div class="course-hero app-hero">
+        <div class="app-hero-content">
+            <div class="app-eyebrow">Browse by subject</div>
+            <h1>Danh sách môn học</h1>
+            <p>Điểm bắt đầu rõ ràng cho từng role: chọn môn trước, sau đó đi tiếp sang tài liệu hoặc AI chat theo đúng ngữ cảnh.</p>
         </div>
-        <div class="course-hero-actions">
+        <div class="course-hero-actions app-hero-actions">
             @if (isAdmin)
             {
-                <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#createModal">
-                    <i class="bi bi-plus-circle"></i> Thêm Môn Học Mới
+                <button class="btn btn-light btn-lg rounded-pill px-4 fw-bold" data-bs-toggle="modal" data-bs-target="#createModal">
+                    <i class="bi bi-plus-circle"></i> Thêm môn học mới
                 </button>
             }
         </div>
@@ -24,14 +24,14 @@
 
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="alert alert-success alert-dismissible fade show mt-4" role="alert">
+        <div class="alert alert-success alert-dismissible fade show mt-4 rounded-4 border-0 shadow-sm" role="alert">
             @TempData["SuccessMessage"]
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     }
     @if (TempData["ErrorMessage"] != null)
     {
-        <div class="alert alert-danger alert-dismissible fade show mt-4" role="alert">
+        <div class="alert alert-danger alert-dismissible fade show mt-4 rounded-4 border-0 shadow-sm" role="alert">
             @Html.Raw(TempData["ErrorMessage"])
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
@@ -52,7 +52,7 @@
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content border-0 shadow-lg course-modal">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-journal-plus"></i> Thêm Môn Học Mới</h5>
+                    <h5 class="modal-title"><i class="bi bi-journal-plus"></i> Thêm môn học mới</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4">
@@ -82,8 +82,8 @@
                     </div>
                 </div>
                 <div class="modal-footer border-0 px-4 pb-4 pt-0">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
-                    <button type="button" class="btn btn-primary px-4" id="btnCreate">Lưu</button>
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-primary px-4 rounded-pill" id="btnCreate">Lưu</button>
                 </div>
             </div>
         </div>
@@ -93,7 +93,7 @@
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content border-0 shadow-lg course-modal edit-modal">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-pencil-square"></i> Cập Nhật Môn Học</h5>
+                    <h5 class="modal-title"><i class="bi bi-pencil-square"></i> Cập nhật môn học</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4">
@@ -124,8 +124,8 @@
                     </div>
                 </div>
                 <div class="modal-footer border-0 px-4 pb-4 pt-0">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
-                    <button type="button" class="btn btn-warning px-4 text-dark fw-semibold" id="btnUpdate">Cập Nhật</button>
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-warning px-4 text-dark fw-semibold rounded-pill" id="btnUpdate">Cập nhật</button>
                 </div>
             </div>
         </div>
@@ -133,16 +133,9 @@
 }
 
 <style>
-    .course-shell { max-width: 1320px; margin: 0 auto; padding-bottom: 24px; }
-    .course-hero { display: flex; justify-content: space-between; gap: 24px; padding: 32px; border-radius: 28px; color: #fff; background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 48%, #7c3aed 100%); box-shadow: 0 24px 80px rgba(15,23,42,.24); }
-    .course-hero h1 { font-size: clamp(30px, 4vw, 46px); font-weight: 800; margin: 6px 0 10px; }
-    .course-hero p { max-width: 780px; color: rgba(255,255,255,.85); margin-bottom: 0; }
-    .eyebrow { text-transform: uppercase; letter-spacing: .18em; font-weight: 700; font-size: 12px; opacity: .85; }
-    .course-hero-actions { display: flex; align-items: end; }
-    .course-hero .btn { border-radius: 999px; font-weight: 700; padding: 12px 18px; }
-    .section-title h2 { font-weight: 800; margin-bottom: 6px; }
-    .section-title p { color: #64748b; margin-bottom: 0; }
-    .course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; margin-top: 18px; }
+    .course-shell { padding-bottom: 24px; }
+    .course-hero { box-shadow: var(--app-shadow); }
+    .course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; margin-top: 6px; }
     .course-card { position: relative; border-radius: 24px; background: linear-gradient(180deg, #fff 0%, #f8fafc 100%); border: 1px solid #e2e8f0; box-shadow: 0 10px 30px rgba(15,23,42,.06); overflow: hidden; transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
     .course-card:hover { transform: translateY(-4px); border-color: #93c5fd; box-shadow: 0 20px 42px rgba(15,23,42,.12); }
     .course-card-main { display: block; text-decoration: none; color: inherit; padding: 20px; }
@@ -154,7 +147,7 @@
     .course-card-footer { display: flex; justify-content: space-between; gap: 12px; align-items: center; color: #64748b; font-size: 13px; flex-wrap: wrap; }
     .open-link { color: #2563eb; font-weight: 700; }
     .course-card-actions { display: flex; gap: 8px; padding: 0 20px 20px; }
-    .course-modal .modal-header { background: linear-gradient(135deg, #1d4ed8, #7c3aed); color: #fff; }
+    .course-modal .modal-header { background: linear-gradient(135deg, #1456b8, #0f9d7a); color: #fff; }
     .course-modal .modal-header .btn-close { filter: brightness(0) invert(1); }
 </style>
 
@@ -287,4 +280,3 @@
 </script>
 @Html.AntiForgeryToken()
 }
-
