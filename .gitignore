@@ -1,0 +1,93 @@
+# .gitignore for .NET, Visual Studio and VS Code
+# Generated to exclude IDE files, build outputs, temporary files, and local secrets
+
+##############################
+# Visual Studio / Rider
+##############################
+.vs/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+##############################
+# VS Code
+##############################
+.vscode/
+*.code-workspace
+
+##############################
+# Build results
+##############################
+# Ignore bin/ and obj/ folders for all projects
+**/[Bb]in/
+**/[Oo]bj/
+
+##############################
+# NuGet
+##############################
+*.nupkg
+.nuget/packages/
+packages/
+
+##############################
+# Logs and temp files
+##############################
+*.log
+*.tmp
+*.temp
+build_output.txt
+*.cache
+*.pid
+
+##############################
+# Publish / deployment
+##############################
+publish/
+out/
+
+##############################
+# User-specific / IDE config
+##############################
+*.DotSettings.user
+*.sln.iml
+
+##############################
+# Database and user secrets
+##############################
+# Ignore local development settings which may contain DB connection strings
+appsettings.Development.json
+
+##############################
+# Other
+##############################
+ScaffoldingReadMe.txt
+*.db
+*.sqlite
+*.db-shm
+*.db-wal
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+##############################
+# Python
+##############################
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+venv/
+venv*/
+env/
+ENV/
+*.env
+qwen_lora/
+unsloth_compiled_cache/
+temp_files/
+**/wwwroot/uploads/
+.claude/
+
