@@ -11,23 +11,23 @@
     var isCourseManager = isLecturer && Model.SelectedCourse?.ManagedById == currentUserId;
 }
 
-<div class="docs-shell">
-    <div class="docs-hero">
-        <div>
-            <div class="eyebrow">Môn học & tài liệu</div>
+<div class="docs-shell app-page">
+    <div class="docs-hero app-hero">
+        <div class="app-hero-content">
+            <div class="app-eyebrow">Môn học & tài liệu</div>
             <h1>@selectedCourseName</h1>
-            <p>Danh sách tài liệu chỉ thuộc đúng môn học này. Quyền CRUD chỉ hiện cho trưởng bộ môn.</p>
+            <p>Toàn bộ tài liệu được gom theo đúng môn học để người dùng ít bị lạc luồng hơn. Quyền CRUD chỉ hiện cho trưởng bộ môn phù hợp.</p>
         </div>
-        <div class="docs-hero-actions">
-            <a asp-page="/Courses/Index" class="btn btn-light btn-lg">
-                <i class="bi bi-arrow-left"></i> Quay lại Môn học
+        <div class="docs-hero-actions app-hero-actions">
+            <a asp-page="/Courses/Index" class="app-btn-secondary">
+                <i class="bi bi-arrow-left"></i> Quay lại môn học
             </a>
-            <a asp-page="/Chat/Index" asp-route-courseId="@Model.CourseId" class="btn btn-outline-light btn-lg">
+            <a asp-page="/Chat/Index" asp-route-courseId="@Model.CourseId" class="app-btn-ghost">
                 <i class="bi bi-chat-dots-fill"></i> Chat theo môn
             </a>
             @if (isCourseManager)
             {
-                <a asp-page="/Documents/Upload" asp-route-courseId="@Model.CourseId" class="btn btn-primary btn-lg">
+                <a asp-page="/Documents/Upload" asp-route-courseId="@Model.CourseId" class="app-btn-primary">
                     <i class="bi bi-cloud-arrow-up-fill"></i> Tải lên
                 </a>
             }
@@ -36,17 +36,17 @@
 
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">@TempData["SuccessMessage"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+        <div class="alert alert-success alert-dismissible fade show rounded-4 border-0 shadow-sm" role="alert">@TempData["SuccessMessage"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
     }
     @if (TempData["ErrorMessage"] != null)
     {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">@Html.Raw(TempData["ErrorMessage"])<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+        <div class="alert alert-danger alert-dismissible fade show rounded-4 border-0 shadow-sm" role="alert">@Html.Raw(TempData["ErrorMessage"])<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
     }
 
-    <div class="panel card shadow-sm border-0">
+    <div class="panel app-panel overflow-hidden">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0 docs-table">
+                <table class="table table-hover align-middle mb-0 docs-table app-table">
                     <thead>
                         <tr>
                             <th>STT</th>
@@ -72,14 +72,14 @@
                         else
                         {
                             <tr>
-                                <td colspan="8" class="empty-state">
+                                <td colspan="8" class="empty-state app-empty">
                                     <div>
-                                        <div class="empty-icon"><i class="bi bi-file-earmark-text"></i></div>
+                                        <div class="empty-icon app-empty-icon"><i class="bi bi-file-earmark-text"></i></div>
                                         <h3>Chưa có tài liệu</h3>
                                         <p>Môn này chưa có tài liệu hoặc bạn chưa được cấp quyền xem dữ liệu đã index.</p>
                                         @if (isCourseManager)
                                         {
-                                            <a asp-page="/Documents/Upload" asp-route-courseId="@Model.CourseId" class="btn btn-primary btn-lg mt-2">Tải tài liệu đầu tiên</a>
+                                            <a asp-page="/Documents/Upload" asp-route-courseId="@Model.CourseId" class="btn btn-primary btn-lg mt-2 rounded-pill px-4">Tải tài liệu đầu tiên</a>
                                         }
                                     </div>
                                 </td>
@@ -93,15 +93,8 @@
 </div>
 
 <style>
-    .docs-shell { max-width: 1320px; margin: 0 auto; padding-bottom: 24px; }
-    .docs-hero { display: flex; justify-content: space-between; gap: 24px; padding: 32px; border-radius: 24px; color: #fff; background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 50%, #7c3aed 100%); box-shadow: 0 24px 80px rgba(15, 23, 42, 0.24); }
-    .docs-hero h1 { font-size: clamp(28px, 4vw, 44px); font-weight: 800; margin: 6px 0 10px; }
-    .docs-hero p { max-width: 760px; color: rgba(255,255,255,.82); margin-bottom: 0; }
-    .eyebrow { text-transform: uppercase; letter-spacing: .18em; font-weight: 700; font-size: 12px; opacity: .8; }
-    .docs-hero-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
-    .docs-hero .btn { border-radius: 999px; font-weight: 700; padding: 12px 18px; }
-    .panel { margin-top: 24px; border-radius: 22px; overflow: visible; }
-    .panel .card-body { overflow: visible; }
+    .docs-shell { padding-bottom: 24px; }
+    .panel { border-radius: 22px; }
     .panel .table-responsive { overflow: visible; }
     .docs-table { overflow: visible; }
     .docs-table tbody, .docs-table tr, .docs-table td { overflow: visible; }
@@ -111,10 +104,7 @@
     .doc-actions-dropdown .dropdown-item { border-radius: 12px; margin: 2px 8px; padding-top: 10px; padding-bottom: 10px; }
     .doc-actions-dropdown .dropdown-item:hover { background: #f8fafc; }
     .doc-actions-dropdown .doc-menu-btn { border-radius: 12px; padding-top: 10px; padding-bottom: 10px; }
-    .docs-table thead { background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%); }
-    .docs-table th, .docs-table td { padding: 16px 18px; }
-    .empty-state { padding: 60px 20px; text-align: center; }
-    .empty-icon { width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center; margin: 0 auto 14px; background: rgba(59,130,246,.1); color: #2563eb; font-size: 30px; }
+    .empty-state { text-align: center; }
 </style>
 
 @section Scripts {
