@@ -10,7 +10,7 @@ echo =======================================================================
 echo.
 echo   [1] Khoi tao Moi truong ao Python va Cai dat cac thu vien (Requirements)
 echo   [2] Khoi chay Python FastAPI AI Server (Port 8000)
-echo   [3] Khoi chay C# .NET Core Web App (Port 5004)
+echo   [3] Khoi chay C# .NET Core Web App (Port 5274)
 echo   [4] KHOI CHAY CA HAI MICROSERVICES ^& Tu dong mo Trinh duyet Chrome
 echo   [5] Thoat chuong trinh
 echo.
@@ -57,7 +57,7 @@ goto menu
 :run_dotnet
 cls
 echo === DANG KHOI CHAY C# .NET WEB APPLICATION ===
-echo [INFO] Web App se chay tai dia chi: http://localhost:5004
+echo [INFO] Web App se chay tai dia chi: http://localhost:5274
 echo.
 cd /d "%~dp0PRN222_Project\PRN222.RazorWebApp"
 dotnet run
@@ -80,7 +80,7 @@ echo [INFO] Cho 4 giay de Web App khoi dong...
 timeout /t 4 /nobreak > nul
 
 echo [INFO] Buoc 3: Tu dong mo Trinh duyet Chrome den trang web...
-start http://localhost:5004
+start http://localhost:5274
 
 echo.
 echo === DA GHE CO KICH HOAT THANH CONG SONG SONG CA HAI WINDOWS! ===
