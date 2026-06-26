@@ -1,4 +1,4 @@
-﻿@page
+@page
 @model PRN222.RazorWebApp.Pages.Documents.IndexModel
 @{
     var selectedCourseName = Model.SelectedCourse != null ? $"{Model.SelectedCourse.Name} ({Model.SelectedCourse.Code})" : "Chọn môn học";
@@ -43,7 +43,7 @@
         <div class="alert alert-danger alert-dismissible fade show rounded-4 border-0 shadow-sm" role="alert">@Html.Raw(TempData["ErrorMessage"])<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
     }
 
-    <div class="panel app-panel overflow-hidden">
+    <div class="panel app-panel">
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0 docs-table app-table">
