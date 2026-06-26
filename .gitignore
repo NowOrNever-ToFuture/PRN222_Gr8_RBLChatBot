@@ -85,3 +85,9 @@ env/
 ENV/
 *.env
 
+
+##############################
+# Local uploads
+##############################
+PRN222_Project/PRN222.RazorWebApp/wwwroot/uploads/
+
