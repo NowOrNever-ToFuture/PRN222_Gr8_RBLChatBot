@@ -81,7 +81,12 @@ __pycache__/
 .pytest_cache/
 .venv/
 venv/
+venv*/
 env/
 ENV/
 *.env
+qwen_lora/
+unsloth_compiled_cache/
+**/wwwroot/uploads/
+.claude/
 

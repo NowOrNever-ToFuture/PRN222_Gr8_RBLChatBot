@@ -3,8 +3,10 @@ import re
 import shutil
 import uuid
 import asyncio
+from functools import lru_cache
 
 import pandas as pd
+import torch
 from docx import Document as DocxDocument
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel
@@ -16,6 +18,25 @@ app = FastAPI(title="PRN222 Local RAG AI Server")
 
 SUPPORTED_MODELS = ["bge-m3", "e5", "phobert"]
 loaded_models = {}
+
+
+@lru_cache(maxsize=1)
+def load_qwen_model():
+    """Load and cache the Qwen base model with the local LoRA adapter."""
+    from peft import PeftModel
+    from unsloth import FastLanguageModel
+
+    device_map = "auto" if torch.cuda.is_available() else "cpu"
+    model, tokenizer = FastLanguageModel.from_pretrained(
+        model_name="unsloth/Qwen2.5-1.5B-Instruct",
+        max_seq_length=2048,
+        dtype=None,
+        load_in_4bit=torch.cuda.is_available(),
+        device_map=device_map,
+    )
+    model = PeftModel.from_pretrained(model, "./qwen_lora")
+    FastLanguageModel.for_inference(model)
+    return model, tokenizer
 
 def get_model(model_name: str) -> SentenceTransformer:
     if model_name not in SUPPORTED_MODELS:
@@ -258,3 +279,33 @@ async def parse_and_process_document(
     finally:
         if os.path.exists(file_path):
             os.remove(file_path)
+
+
+class QwenChatRequest(BaseModel):
+    message: str
+
+
+@app.post("/qwen-chat")
+async def qwen_chat(request: QwenChatRequest):
+    try:
+        model, tokenizer = load_qwen_model()
+        input_ids = tokenizer.apply_chat_template(
+            [{"role": "user", "content": request.message}],
+            tokenize=True,
+            add_generation_prompt=True,
+            return_tensors="pt",
+        )
+        input_ids = input_ids.to("cuda" if torch.cuda.is_available() else "cpu")
+        output_ids = model.generate(
+            input_ids=input_ids,
+            max_new_tokens=256,
+            temperature=0.7,
+            do_sample=True,
+        )
+        answer = tokenizer.decode(
+            output_ids[0][input_ids.shape[-1]:],
+            skip_special_tokens=True,
+        ).strip()
+        return {"answer": answer}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
