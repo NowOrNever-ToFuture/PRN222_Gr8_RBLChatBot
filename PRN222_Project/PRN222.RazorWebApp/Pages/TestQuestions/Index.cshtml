@@ -55,7 +55,7 @@
                             else if (q.Difficulty == 2) { <span class="badge bg-warning text-dark">Trung bình</span> }
                             else { <span class="badge bg-danger">Khó</span> }
                         </td>
-                        <td class="col-date">@q.CreatedDate.ToString("dd/MM/yyyy")</td>
+                        <td class="col-date">@q.CreatedDate.AddHours(7).ToString("dd/MM/yyyy")</td>
                         <td>
                             <button class="btn btn-sm btn-outline-primary btn-edit"
                                     data-id="@q.Id" data-question="@q.QuestionText"

@@ -40,7 +40,7 @@ namespace PRN222.RazorWebApp.Pages.Courses
                 return new JsonResult(new { success = false, message = "Mã môn học và Tên môn học không được để trống." });
             try
             {
-                var course = await _courseService.CreateCourseAsync(dto.Name, dto.Code, dto.Description ?? "", dto.ManagedById);
+                await _courseService.CreateCourseAsync(dto.Name, dto.Code, dto.Description ?? string.Empty, dto.ManagedById);
                 return new JsonResult(new { success = true });
             }
             catch (Exception ex) { return new JsonResult(new { success = false, message = ex.Message }); }
@@ -55,7 +55,7 @@ namespace PRN222.RazorWebApp.Pages.Courses
                 return new JsonResult(new { success = false, message = "Mã môn học và Tên môn học không được để trống." });
             try
             {
-                await _courseService.UpdateCourseAsync(dto.Id, dto.Name, dto.Code, dto.Description ?? "", dto.ManagedById);
+                await _courseService.UpdateCourseAsync(dto.Id, dto.Name, dto.Code, dto.Description ?? string.Empty, dto.ManagedById);
                 return new JsonResult(new { success = true });
             }
             catch (Exception ex) { return new JsonResult(new { success = false, message = ex.Message }); }
@@ -89,13 +89,21 @@ namespace PRN222.RazorWebApp.Pages.Courses
         }
     }
 
-    public class CourseCreateRequest 
-    { 
-        public string Code { get; set; } = ""; 
-        public string Name { get; set; } = ""; 
-        public string? Description { get; set; } 
+    public class CourseCreateRequest
+    {
+        public string Code { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string? Description { get; set; }
         public Guid? ManagedById { get; set; }
     }
-    public class CourseEditRequest : CourseCreateRequest { public Guid Id { get; set; } }
-    public class CourseDeleteRequest { public Guid Id { get; set; } }
+
+    public class CourseEditRequest : CourseCreateRequest
+    {
+        public Guid Id { get; set; }
+    }
+
+    public class CourseDeleteRequest
+    {
+        public Guid Id { get; set; }
+    }
 }

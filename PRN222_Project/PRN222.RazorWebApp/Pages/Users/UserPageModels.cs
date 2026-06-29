@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using PRN222.RazorWebApp.Models;
@@ -67,7 +67,7 @@ namespace PRN222.RazorWebApp.Pages.Users
                 return Page();
             }
 
-            var (success, errorMessage) = await _userService.CreateUserAsync(Input.Username, Input.Password, Input.Role, Input.CourseId);
+            var (success, errorMessage) = await _userService.CreateUserAsync(Input.Username, Input.Password, Input.Role, Input.AssignedCourseIds);
             if (!success)
             {
                 ModelState.AddModelError(string.Empty, errorMessage);
@@ -112,7 +112,7 @@ namespace PRN222.RazorWebApp.Pages.Users
                 Id = user.Id,
                 Username = user.Username,
                 Role = user.Role,
-                CourseId = user.CourseId
+                AssignedCourseIds = user.TeachingAssignments.Select(ta => ta.CourseId).ToList()
             };
 
             await LoadReferenceDataAsync(user.Id);
@@ -127,7 +127,7 @@ namespace PRN222.RazorWebApp.Pages.Users
                 return Page();
             }
 
-            var (success, errorMessage, clearedManagedCourseCount) = await _userService.UpdateUserAsync(Input.Id, Input.Username, Input.Role, Input.CourseId);
+            var (success, errorMessage, clearedManagedCourseCount) = await _userService.UpdateUserAsync(Input.Id, Input.Username, Input.Role, Input.AssignedCourseIds);
             if (!success)
             {
                 ModelState.AddModelError(string.Empty, errorMessage);
@@ -136,7 +136,7 @@ namespace PRN222.RazorWebApp.Pages.Users
             }
 
             TempData["SuccessMessage"] = clearedManagedCourseCount > 0
-                ? $"Tài khoản '{Input.Username}' đã được cập nhật. Hệ thống đồng thời gỡ quyền trưởng bộ môn khỏi {clearedManagedCourseCount} môn học do role không còn là Lecturer."
+                ? $"Tài khoản '{Input.Username}' đã được cập nhật. Hệ thống đồng thời gỡ quyền trưởng bộ môn khỏi {clearedManagedCourseCount} môn học vì role không còn là Lecturer."
                 : $"Tài khoản '{Input.Username}' đã được cập nhật thành công.";
 
             return RedirectToPage("/Users/Index");

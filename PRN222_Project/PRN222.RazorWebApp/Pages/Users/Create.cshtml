@@ -1,4 +1,4 @@
-﻿@page
+@page
 @model PRN222.RazorWebApp.Pages.Users.CreateModel
 @{
     ViewData["Title"] = "Tạo tài khoản mới";
@@ -8,9 +8,10 @@
     <div class="row">
         <div class="col-md-8 offset-md-2">
             <div class="card border-0 shadow-lg" style="border-radius: 12px;">
-                <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px 12px 0 0;">
+                <div class="card-header" style="background: linear-gradient(135deg, #0f4c81 0%, #159895 100%); color: white; border-radius: 12px 12px 0 0;">
                     <h3 class="mb-0"><i class="bi bi-person-plus-fill"></i> Tạo tài khoản mới</h3>
                 </div>
+
                 <div class="card-body p-4">
                     <form method="post">
                         @if (!ViewData.ModelState.IsValid && ViewData.ModelState.Values.Any(v => v.Errors.Any()))
@@ -53,32 +54,40 @@
                         </div>
 
                         <div class="mb-4" id="courseSelectionDiv" style="display: none;">
-                            <label class="form-label fw-semibold"><i class="bi bi-book"></i> Môn mặc định cho giảng viên</label>
-                            <select asp-for="Input.CourseId" class="form-control form-control-lg" style="border-radius: 8px; border: 2px solid #e0e0e0;">
-                                <option value="">-- Chọn môn mặc định --</option>
-                                @foreach (var course in Model.Courses)
-                                {
-                                    <option value="@course.Id">@course.Code - @course.Name</option>
-                                }
-                            </select>
-                            <div class="form-text mt-2">
-                                Trường này chỉ là thông tin tham chiếu cho lecturer. Quyền CRUD tài liệu vẫn được kiểm tra theo <code>Courses.ManagedById</code>.
+                            <label class="form-label fw-semibold"><i class="bi bi-book"></i> Môn giảng dạy</label>
+                            <div class="dropdown">
+                                <button class="btn btn-outline-secondary w-100 text-start d-flex justify-content-between align-items-center dropdown-toggle form-control-lg" type="button" id="courseDropdownBtn" data-bs-toggle="dropdown" data-bs-auto-close="outside" style="border-radius: 8px; border: 2px solid #e0e0e0; font-size: 16px; background-color: #fff;">
+                                    <span id="selectedCoursesText" class="text-truncate" style="max-width: 90%;">Chọn môn giảng dạy...</span>
+                                </button>
+                                <div class="dropdown-menu w-100 p-3 shadow-sm" aria-labelledby="courseDropdownBtn" style="max-height: 250px; overflow-y: auto; border-radius: 8px;">
+                                    @if (Model.Courses.Count == 0)
+                                    {
+                                        <div class="text-muted p-2">Chưa có môn học nào để gán.</div>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var course in Model.Courses)
+                                        {
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input course-checkbox" type="checkbox" name="Input.AssignedCourseIds" value="@course.Id" id="chk-@course.Id" data-code="@course.Code" @(Model.Input.AssignedCourseIds.Contains(course.Id) ? "checked" : null) />
+                                                <label class="form-check-label fw-semibold" for="chk-@course.Id">
+                                                    @course.Code - @course.Name
+                                                </label>
+                                            </div>
+                                        }
+                                    }
+                                </div>
                             </div>
                         </div>
 
-                        <div class="alert alert-info">
-                            <i class="bi bi-info-circle"></i>
-                            Lecturer có thể xem tài liệu của tất cả môn học. Chỉ khi được Admin gán vào <code>Courses.ManagedById</code> thì lecturer đó mới trở thành Head Lecturer và có quyền CRUD tài liệu của môn tương ứng.
-                        </div>
-
-                        <div class="row mt-5">
+                        <div class="row mt-5 g-3">
                             <div class="col-md-6">
-                                <button type="submit" class="btn btn-lg w-100 fw-semibold text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; border-radius: 8px;">
+                                <button type="submit" class="btn btn-lg w-100 fw-semibold text-white" style="background: linear-gradient(135deg, #0f4c81 0%, #159895 100%); border: none; border-radius: 999px;">
                                     <i class="bi bi-check-circle"></i> Tạo tài khoản
                                 </button>
                             </div>
                             <div class="col-md-6">
-                                <a asp-page="/Users/Index" class="btn btn-lg w-100 fw-semibold" style="background-color: #e9ecef; border: none; border-radius: 8px;">
+                                <a asp-page="/Users/Index" class="btn btn-lg w-100 fw-semibold" style="background-color: #e9ecef; border: none; border-radius: 999px;">
                                     <i class="bi bi-arrow-left"></i> Quay lại
                                 </a>
                             </div>
@@ -95,20 +104,40 @@
         document.addEventListener("DOMContentLoaded", function () {
             const roleSelect = document.querySelector('select[name="Input.Role"]');
             const courseDiv = document.getElementById('courseSelectionDiv');
-            const courseSelect = document.querySelector('select[name="Input.CourseId"]');
+            const courseCheckboxes = document.querySelectorAll('.course-checkbox');
+            const selectedCoursesText = document.getElementById('selectedCoursesText');
+
+            function updateSelectedCoursesText() {
+                const selectedCodes = [];
+                courseCheckboxes.forEach(cb => {
+                    if (cb.checked) {
+                        selectedCodes.push(cb.getAttribute('data-code'));
+                    }
+                });
+                if (selectedCodes.length > 0) {
+                    selectedCoursesText.textContent = selectedCodes.join(', ');
+                } else {
+                    selectedCoursesText.textContent = 'Chọn môn giảng dạy...';
+                }
+            }
 
             function toggleCourseField() {
                 const isLecturer = roleSelect.value === 'Lecturer';
                 courseDiv.style.display = isLecturer ? 'block' : 'none';
-                courseSelect.required = false;
 
                 if (!isLecturer) {
-                    courseSelect.value = '';
+                    courseCheckboxes.forEach(input => input.checked = false);
+                    updateSelectedCoursesText();
                 }
             }
 
             roleSelect.addEventListener('change', toggleCourseField);
+            courseCheckboxes.forEach(cb => {
+                cb.addEventListener('change', updateSelectedCoursesText);
+            });
+
             toggleCourseField();
+            updateSelectedCoursesText();
         });
     </script>
 }
