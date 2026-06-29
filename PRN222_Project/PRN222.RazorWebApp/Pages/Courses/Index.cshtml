@@ -6,10 +6,11 @@
 }
 
 <div class="course-shell app-page">
-    <div class="course-hero app-hero">
+    <section class="course-hero app-hero">
         <div class="app-hero-content">
-            <div class="app-eyebrow">Browse by subject</div>
+            <div class="app-eyebrow">Course governance</div>
             <h1>Danh sách môn học</h1>
+            <p class="course-hero-copy">Phân tách rõ giảng viên giảng dạy và trưởng bộ môn để Admin giao việc đúng ngữ cảnh, đúng quyền.</p>
         </div>
         <div class="course-hero-actions app-hero-actions">
             @if (isAdmin)
@@ -19,7 +20,7 @@
                 </button>
             }
         </div>
-    </div>
+    </section>
 
     @if (TempData["SuccessMessage"] != null)
     {
@@ -35,6 +36,7 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     }
+
     <div class="course-grid">
         @foreach (var course in Model.Courses)
         {
@@ -51,10 +53,16 @@
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content border-0 shadow-lg course-modal">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-journal-plus"></i> Thêm môn học mới</h5>
+                    <div>
+                        <h5 class="modal-title"><i class="bi bi-journal-plus"></i> Thêm môn học mới</h5>
+                        <div class="modal-subtitle">Chỉ giao trưởng bộ môn tại đây. Danh sách giảng viên giảng dạy được quản lý ở phần Users.</div>
+                    </div>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4">
+                    <div class="course-modal-callout mb-4">
+                        <strong>Quyền được tách riêng:</strong> lecturer được gán dạy nhiều môn, nhưng lecturer được chọn ở đây sẽ là người chịu trách nhiệm chính cho môn học.
+                    </div>
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Mã môn học</label>
@@ -73,6 +81,7 @@
                                     <option value="@lecturer.Id">@lecturer.FullName (@lecturer.Username)</option>
                                 }
                             </select>
+                            <div class="form-text">Nếu lecturer này đang là trưởng bộ môn của môn khác, hệ thống sẽ chặn và yêu cầu gỡ quyền ở môn cũ trước.</div>
                         </div>
                         <div class="col-12">
                             <label class="form-label fw-semibold">Mô tả</label>
@@ -92,11 +101,17 @@
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content border-0 shadow-lg course-modal edit-modal">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-pencil-square"></i> Cập nhật môn học</h5>
+                    <div>
+                        <h5 class="modal-title"><i class="bi bi-pencil-square"></i> Cập nhật môn học</h5>
+                        <div class="modal-subtitle">Cập nhật thông tin môn và trưởng bộ môn mà không làm rối vai trò giảng dạy.</div>
+                    </div>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4">
                     <input type="hidden" id="edit-id" />
+                    <div class="course-modal-callout mb-4 warning">
+                        <strong>Lưu ý:</strong> đổi trưởng bộ môn không tự động thay đổi toàn bộ danh sách giảng viên dạy môn. Danh sách dạy học vẫn được giữ riêng.
+                    </div>
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Mã môn học</label>
@@ -132,22 +147,35 @@
 }
 
 <style>
-    .course-shell { padding-bottom: 24px; }
+    .course-shell { padding-bottom: 32px; }
     .course-hero { box-shadow: var(--app-shadow); }
-    .course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; margin-top: 6px; }
-    .course-card { position: relative; border-radius: 24px; background: linear-gradient(180deg, #fff 0%, #f8fafc 100%); border: 1px solid #e2e8f0; box-shadow: 0 10px 30px rgba(15,23,42,.06); overflow: hidden; transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+    .course-hero-copy { max-width: 680px; margin: 0; color: rgba(255,255,255,.88); }
+    .course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; margin-top: 22px; }
+    .course-card { position: relative; border-radius: 28px; background: linear-gradient(180deg, #fff 0%, #f8fafc 100%); border: 1px solid #e2e8f0; box-shadow: 0 10px 30px rgba(15,23,42,.06); overflow: hidden; transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
     .course-card:hover { transform: translateY(-4px); border-color: #93c5fd; box-shadow: 0 20px 42px rgba(15,23,42,.12); }
-    .course-card-main { display: block; text-decoration: none; color: inherit; padding: 20px; }
+    .course-card-main { display: block; text-decoration: none; color: inherit; padding: 22px; }
     .course-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; gap: 12px; }
-    .course-code { display: inline-flex; align-items: center; padding: 6px 10px; border-radius: 999px; background: rgba(59,130,246,.1); color: #2563eb; font-weight: 800; }
-    .course-doc-count { font-size: 13px; color: #64748b; font-weight: 600; }
-    .course-card-body h3 { font-size: 21px; font-weight: 800; color: #0f172a; margin-bottom: 8px; }
-    .course-card-body p { color: #475569; min-height: 48px; margin-bottom: 16px; }
-    .course-card-footer { display: flex; justify-content: space-between; gap: 12px; align-items: center; color: #64748b; font-size: 13px; flex-wrap: wrap; }
+    .course-code { display: inline-flex; align-items: center; padding: 7px 12px; border-radius: 999px; background: rgba(59,130,246,.1); color: #2563eb; font-weight: 800; }
+    .course-doc-count { font-size: 13px; color: #64748b; font-weight: 700; }
+    .course-card-body h3 { font-size: 22px; font-weight: 800; color: #0f172a; margin-bottom: 8px; }
+    .course-card-body p { color: #475569; min-height: 48px; margin-bottom: 18px; }
+    .course-card-sections { display: grid; gap: 12px; }
+    .course-card-section { padding: 14px 15px; border-radius: 18px; background: #f8fbff; border: 1px solid #e6eef8; }
+    .course-card-section.head { background: linear-gradient(135deg, rgba(15,118,110,.10), rgba(16,185,129,.12)); border-color: rgba(16,185,129,.22); }
+    .course-card-section.teaching { background: linear-gradient(135deg, rgba(37,99,235,.08), rgba(59,130,246,.12)); border-color: rgba(37,99,235,.18); }
+    .course-section-label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; font-weight: 800; color: #64748b; margin-bottom: 8px; }
+    .course-head-name { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; color: #0f172a; }
+    .course-empty-state { color: #7c8a9b; font-size: 14px; }
+    .course-teaching-list { display: flex; flex-wrap: wrap; gap: 8px; }
+    .course-teaching-pill { display: inline-flex; align-items: center; gap: 6px; padding: 8px 11px; border-radius: 999px; background: rgba(255,255,255,.85); border: 1px solid rgba(37,99,235,.14); color: #1e3a5f; font-weight: 600; font-size: 13px; }
+    .course-card-footer { display: flex; justify-content: space-between; gap: 12px; align-items: center; color: #64748b; font-size: 13px; flex-wrap: wrap; margin-top: 18px; }
     .open-link { color: #2563eb; font-weight: 700; }
-    .course-card-actions { display: flex; gap: 8px; padding: 0 20px 20px; }
+    .course-card-actions { display: flex; gap: 8px; padding: 0 22px 22px; }
     .course-modal .modal-header { background: linear-gradient(135deg, #1456b8, #0f9d7a); color: #fff; }
     .course-modal .modal-header .btn-close { filter: brightness(0) invert(1); }
+    .modal-subtitle { margin-top: 4px; color: rgba(255,255,255,.82); font-size: 13px; }
+    .course-modal-callout { padding: 14px 16px; border-radius: 16px; background: #eef6ff; border: 1px solid #c7ddff; color: #1e3a5f; }
+    .course-modal-callout.warning { background: #fff7e9; border-color: #f0d8a8; color: #7a4d00; }
 </style>
 
 @section Scripts {
@@ -229,7 +257,7 @@
                 document.getElementById('create-desc').value = '';
                 document.getElementById('create-managedby').value = '';
             } else {
-                alert('Lỗi: ' + result.message);
+                alert('Loi: ' + result.message);
             }
         });
 
@@ -255,14 +283,14 @@
                 const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
                 modal.hide();
             } else {
-                alert('Lỗi: ' + result.message);
+                alert('Loi: ' + result.message);
             }
         });
 
         document.addEventListener('click', async (e) => {
             const btn = e.target.closest('.btn-delete');
             if (!btn) return;
-            if (!confirm('Bạn có chắc muốn xóa môn học này?')) return;
+            if (!confirm('Ban co chac muon xoa mon hoc nay?')) return;
             const res = await fetch('/Courses/Index?handler=Delete', {
                 method: 'POST',
                 headers: {
@@ -272,7 +300,7 @@
                 body: JSON.stringify({ id: btn.dataset.id })
             });
             const result = await res.json();
-            if (!result.success) alert('Lỗi: ' + result.message);
+            if (!result.success) alert('Loi: ' + result.message);
         });
         </text>
     }

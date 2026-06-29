@@ -1,6 +1,12 @@
-﻿@model PRN222.Models.Course
+@model PRN222.Models.Course
 @{
     var isAdmin = User.IsInRole("Admin");
+    var teachingLecturers = Model.CourseLecturers?
+        .Where(cl => cl.Lecturer != null)
+        .OrderBy(cl => cl.Lecturer.FullName)
+        .Select(cl => cl.Lecturer.FullName)
+        .Distinct()
+        .ToList() ?? new List<string>();
 }
 
 <td class="row-num"></td>
@@ -11,6 +17,7 @@
             <div class="fs-6 text-primary fw-bold">@Model.Name</div>
             <div class="text-muted small">@Model.Description</div>
         </div>
+        <div class="small text-muted">Giảng dạy: @(teachingLecturers.Count > 0 ? string.Join(", ", teachingLecturers) : "Chưa có giảng viên được gán")</div>
         <a asp-page="/Documents/Index" asp-route-courseId="@Model.Id" class="btn btn-sm btn-outline-primary align-self-start">
             <i class="bi bi-folder2-open"></i> Xem tài liệu
         </a>
