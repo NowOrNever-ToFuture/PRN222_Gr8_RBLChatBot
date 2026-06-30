@@ -58,9 +58,9 @@ using (var scope = app.Services.CreateScope())
         dbContext.Courses.Add(new Course
         {
             Id = Guid.NewGuid(),
-            Name = "Tri?t h?c M?c - L?nin",
+            Name = "Triết học Mác - Lênin",
             Code = "MLN",
-            Description = "Tri?t h?c M?c - L?nin: N?n t?ng l? thuy?t c? b?n",
+            Description = "Triết học Mác - Lênin lí thuyết cơ bản",
             CreatedDate = DateTime.UtcNow
         });
         dbContext.SaveChanges();
@@ -80,7 +80,7 @@ using (var scope = app.Services.CreateScope())
         {
             Id = Guid.NewGuid(),
             Username = "admin",
-            FullName = "Administrator",
+            FullName = "Admin FPT",
             PasswordHash = passwordHash,
             Role = "Admin"
         });
@@ -101,7 +101,7 @@ using (var scope = app.Services.CreateScope())
         {
             Id = Guid.NewGuid(),
             Username = "student",
-            FullName = "Student User",
+            FullName = "Nguyễn Hoàng Nam",
             PasswordHash = passwordHash,
             Role = "Student"
         });
@@ -121,8 +121,8 @@ using (var scope = app.Services.CreateScope())
         var lecturer = new User
         {
             Id = Guid.NewGuid(),
-            Username = "lecturer",
-            FullName = "Head Lecturer",
+            Username = "lecturer01",
+            FullName = "Nguyễn Văn A",
             PasswordHash = passwordHash,
             Role = "Lecturer"
         };
