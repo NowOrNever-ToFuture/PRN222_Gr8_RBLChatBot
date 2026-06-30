@@ -216,6 +216,49 @@
                 });
             }
         });
+
+        const isStudent = @(User.IsInRole("Student") ? "true" : "false");
+        if (isStudent) {
+            const docConnection = new signalR.HubConnectionBuilder().withUrl("/hubs/documentupload").withAutomaticReconnect().build();
+            docConnection.start().catch(err => console.error("SignalR DocumentUploadHub Connection Error:", err));
+
+            const reloadCard = (courseId) => {
+                const card = document.getElementById(`course-${courseId}`);
+                if (card) {
+                    $.get(`/Courses/Index?handler=CardHtml&id=${courseId}`, function(html) {
+                        card.innerHTML = html;
+                    });
+                }
+            };
+
+            docConnection.on("DocumentAdded", (doc) => {
+                if (doc.status === "Completed") reloadCard(doc.courseId);
+            });
+
+            docConnection.on("DocumentUpdated", (doc) => {
+                reloadCard(doc.courseId);
+            });
+
+            docConnection.on("DocumentDeleted", (docId) => {
+                const docEl = document.getElementById(`student-doc-${docId}`);
+                if (docEl) {
+                    const docsList = docEl.closest('.docs-list');
+                    if (docsList) {
+                        const courseId = docsList.id.replace('docs-list-', '');
+                        docEl.remove();
+                        const currentDocs = docsList.querySelectorAll('.doc-item').length;
+                        if (currentDocs === 0) {
+                            docsList.innerHTML = `<div class="text-muted small empty-docs-msg" id="empty-docs-${courseId}">Chưa có tài liệu nào.</div>`;
+                        }
+                        const card = document.getElementById(`course-${courseId}`);
+                        if (card) {
+                            const countSpan = card.querySelector('.course-doc-count');
+                            if (countSpan) countSpan.innerHTML = `<i class="bi bi-folder2-open"></i> ${currentDocs} tài liệu`;
+                        }
+                    }
+                }
+            });
+        }
     });
 
     @if (isAdmin)

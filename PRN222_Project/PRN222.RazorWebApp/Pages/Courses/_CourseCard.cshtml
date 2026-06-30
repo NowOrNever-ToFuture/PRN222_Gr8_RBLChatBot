@@ -1,6 +1,7 @@
 @model PRN222.Models.Course
 @{
     var isAdmin = User.IsInRole("Admin");
+    var isStudent = User.IsInRole("Student");
     var teachingLecturers = Model.CourseLecturers?
         .Where(cl => cl.Lecturer != null)
         .OrderBy(cl => cl.Lecturer.FullName)
@@ -8,7 +9,15 @@
         .DistinctBy(l => l.Id)
         .ToList() ?? new List<PRN222.Models.User>();
 }
-<a asp-page="/Documents/Index" asp-route-courseId="@Model.Id" class="course-card-main">
+
+@if (isStudent)
+{
+    @Html.Raw("<div class=\"course-card-main\">")
+}
+else
+{
+    @Html.Raw($"<a href=\"/Documents/Index?courseId={Model.Id}\" class=\"course-card-main\">")
+}
     <div class="course-card-top">
         <span class="course-code">@Model.Code</span>
         <span class="course-doc-count"><i class="bi bi-folder2-open"></i> @(Model.Documents?.Count ?? 0) tài liệu</span>
@@ -48,9 +57,48 @@
     </div>
     <div class="course-card-footer">
         <span>@teachingLecturers.Count giảng viên đang dạy</span>
-        <span class="open-link">Xem tài liệu <i class="bi bi-arrow-right"></i></span>
+        @if (!isStudent)
+        {
+            <span class="open-link">Xem tài liệu <i class="bi bi-arrow-right"></i></span>
+        }
     </div>
-</a>
+
+    @if (isStudent)
+    {
+        <div class="course-student-docs mt-3 pt-3 border-top">
+            <h6 class="mb-2 fw-bold text-dark" style="font-size: 14px;"><i class="bi bi-file-earmark-text"></i> Tài liệu môn học</h6>
+            <div class="list-group docs-list" id="docs-list-@Model.Id">
+                @if (Model.Documents != null && Model.Documents.Any(d => d.Status == "Completed"))
+                {
+                    foreach (var doc in Model.Documents.Where(d => d.Status == "Completed").OrderByDescending(d => d.UploadDate))
+                    {
+                        <a href="@doc.FilePath" target="_blank" class="list-group-item list-group-item-action py-2 px-3 doc-item border-0 bg-light mb-1 rounded-3" id="student-doc-@doc.Id">
+                            <div class="d-flex w-100 justify-content-between align-items-center">
+                                <div class="text-truncate flex-grow-1" style="font-size: 14px; font-weight: 500;">
+                                    <i class="bi bi-file-earmark-pdf-fill text-danger me-2"></i>@doc.FileName
+                                </div>
+                                <small class="text-muted ms-2" style="font-size: 12px;">@doc.UploadDate.ToString("dd/MM/yyyy")</small>
+                            </div>
+                        </a>
+                    }
+                }
+                else
+                {
+                    <div class="text-muted small empty-docs-msg" id="empty-docs-@Model.Id">Chưa có tài liệu nào.</div>
+                }
+            </div>
+        </div>
+    }
+
+@if (isStudent)
+{
+    @Html.Raw("</div>")
+}
+else
+{
+    @Html.Raw("</a>")
+}
+
 @if (isAdmin)
 {
     <div class="course-card-actions">
