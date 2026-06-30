@@ -1,4 +1,4 @@
-﻿@page
+@page
 @model PRN222.RazorWebApp.Pages.Dashboard.IndexModel
 @using PRN222.Services.Interfaces
 @{
@@ -125,7 +125,7 @@
                         <div class="app-list-item">
                             <div>
                                 <div class="fw-bold">@run.EmbeddingModel</div>
-                                <div class="small app-muted">@run.ChunkingStrategy · @run.RunDate.ToString("dd/MM HH:mm")</div>
+                                <div class="small app-muted">@run.ChunkingStrategy · @run.RunDate.AddHours(7).ToString("dd/MM HH:mm")</div>
                             </div>
                             <span class="app-badge-soft app-badge-blue">@(run.TotalTimeMs / 1000.0)s</span>
                         </div>
@@ -150,7 +150,7 @@
                         <div class="app-list-item">
                             <div>
                                 <div class="fw-bold text-truncate" style="max-width: 220px;" title="@doc.FileName">@doc.FileName</div>
-                                <div class="small app-muted">@doc.CourseName · @doc.UploadedBy · @doc.UploadDate.ToString("dd/MM HH:mm")</div>
+                                <div class="small app-muted">@doc.CourseName · @doc.UploadedBy · @doc.UploadDate.AddHours(7).ToString("dd/MM HH:mm")</div>
                             </div>
                             <span class="app-badge-soft @(doc.Status == "Completed" ? "app-badge-green" : doc.Status == "Failed" ? "app-badge-rose" : "app-badge-amber")">@doc.Status</span>
                         </div>

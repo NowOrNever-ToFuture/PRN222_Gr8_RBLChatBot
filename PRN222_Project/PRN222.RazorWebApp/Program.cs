@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using PRN222.Models;
 using PRN222.Repositories;
@@ -45,7 +45,9 @@ var app = builder.Build();
 
 var uploadsPath = Path.Combine(app.Environment.WebRootPath, "uploads");
 if (!Directory.Exists(uploadsPath))
+{
     Directory.CreateDirectory(uploadsPath);
+}
 
 using (var scope = app.Services.CreateScope())
 {
@@ -56,9 +58,9 @@ using (var scope = app.Services.CreateScope())
         dbContext.Courses.Add(new Course
         {
             Id = Guid.NewGuid(),
-            Name = "Triết học Mác - Lênin",
+            Name = "Tri?t h?c M?c - L?nin",
             Code = "MLN",
-            Description = "Triết học Mác - Lênin: Nền tảng lý thuyết cơ bản",
+            Description = "Tri?t h?c M?c - L?nin: N?n t?ng l? thuy?t c? b?n",
             CreatedDate = DateTime.UtcNow
         });
         dbContext.SaveChanges();
@@ -116,18 +118,29 @@ using (var scope = app.Services.CreateScope())
         System.Buffer.BlockCopy(hash, 0, hashWithSalt, 16, 32);
         string passwordHash = Convert.ToBase64String(hashWithSalt);
 
-        var firstCourse = dbContext.Courses.FirstOrDefault();
-
-        dbContext.Users.Add(new User
+        var lecturer = new User
         {
             Id = Guid.NewGuid(),
             Username = "lecturer",
             FullName = "Head Lecturer",
             PasswordHash = passwordHash,
-            Role = "Lecturer",
-            CourseId = firstCourse?.Id
-        });
+            Role = "Lecturer"
+        };
+
+        dbContext.Users.Add(lecturer);
         dbContext.SaveChanges();
+
+        var firstCourse = dbContext.Courses.FirstOrDefault();
+        if (firstCourse != null && !dbContext.CourseLecturers.Any(cl => cl.CourseId == firstCourse.Id && cl.LecturerId == lecturer.Id))
+        {
+            dbContext.CourseLecturers.Add(new CourseLecturer
+            {
+                Id = Guid.NewGuid(),
+                CourseId = firstCourse.Id,
+                LecturerId = lecturer.Id
+            });
+            dbContext.SaveChanges();
+        }
     }
 
     if (!dbContext.SystemSettings.Any())

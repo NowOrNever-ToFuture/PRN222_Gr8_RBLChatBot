@@ -1,4 +1,11 @@
-﻿@model PRN222.Models.User
+@model PRN222.Models.User
+@{
+    var assignedCourses = Model.TeachingAssignments
+        .Where(ta => ta.Course != null)
+        .OrderBy(ta => ta.Course.Code)
+        .Select(ta => $"{ta.Course.Code} - {ta.Course.Name}")
+        .ToList();
+}
 <tr id="user-@Model.Id">
     <td>
         <div class="fw-bold text-dark">@Model.Username</div>
@@ -21,18 +28,18 @@
     <td>
         @if (Model.Role == "Lecturer")
         {
-            <span class="text-dark fw-semibold">@(Model.Course?.Name ?? "Có thể phụ trách nhiều môn")</span>
-            <div class="small text-muted">Dùng để quản lý tài liệu và hỗ trợ học phần</div>
+            <span class="text-dark fw-semibold">@(assignedCourses.Count > 0 ? string.Join(", ", assignedCourses) : "Chưa gán môn giảng dạy")</span>
+            <div class="small text-muted">Giảng viên có thể được phân công nhiều môn. Trưởng bộ môn được quản lý riêng ở Course.</div>
         }
         else if (Model.Role == "Student")
         {
-            <span class="text-dark fw-semibold">@(Model.Course?.Name ?? "Chưa gán môn")</span>
-            <div class="small text-muted">Bối cảnh học tập mặc định của sinh viên</div>
+            <span class="text-dark fw-semibold">Ngữ cảnh học tập chung</span>
+            <div class="small text-muted">Sinh viên không cần gán cứng với một môn duy nhất trong bảng Users.</div>
         }
         else
         {
             <span class="text-dark fw-semibold">Toàn hệ thống</span>
-            <div class="small text-muted">Toàn quyền cấu hình và điều phối</div>
+            <div class="small text-muted">Toàn quyền cấu hình và điều phối.</div>
         }
     </td>
     <td class="text-center">

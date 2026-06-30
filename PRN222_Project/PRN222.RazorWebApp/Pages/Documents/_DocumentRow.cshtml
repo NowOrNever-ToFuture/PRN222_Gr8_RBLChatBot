@@ -1,4 +1,4 @@
-﻿@model PRN222.Models.Document
+@model PRN222.Models.Document
 @{
     var isAdmin = User.IsInRole("Admin");
     var currentUserIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
@@ -41,7 +41,7 @@
         <i class="bi bi-person text-muted"></i> @Model.Owner?.FullName
     </small>
 </td>
-<td class="px-4"><small class="text-muted">@Model.UploadDate.ToString("dd/MM/yyyy HH:mm")</small></td>
+<td class="px-4"><small class="text-muted">@Model.UploadDate.AddHours(7).ToString("dd/MM/yyyy HH:mm")</small></td>
 <td class="px-4">
     @{
         var statusText = Model.Status;
