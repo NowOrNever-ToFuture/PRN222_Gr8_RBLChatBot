@@ -10,7 +10,7 @@ echo =======================================================================
 echo.
 echo   [1] Khoi tao Moi truong ao Python va Cai dat cac thu vien (Requirements)
 echo   [2] Khoi chay Python FastAPI AI Server (Port 8000)
-echo   [3] Khoi chay C# .NET Core Web App (Port 5004)
+echo   [3] Khoi chay C# .NET Core Web App (Port 5274)
 echo   [4] KHOI CHAY CA HAI MICROSERVICES ^& Tu dong mo Trinh duyet Chrome
 echo   [5] Thoat chuong trinh
 echo.
@@ -91,3 +91,4 @@ goto menu
 
 :exit_menu
 exit
+

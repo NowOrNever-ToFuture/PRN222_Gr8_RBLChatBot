@@ -1,18 +1,53 @@
 @model PRN222.Models.Course
 @{
     var isAdmin = User.IsInRole("Admin");
+    var teachingLecturers = Model.CourseLecturers?
+        .Where(cl => cl.Lecturer != null)
+        .OrderBy(cl => cl.Lecturer.FullName)
+        .Select(cl => cl.Lecturer)
+        .DistinctBy(l => l.Id)
+        .ToList() ?? new List<PRN222.Models.User>();
 }
 <a asp-page="/Documents/Index" asp-route-courseId="@Model.Id" class="course-card-main">
     <div class="course-card-top">
         <span class="course-code">@Model.Code</span>
-        <span class="course-doc-count"><i class="bi bi-folder2-open"></i> @(Model.Documents?.Count ?? 0)</span>
+        <span class="course-doc-count"><i class="bi bi-folder2-open"></i> @(Model.Documents?.Count ?? 0) tài liệu</span>
     </div>
     <div class="course-card-body">
         <h3>@Model.Name</h3>
         <p>@Model.Description</p>
+        <div class="course-card-sections">
+            <div class="course-card-section head">
+                <span class="course-section-label">Trưởng bộ môn</span>
+                @if (Model.ManagedBy != null)
+                {
+                    <span class="course-head-name"><i class="bi bi-person-badge-fill"></i> @Model.ManagedBy.FullName</span>
+                }
+                else
+                {
+                    <span class="course-empty-state">Chưa gán người chịu trách nhiệm chính.</span>
+                }
+            </div>
+            <div class="course-card-section teaching">
+                <span class="course-section-label">Giảng viên giảng dạy</span>
+                @if (teachingLecturers.Count > 0)
+                {
+                    <div class="course-teaching-list">
+                        @foreach (var lecturer in teachingLecturers)
+                        {
+                            <span class="course-teaching-pill"><i class="bi bi-person-workspace"></i> @lecturer.FullName</span>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <span class="course-empty-state">Chưa có giảng viên nào được gán dạy môn này.</span>
+                }
+            </div>
+        </div>
     </div>
     <div class="course-card-footer">
-        <span><i class="bi bi-person-badge"></i> @(Model.ManagedBy?.FullName ?? "Chưa gán trưởng bộ môn")</span>
+        <span>@teachingLecturers.Count giảng viên đang dạy</span>
         <span class="open-link">Xem tài liệu <i class="bi bi-arrow-right"></i></span>
     </div>
 </a>

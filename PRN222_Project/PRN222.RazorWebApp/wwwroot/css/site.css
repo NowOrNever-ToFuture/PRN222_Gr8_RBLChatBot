@@ -1,4 +1,4 @@
-﻿:root {
+:root {
   --app-bg: #f4f7fb;
   --app-surface: rgba(255, 255, 255, 0.82);
   --app-surface-strong: #ffffff;
@@ -56,7 +56,6 @@ body::before {
 
 main {
   position: relative;
-  z-index: 1;
 }
 
 a {

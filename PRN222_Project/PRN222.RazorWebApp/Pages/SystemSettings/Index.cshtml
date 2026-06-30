@@ -1,4 +1,4 @@
-﻿@page
+@page
 @model PRN222.RazorWebApp.Pages.SystemSettings.IndexModel
 @{
     ViewData["Title"] = "Cấu Hình Hệ Thống";
@@ -40,7 +40,7 @@
                     </p>
                     <form method="post" asp-page-handler="UpdateActiveSettings">
                         @Html.AntiForgeryToken()
-                        <div class="mb-4">
+                        <div class="mb-4 d-none">
                             <label class="form-label fw-bold text-primary"><i class="bi bi-cpu-fill"></i> 1. Chọn mô hình mặc định:</label>
                             <div class="form-check mb-3 ms-3">
                                 <input class="form-check-input" type="radio" name="activeModel" id="model-bgem3" value="bge-m3" @(Model.ActiveModel == "bge-m3" ? "checked" : "") />
@@ -83,6 +83,16 @@
                             <div class="form-check mb-3 ms-3">
                                 <input class="form-check-input" type="radio" name="activeStrategy" id="strat-fixed-overlap" value="fixed_size_overlap" @(Model.ActiveStrategy == "fixed_size_overlap" ? "checked" : "") />
                                 <label class="form-check-label" for="strat-fixed-overlap"><strong>Fixed Size + Overlap</strong> (Kích thước cố định kèm phần chồng lấp)</label>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-primary"><i class="bi bi-rulers"></i> 3. Kích thước chunk (Chunk Size):</label>
+                            <div class="ms-3 w-25">
+                                <input type="number" class="form-control" name="chunkSize" value="@Model.ChunkSize" min="100" max="2000" step="50" required />
+                                <div class="form-text">Số ký tự/từ tối đa cho mỗi đoạn cắt. Nên từ 500 - 1000.</div>
                             </div>
                         </div>
 
@@ -133,6 +143,11 @@
 
             if (setting.key === 'ActiveChunkingStrategy') {
                 $(`input[name="activeStrategy"][value="${setting.value}"]`).prop('checked', true);
+            }
+
+            if (setting.key === 'ChunkSize') {
+                $(`input[name="chunkSize"]`).val(setting.value);
+                $('#global-chunk-size-display').text(setting.value);
             }
 
             showAlert(`Cấu hình '${setting.key}' vừa được cập nhật realtime thành '${setting.value}'.`);
