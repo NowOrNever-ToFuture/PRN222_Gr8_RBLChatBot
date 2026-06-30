@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using PRN222.Services.Interfaces;
@@ -17,6 +17,7 @@ namespace PRN222.RazorWebApp.Pages.SystemSettings
 
         public string ActiveModel { get; set; } = "bge-m3";
         public string ActiveStrategy { get; set; } = "markdown_header";
+        public int ChunkSize { get; set; } = 500;
 
         public async Task OnGetAsync()
         {
@@ -25,11 +26,14 @@ namespace PRN222.RazorWebApp.Pages.SystemSettings
 
             var strat = await _systemSettingService.GetSettingValueAsync("ActiveChunkingStrategy");
             ActiveStrategy = string.IsNullOrEmpty(strat) ? "markdown_header" : strat;
+
+            var sizeStr = await _systemSettingService.GetSettingValueAsync("ChunkSize");
+            ChunkSize = int.TryParse(sizeStr, out int size) ? size : 500;
         }
 
-        public async Task<IActionResult> OnPostUpdateActiveSettingsAsync(string activeModel, string activeStrategy)
+        public async Task<IActionResult> OnPostUpdateActiveSettingsAsync(string activeModel, string activeStrategy, int chunkSize)
         {
-            if (string.IsNullOrWhiteSpace(activeModel) || string.IsNullOrWhiteSpace(activeStrategy))
+            if (string.IsNullOrWhiteSpace(activeModel) || string.IsNullOrWhiteSpace(activeStrategy) || chunkSize <= 0)
             {
                 TempData["ErrorMessage"] = "Vui lòng chọn cấu hình hợp lệ.";
                 return RedirectToPage();
@@ -39,7 +43,8 @@ namespace PRN222.RazorWebApp.Pages.SystemSettings
             {
                 await _systemSettingService.SetSettingAsync("ActiveEmbeddingModel", activeModel);
                 await _systemSettingService.SetSettingAsync("ActiveChunkingStrategy", activeStrategy);
-                TempData["SuccessMessage"] = $"Đã cập nhật cấu hình mặc định thành công: Mô hình = {activeModel} | Chặt chunk = {activeStrategy}. Hệ thống sẽ áp dụng ngay lập tức.";
+                await _systemSettingService.SetSettingAsync("ChunkSize", chunkSize.ToString());
+                TempData["SuccessMessage"] = $"Đã cập nhật cấu hình mặc định thành công: Mô hình = {activeModel} | Chặt chunk = {activeStrategy} | Kích thước chunk = {chunkSize}. Hệ thống sẽ áp dụng ngay lập tức.";
             }
             catch (Exception ex)
             {

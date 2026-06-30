@@ -35,7 +35,6 @@ namespace PRN222.Services.Interfaces
 
         /// <summary>
         /// Gửi file vật lý sang Python Microservice để parse sang Markdown và chunking có vector embeddings.
-        /// </summary>
-        Task<PythonParseResponseDto> ParseDocumentAsync(string filePath, string modelName = "bge-m3", string chunkStrategy = "markdown_header");
+        Task<PythonParseResponseDto> ParseDocumentAsync(string filePath, string modelName = "bge-m3", string chunkStrategy = "markdown_header", int chunkSize = 500);
     }
 }

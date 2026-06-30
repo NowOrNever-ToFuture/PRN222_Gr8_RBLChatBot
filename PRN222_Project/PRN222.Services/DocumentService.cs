@@ -174,8 +174,10 @@ namespace PRN222.Services
                 string activeModelName = await _systemSettingService.GetSettingValueAsync("ActiveEmbeddingModel");
                 string activeChunkingStrategy = string.IsNullOrWhiteSpace(chunkingStrategy) ? await _systemSettingService.GetSettingValueAsync("ActiveChunkingStrategy") : chunkingStrategy;
                 if (string.IsNullOrWhiteSpace(activeChunkingStrategy)) activeChunkingStrategy = "markdown_header";
+                string chunkSizeStr = await _systemSettingService.GetSettingValueAsync("ChunkSize");
+                int chunkSize = int.TryParse(chunkSizeStr, out int size) ? size : 500;
 
-                var parseResult = await _docProcessing.ParseDocumentAsync(document.FilePath, activeModelName, activeChunkingStrategy);
+                var parseResult = await _docProcessing.ParseDocumentAsync(document.FilePath, activeModelName, activeChunkingStrategy, chunkSize);
                 string mdFilePath = System.IO.Path.ChangeExtension(document.FilePath, ".md");
                 await System.IO.File.WriteAllTextAsync(mdFilePath, parseResult.Markdown, System.Text.Encoding.UTF8);
 

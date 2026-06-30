@@ -23,13 +23,19 @@ namespace PRN222.RazorWebApp.Models
 
     public class CreateUserViewModel
     {
-        [Required]
+        [Required(ErrorMessage = "Tên đăng nhập không được để trống.")]
+        [StringLength(50, MinimumLength = 3, ErrorMessage = "Tên đăng nhập phải từ 3 đến 50 ký tự.")]
         public string Username { get; set; } = "";
-        [Required]
+        
+        [Required(ErrorMessage = "Mật khẩu không được để trống.")]
+        [StringLength(50, MinimumLength = 6, ErrorMessage = "Mật khẩu phải từ 6 đến 50 ký tự.")]
         public string Password { get; set; } = "";
-        [Required]
+        
+        [Required(ErrorMessage = "Vui lòng xác nhận mật khẩu.")]
+        [Compare("Password", ErrorMessage = "Mật khẩu xác nhận không khớp.")]
         public string ConfirmPassword { get; set; } = "";
-        [Required]
+        
+        [Required(ErrorMessage = "Vui lòng chọn vai trò.")]
         public string Role { get; set; } = "Student";
         public List<Guid> AssignedCourseIds { get; set; } = new();
     }
@@ -37,9 +43,12 @@ namespace PRN222.RazorWebApp.Models
     public class EditUserViewModel
     {
         public Guid Id { get; set; }
-        [Required]
+        
+        [Required(ErrorMessage = "Tên đăng nhập không được để trống.")]
+        [StringLength(50, MinimumLength = 3, ErrorMessage = "Tên đăng nhập phải từ 3 đến 50 ký tự.")]
         public string Username { get; set; } = "";
-        [Required]
+        
+        [Required(ErrorMessage = "Vui lòng chọn vai trò.")]
         public string Role { get; set; } = "Student";
         public List<Guid> AssignedCourseIds { get; set; } = new();
     }
