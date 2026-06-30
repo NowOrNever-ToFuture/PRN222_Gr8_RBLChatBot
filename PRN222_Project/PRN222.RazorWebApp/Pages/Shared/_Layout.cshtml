@@ -1,4 +1,9 @@
-﻿<!DOCTYPE html>
+@inject PRN222.Services.Interfaces.ISystemSettingService SystemSettingService
+@{
+    var chunkSizeStr = await SystemSettingService.GetSettingValueAsync("ChunkSize");
+    var currentChunkSize = string.IsNullOrEmpty(chunkSizeStr) ? "500" : chunkSizeStr;
+}
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -165,6 +170,15 @@
                         }
                     </ul>
                     <ul class="navbar-nav align-items-center">
+                        @if (!User.IsInRole("Student"))
+                        {
+                            <li class="nav-item d-flex align-items-center me-3 d-none d-md-flex">
+                                <span class="badge rounded-pill bg-light text-secondary border shadow-sm px-3 py-2" style="font-weight: 500; font-size: 0.8rem;" title="Kích thước Chunk hiện tại">
+                                    <i class="bi bi-scissors me-1"></i> Chunk Size: <span id="global-chunk-size-display">@currentChunkSize</span>
+                                </span>
+                            </li>
+                        }
+
                         @if (User.Identity?.IsAuthenticated ?? false)
                         {
                             <li class="nav-item dropdown">

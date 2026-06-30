@@ -34,6 +34,7 @@
                         <div class="mb-4">
                             <label class="form-label fw-semibold"><i class="bi bi-person-circle"></i> Tên đăng nhập</label>
                             <input asp-for="Input.Username" class="form-control form-control-lg" style="border-radius: 8px; border: 2px solid #e0e0e0;" />
+                            <span asp-validation-for="Input.Username" class="text-danger"></span>
                         </div>
 
                         <div class="mb-4">
@@ -41,7 +42,6 @@
                             <select asp-for="Input.Role" class="form-control form-control-lg" style="border-radius: 8px; border: 2px solid #e0e0e0;">
                                 <option value="Student">Student (Sinh viên)</option>
                                 <option value="Lecturer">Lecturer (Giảng viên)</option>
-                                <option value="Admin">Admin (Quản trị viên)</option>
                             </select>
                         </div>
 
