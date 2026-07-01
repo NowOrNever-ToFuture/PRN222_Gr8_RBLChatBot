@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PRN222.Repositories;
 
@@ -11,9 +12,11 @@ using PRN222.Repositories;
 namespace PRN222.Repositories.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260625080019_AddManagedByIdToCourse")]
+    partial class AddManagedByIdToCourse
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -151,29 +154,6 @@ namespace PRN222.Repositories.Migrations
                     b.HasIndex("ManagedById");
 
                     b.ToTable("Courses");
-                });
-
-            modelBuilder.Entity("PRN222.Models.CourseLecturer", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
-
-                    b.Property<Guid>("CourseId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("LecturerId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("LecturerId");
-
-                    b.HasIndex("CourseId", "LecturerId")
-                        .IsUnique();
-
-                    b.ToTable("CourseLecturers");
                 });
 
             modelBuilder.Entity("PRN222.Models.Document", b =>
@@ -368,6 +348,9 @@ namespace PRN222.Repositories.Migrations
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("NEWSEQUENTIALID()");
 
+                    b.Property<Guid?>("CourseId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("FullName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -385,6 +368,8 @@ namespace PRN222.Repositories.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CourseId");
 
                     b.ToTable("Users");
                 });
@@ -427,25 +412,6 @@ namespace PRN222.Repositories.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("ManagedBy");
-                });
-
-            modelBuilder.Entity("PRN222.Models.CourseLecturer", b =>
-                {
-                    b.HasOne("PRN222.Models.Course", "Course")
-                        .WithMany("CourseLecturers")
-                        .HasForeignKey("CourseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("PRN222.Models.User", "Lecturer")
-                        .WithMany("TeachingAssignments")
-                        .HasForeignKey("LecturerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Course");
-
-                    b.Navigation("Lecturer");
                 });
 
             modelBuilder.Entity("PRN222.Models.Document", b =>
@@ -499,6 +465,16 @@ namespace PRN222.Repositories.Migrations
                     b.Navigation("Course");
                 });
 
+            modelBuilder.Entity("PRN222.Models.User", b =>
+                {
+                    b.HasOne("PRN222.Models.Course", "Course")
+                        .WithMany()
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Course");
+                });
+
             modelBuilder.Entity("PRN222.Models.BenchmarkRun", b =>
                 {
                     b.Navigation("Results");
@@ -511,8 +487,6 @@ namespace PRN222.Repositories.Migrations
 
             modelBuilder.Entity("PRN222.Models.Course", b =>
                 {
-                    b.Navigation("CourseLecturers");
-
                     b.Navigation("Documents");
 
                     b.Navigation("TestQuestions");
@@ -531,8 +505,6 @@ namespace PRN222.Repositories.Migrations
             modelBuilder.Entity("PRN222.Models.User", b =>
                 {
                     b.Navigation("Conversations");
-
-                    b.Navigation("TeachingAssignments");
 
                     b.Navigation("UploadedDocuments");
                 });

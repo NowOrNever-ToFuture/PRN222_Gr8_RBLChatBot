@@ -2,240 +2,172 @@
 @model PRN222.RazorWebApp.Pages.Dashboard.IndexModel
 @using PRN222.Services.Interfaces
 @{
-    ViewData["Title"] = "Dashboard Benchmark";
+    ViewData["Title"] = "Admin Dashboard";
 }
 
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
-        <div>
-            <h2 class="fw-bold text-dark mb-0"><i class="bi bi-speedometer2 text-primary"></i> Chào mừng trở lại, Admin!</h2>
-            <p class="text-muted mb-0 mt-1">Quản lý và đánh giá hệ thống AI Chatbot RBL</p>
+<div class="app-page">
+    <section class="app-hero">
+        <div class="app-hero-content">
+            <div class="app-eyebrow"><i class="bi bi-activity"></i> Admin control center</div>
+            <h2>Điều hành hệ thống AI học tập</h2>
+            <p>Theo dõi sức khỏe dữ liệu, benchmark model và các hoạt động quan trọng trong cùng một không gian quản trị rõ ràng hơn.</p>
         </div>
-        <div class="d-flex align-items-center gap-3">
-            <span class="badge bg-success rounded-pill px-3 py-2 shadow-sm fs-6">
-                <i class="bi bi-record-circle-fill text-white"></i> Active Model: @Model.ActiveModel
-            </span>
+        <div class="app-hero-actions">
+            <span class="app-chip"><i class="bi bi-cpu"></i> Active model: @Model.ActiveModel</span>
+            <a asp-page="/SystemSettings/Index" class="app-btn-secondary"><i class="bi bi-sliders"></i> Cấu hình</a>
         </div>
-    </div>
+    </section>
 
     @if (Model.Stats != null)
     {
-        <div class="row g-4 mb-4">
-            <div class="col-xl-3 col-md-6">
-                <div class="card bg-white border-0 shadow-sm h-100 py-2" style="border-left: 5px solid #0d6efd !important;">
-                    <div class="card-body">
-                        <div class="text-xs fw-bold text-primary text-uppercase mb-1">Tổng Môn Học</div>
-                        <div class="h3 mb-0 fw-bold text-dark">@Model.Stats.TotalCourses <small class="text-muted fs-6 fw-normal">môn</small></div>
-                    </div>
-                </div>
+        <section class="app-grid-4">
+            <div class="app-kpi">
+                <div class="app-kpi-label">Tổng môn học</div>
+                <div class="app-kpi-value">@Model.Stats.TotalCourses</div>
+                <div class="app-kpi-meta">Môn đang hoạt động trong hệ thống</div>
             </div>
-            <div class="col-xl-3 col-md-6">
-                <div class="card bg-white border-0 shadow-sm h-100 py-2" style="border-left: 5px solid #198754 !important;">
-                    <div class="card-body">
-                        <div class="text-xs fw-bold text-success text-uppercase mb-1">Kho Tri Thức</div>
-                        <div class="h3 mb-0 fw-bold text-dark">@Model.Stats.TotalDocuments <small class="text-muted fs-6 fw-normal">files</small></div>
-                        <div class="text-xs mt-1 text-muted"><i class="bi bi-diagram-3"></i> @Model.Stats.TotalChunks chunks (vectors)</div>
-                    </div>
-                </div>
+            <div class="app-kpi">
+                <div class="app-kpi-label">Kho tri thức</div>
+                <div class="app-kpi-value">@Model.Stats.TotalDocuments</div>
+                <div class="app-kpi-meta">@Model.Stats.TotalChunks chunks đã index</div>
             </div>
-            <div class="col-xl-3 col-md-6">
-                <div class="card bg-white border-0 shadow-sm h-100 py-2" style="border-left: 5px solid #0dcaf0 !important;">
-                    <div class="card-body">
-                        <div class="text-xs fw-bold text-info text-uppercase mb-1">Ngân Hàng Câu Hỏi</div>
-                        <div class="h3 mb-0 fw-bold text-dark">@Model.Stats.TotalQuestions <small class="text-muted fs-6 fw-normal">câu</small></div>
-                    </div>
-                </div>
+            <div class="app-kpi">
+                <div class="app-kpi-label">Ngân hàng câu hỏi</div>
+                <div class="app-kpi-value">@Model.Stats.TotalQuestions</div>
+                <div class="app-kpi-meta">Dữ liệu dùng để benchmark và đánh giá</div>
             </div>
-            <div class="col-xl-3 col-md-6">
-                <div class="card bg-white border-0 shadow-sm h-100 py-2" style="border-left: 5px solid #ffc107 !important;">
-                    <div class="card-body">
-                        <div class="text-xs fw-bold text-warning text-uppercase mb-1">Đã Benchmark</div>
-                        <div class="h3 mb-0 fw-bold text-dark">@Model.Stats.TotalBenchmarkRuns <small class="text-muted fs-6 fw-normal">lần chạy</small></div>
-                    </div>
-                </div>
+            <div class="app-kpi">
+                <div class="app-kpi-label">Lần benchmark</div>
+                <div class="app-kpi-value">@Model.Stats.TotalBenchmarkRuns</div>
+                <div class="app-kpi-meta">Các lượt chạy đã được lưu lại</div>
             </div>
-        </div>
+        </section>
     }
 
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-header bg-white border-bottom py-3">
-            <h6 class="m-0 fw-bold text-dark"><i class="bi bi-sliders2-vertical me-2"></i>Chạy Benchmark Theo Chunking Strategy</h6>
-        </div>
-        <div class="card-body">
-            <form id="benchmarkForm" class="row g-3 align-items-end">
-                <div class="col-lg-4 col-md-6">
-                    <label class="form-label fw-bold">Embedding model</label>
-                    <select id="embeddingModel" name="embeddingModel" class="form-select">
-                        <option value="bge-m3">BGE-M3</option>
-                        <option value="e5">Multilingual E5</option>
-                        <option value="phobert">PhoBERT / Vietnamese SBERT</option>
-                    </select>
-                </div>
-                <div class="col-lg-4 col-md-6">
-                    <label class="form-label fw-bold">Chunking strategy</label>
-                    <select id="chunkingStrategy" name="chunkingStrategy" class="form-select">
-                        <option value="markdown_header">Markdown header</option>
-                        <option value="paragraph">Paragraph window</option>
-                        <option value="sentence">Sentence window</option>
-                        <option value="fixed_size">Fixed size</option>
-                        <option value="fixed_size_overlap">Fixed size + overlap</option>
-                    </select>
-                </div>
-                <div class="col-lg-4">
-                    <button type="submit" id="runBenchmarkBtn" class="btn btn-warning btn-lg w-100">
-                        <i class="bi bi-play-fill"></i> Re-index & Benchmark
-                    </button>
-                </div>
-            </form>
-            <div id="benchmarkStatus" class="alert alert-secondary mt-3 mb-0 d-none">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span id="benchmarkStatusText">Đang chuẩn bị benchmark...</span>
-                    <span id="benchmarkPercent" class="fw-bold">0%</span>
-                </div>
-                <div class="progress" style="height: 8px;">
-                    <div id="benchmarkProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
-                </div>
-                <div id="benchmarkLiveResult" class="small text-muted mt-2"></div>
+    <section class="app-card">
+        <div class="app-card-title"><i class="bi bi-sliders2-vertical text-primary"></i> Chạy benchmark theo chiến lược chunking</div>
+        <p class="app-muted mb-4">Thao tác benchmark được gom lại để admin dễ chuyển model, re-index dữ liệu và theo dõi tiến độ theo thời gian thực.</p>
+        <form id="benchmarkForm" class="row g-3 align-items-end">
+            <div class="col-lg-4 col-md-6">
+                <label class="form-label fw-bold">Embedding model</label>
+                <select id="embeddingModel" name="embeddingModel" class="form-select">
+                    <option value="bge-m3">BGE-M3</option>
+                    <option value="e5">Multilingual E5</option>
+                    <option value="phobert">PhoBERT / Vietnamese SBERT</option>
+                </select>
             </div>
+            <div class="col-lg-4 col-md-6">
+                <label class="form-label fw-bold">Chunking strategy</label>
+                <select id="chunkingStrategy" name="chunkingStrategy" class="form-select">
+                    <option value="markdown_header">Markdown header</option>
+                    <option value="paragraph">Paragraph window</option>
+                    <option value="sentence">Sentence window</option>
+                    <option value="fixed_size">Fixed size</option>
+                    <option value="fixed_size_overlap">Fixed size + overlap</option>
+                </select>
+            </div>
+            <div class="col-lg-4">
+                <button type="submit" id="runBenchmarkBtn" class="btn btn-warning btn-lg w-100 fw-bold">
+                    <i class="bi bi-play-fill"></i> Re-index & Benchmark
+                </button>
+            </div>
+        </form>
+        <div id="benchmarkStatus" class="alert alert-secondary mt-4 mb-0 d-none" style="border-radius: 16px;">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span id="benchmarkStatusText">Đang chuẩn bị benchmark...</span>
+                <span id="benchmarkPercent" class="fw-bold">0%</span>
+            </div>
+            <div class="progress" style="height: 8px; border-radius: 999px; overflow: hidden;">
+                <div id="benchmarkProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+            </div>
+            <div id="benchmarkLiveResult" class="small text-muted mt-2"></div>
         </div>
-    </div>
+    </section>
 
-    <div class="row g-4 mb-4">
-        <div class="col-lg-6">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-header bg-white border-bottom py-3">
-                    <h6 class="m-0 fw-bold text-primary"><i class="bi bi-bar-chart-fill me-2"></i>Chất Lượng Model (Faithfulness & Relevance)</h6>
-                </div>
-                <div class="card-body">
-                    <div class="chart-area" style="position: relative; height:300px; width:100%">
-                        <canvas id="barChart"></canvas>
-                        <div id="noBarData" class="position-absolute top-50 start-50 translate-middle text-center w-100" style="display: none;">
-                            <i class="bi bi-inbox fs-1 text-muted mb-2 d-block"></i>
-                            <p class="text-muted mb-0">Chưa có dữ liệu. Hãy chạy Benchmark trước.</p>
-                        </div>
-                    </div>
+    <section class="app-grid-2">
+        <div class="app-card">
+            <div class="app-card-title"><i class="bi bi-bar-chart-fill text-primary"></i> Chất lượng model</div>
+            <div class="chart-area" style="position: relative; height:300px; width:100%">
+                <canvas id="barChart"></canvas>
+                <div id="noBarData" class="position-absolute top-50 start-50 translate-middle text-center w-100" style="display: none;">
+                    <i class="bi bi-inbox fs-1 text-muted mb-2 d-block"></i>
+                    <p class="text-muted mb-0">Chưa có dữ liệu benchmark.</p>
                 </div>
             </div>
         </div>
-        <div class="col-lg-6">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-header bg-white border-bottom py-3">
-                    <h6 class="m-0 fw-bold text-success"><i class="bi bi-graph-up-arrow me-2"></i>Hiệu Năng Model (Latency ms)</h6>
-                </div>
-                <div class="card-body">
-                    <div class="chart-area" style="position: relative; height:300px; width:100%">
-                        <canvas id="lineChart"></canvas>
-                        <div id="noLineData" class="position-absolute top-50 start-50 translate-middle text-center w-100" style="display: none;">
-                            <i class="bi bi-inbox fs-1 text-muted mb-2 d-block"></i>
-                            <p class="text-muted mb-0">Chưa có dữ liệu. Hãy chạy Benchmark trước.</p>
-                        </div>
-                    </div>
+        <div class="app-card">
+            <div class="app-card-title"><i class="bi bi-graph-up-arrow text-success"></i> Hiệu năng model</div>
+            <div class="chart-area" style="position: relative; height:300px; width:100%">
+                <canvas id="lineChart"></canvas>
+                <div id="noLineData" class="position-absolute top-50 start-50 translate-middle text-center w-100" style="display: none;">
+                    <i class="bi bi-inbox fs-1 text-muted mb-2 d-block"></i>
+                    <p class="text-muted mb-0">Chưa có dữ liệu benchmark.</p>
                 </div>
             </div>
         </div>
-    </div>
+    </section>
 
-    <div class="row g-4 mb-4">
-        <div class="col-lg-5">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-header bg-white border-bottom py-3">
-                    <h6 class="m-0 fw-bold text-dark"><i class="bi bi-clock-history me-2"></i>Lịch Sử Test Gần Đây</h6>
+    <section class="app-grid-3">
+        <div class="app-card">
+            <div class="app-card-title"><i class="bi bi-clock-history text-primary"></i> Lịch sử test gần đây</div>
+            @if (!Model.BenchmarkRuns.Any())
+            {
+                <div class="app-empty">
+                    <div class="app-empty-icon"><i class="bi bi-inbox"></i></div>
+                    <p class="mb-0 app-muted">Chưa có lịch sử benchmark nào.</p>
                 </div>
-                <div class="card-body p-0">
-                    @if (!Model.BenchmarkRuns.Any())
+            }
+            else
+            {
+                <div class="app-list">
+                    @foreach (var run in Model.BenchmarkRuns.Take(6))
                     {
-                        <div class="text-center py-4"><p class="text-muted mb-0">Chưa có lịch sử benchmark nào.</p></div>
-                    }
-                    else
-                    {
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th class="ps-3 border-0">Thời Gian</th>
-                                        <th class="border-0">Model</th>
-                                        <th class="border-0">Chunking</th>
-                                        <th class="pe-3 border-0">Tổng TG</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var run in Model.BenchmarkRuns)
-                                    {
-                                        <tr>
-                                            <td class="ps-3 text-muted small">@run.RunDate.ToString("dd/MM HH:mm")</td>
-                                            <td><span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2">@run.EmbeddingModel</span></td>
-                                            <td class="small">@run.ChunkingStrategy</td>
-                                            <td class="pe-3 fw-medium">@(run.TotalTimeMs / 1000.0)s</td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
+                        <div class="app-list-item">
+                            <div>
+                                <div class="fw-bold">@run.EmbeddingModel</div>
+                                <div class="small app-muted">@run.ChunkingStrategy · @run.RunDate.AddHours(7).ToString("dd/MM HH:mm")</div>
+                            </div>
+                            <span class="app-badge-soft app-badge-blue">@(run.TotalTimeMs / 1000.0)s</span>
                         </div>
                     }
                 </div>
-            </div>
+            }
         </div>
-        <div class="col-lg-4">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 fw-bold text-dark"><i class="bi bi-file-earmark-arrow-up me-2"></i>Tài Liệu Mới Upload</h6>
-                    <a asp-page="/Documents/Index" class="btn btn-sm btn-link text-decoration-none">Xem tất cả</a>
+        <div class="app-card">
+            <div class="app-card-title"><i class="bi bi-file-earmark-arrow-up text-success"></i> Tài liệu mới upload</div>
+            @if (!Model.RecentUploads.Any())
+            {
+                <div class="app-empty">
+                    <div class="app-empty-icon"><i class="bi bi-file-earmark"></i></div>
+                    <p class="mb-0 app-muted">Chưa có tài liệu nào.</p>
                 </div>
-                <div class="card-body p-0">
-                    @if (!Model.RecentUploads.Any())
+            }
+            else
+            {
+                <div class="app-list">
+                    @foreach (var doc in Model.RecentUploads.Take(5))
                     {
-                        <div class="text-center py-4"><p class="text-muted mb-0">Chưa có tài liệu nào.</p></div>
-                    }
-                    else
-                    {
-                        <ul class="list-group list-group-flush">
-                            @foreach (var doc in Model.RecentUploads)
-                            {
-                                <li class="list-group-item d-flex justify-content-between align-items-center px-3 py-3">
-                                    <div class="d-flex align-items-center">
-                                        <div class="bg-light rounded p-2 me-3">
-                                            @if (doc.FileName.EndsWith(".pdf")) { <i class="bi bi-file-earmark-pdf fs-4 text-danger"></i> }
-                                            else if (doc.FileName.EndsWith(".docx")) { <i class="bi bi-file-earmark-word fs-4 text-primary"></i> }
-                                            else { <i class="bi bi-file-earmark fs-4 text-secondary"></i> }
-                                        </div>
-                                        <div>
-                                            <h6 class="mb-0 text-truncate font-monospace" style="max-width: 170px; font-size: 13px;" title="@doc.FileName">@doc.FileName</h6>
-                                            <div class="text-muted" style="font-size: 11px;">
-                                                Môn: @doc.CourseName<br />
-                                                Bởi: <span class="fw-semibold text-dark">@doc.UploadedBy</span> | @doc.UploadDate.ToString("dd/MM HH:mm")
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <span class="badge @(doc.Status == "Completed" ? "bg-success" : (doc.Status == "Failed" ? "bg-danger" : "bg-warning text-dark")) rounded-pill" style="font-size: 10px;">@doc.Status</span>
-                                </li>
-                            }
-                        </ul>
+                        <div class="app-list-item">
+                            <div>
+                                <div class="fw-bold text-truncate" style="max-width: 220px;" title="@doc.FileName">@doc.FileName</div>
+                                <div class="small app-muted">@doc.CourseName · @doc.UploadedBy · @doc.UploadDate.AddHours(7).ToString("dd/MM HH:mm")</div>
+                            </div>
+                            <span class="app-badge-soft @(doc.Status == "Completed" ? "app-badge-green" : doc.Status == "Failed" ? "app-badge-rose" : "app-badge-amber")">@doc.Status</span>
+                        </div>
                     }
                 </div>
+            }
+        </div>
+        <div class="app-card">
+            <div class="app-card-title"><i class="bi bi-lightning-charge text-warning"></i> Thao tác nhanh</div>
+            <div class="d-grid gap-3">
+                <a asp-page="/TestQuestions/Index" class="btn btn-primary btn-lg text-start fw-bold"><i class="bi bi-question-circle me-2"></i> Câu hỏi test</a>
+                <a asp-page="/Chat/Index" class="btn btn-info btn-lg text-start text-white fw-bold"><i class="bi bi-chat-dots me-2"></i> Test chat AI</a>
+                <a asp-page="/Courses/Index" class="btn btn-success btn-lg text-start fw-bold"><i class="bi bi-journal-text me-2"></i> Quản lý môn học</a>
+                <a asp-page="/SystemSettings/Index" class="btn btn-dark btn-lg text-start fw-bold"><i class="bi bi-sliders me-2"></i> Đổi model AI</a>
             </div>
         </div>
-        <div class="col-lg-3">
-            <div class="card shadow-sm border-0 h-100 bg-light">
-                <div class="card-header bg-transparent border-0 pt-4 pb-0">
-                    <h6 class="m-0 fw-bold text-dark text-uppercase">Thao Tác Nhanh</h6>
-                </div>
-                <div class="card-body d-flex flex-column gap-3 justify-content-center">
-                    <a asp-page="/TestQuestions/Index" class="btn btn-primary btn-lg shadow-sm text-start">
-                        <div class="d-flex align-items-center"><i class="bi bi-question-circle fs-4 me-3"></i><div><div class="fw-bold">Câu hỏi Test</div><div class="small fw-normal text-white-50">Quản lý & Import câu hỏi</div></div></div>
-                    </a>
-                    <a asp-page="/Chat/Index" class="btn btn-info btn-lg shadow-sm text-start text-white">
-                        <div class="d-flex align-items-center"><i class="bi bi-chat-dots fs-4 me-3"></i><div><div class="fw-bold">Test Chat AI</div><div class="small fw-normal text-white-50">Thử nghiệm RAG</div></div></div>
-                    </a>
-                    <a asp-page="/Documents/Upload" class="btn btn-success btn-lg shadow-sm text-start">
-                        <div class="d-flex align-items-center"><i class="bi bi-cloud-arrow-up fs-4 me-3"></i><div><div class="fw-bold">Tải lên Tài liệu</div><div class="small fw-normal text-white-50">Thêm tri thức mới</div></div></div>
-                    </a>
-                    <a asp-page="/SystemSettings/Index" class="btn btn-dark btn-lg shadow-sm text-start">
-                        <div class="d-flex align-items-center"><i class="bi bi-sliders fs-4 me-3"></i><div><div class="fw-bold">Đổi Model AI</div><div class="small fw-normal text-white-50">Cấu hình hệ thống</div></div></div>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
+    </section>
 </div>
 
 @section Scripts {
@@ -302,16 +234,16 @@
             if (barChart) barChart.destroy();
             barChart = new Chart(document.getElementById('barChart').getContext('2d'), {
                 type: 'bar',
-                data: { labels, datasets: [{ label: 'Faithfulness', data: faithfulness, backgroundColor: 'rgba(54,162,235,0.8)', borderColor: 'rgba(54,162,235,1)', borderWidth: 1, borderRadius: 4 }, { label: 'Relevance', data: relevance, backgroundColor: 'rgba(255,193,7,0.8)', borderColor: 'rgba(255,193,7,1)', borderWidth: 1, borderRadius: 4 }] },
+                data: { labels, datasets: [{ label: 'Faithfulness', data: faithfulness, backgroundColor: 'rgba(31,111,235,0.8)', borderColor: 'rgba(31,111,235,1)', borderWidth: 1, borderRadius: 8 }, { label: 'Relevance', data: relevance, backgroundColor: 'rgba(245,158,11,0.8)', borderColor: 'rgba(245,158,11,1)', borderWidth: 1, borderRadius: 8 }] },
                 options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 1.0 } } }
             });
             if (lineChart) lineChart.destroy();
             lineChart = new Chart(document.getElementById('lineChart').getContext('2d'), {
                 type: 'line',
-                data: { labels, datasets: [{ label: 'Latency (ms)', data: latency, borderColor: '#198754', backgroundColor: 'rgba(25,135,84,0.1)', fill: true, tension: 0.4, pointRadius: 5 }] },
+                data: { labels, datasets: [{ label: 'Latency (ms)', data: latency, borderColor: '#0f9d7a', backgroundColor: 'rgba(15,157,122,0.12)', fill: true, tension: 0.35, pointRadius: 5 }] },
                 options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
             });
-        } catch (err) { console.error("Lỗi load chart data:", err); }
+        } catch (err) { console.error('Lỗi load chart data:', err); }
     }
     document.addEventListener('DOMContentLoaded', loadChartData);
 </script>

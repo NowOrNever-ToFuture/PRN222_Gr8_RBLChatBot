@@ -1,0 +1,49 @@
+@model PRN222.Models.User
+@{
+    var assignedCourses = Model.TeachingAssignments
+        .Where(ta => ta.Course != null)
+        .OrderBy(ta => ta.Course.Code)
+        .Select(ta => $"{ta.Course.Code} - {ta.Course.Name}")
+        .ToList();
+}
+<tr id="user-@Model.Id">
+    <td>
+        <div class="fw-bold text-dark">@Model.Username</div>
+        <div class="small text-muted">@Model.FullName</div>
+    </td>
+    <td>
+        @if (Model.Role == "Admin")
+        {
+            <span class="app-badge-soft app-badge-rose"><i class="bi bi-shield-lock"></i> Admin</span>
+        }
+        else if (Model.Role == "Lecturer")
+        {
+            <span class="app-badge-soft app-badge-green"><i class="bi bi-person-workspace"></i> Lecturer</span>
+        }
+        else
+        {
+            <span class="app-badge-soft app-badge-blue"><i class="bi bi-mortarboard"></i> Student</span>
+        }
+    </td>
+    <td>
+        @if (Model.Role == "Lecturer")
+        {
+            <span class="text-dark fw-semibold">@(assignedCourses.Count > 0 ? string.Join(", ", assignedCourses) : "Chưa gán môn giảng dạy")</span>
+            <div class="small text-muted">Giảng viên có thể được phân công nhiều môn. Trưởng bộ môn được quản lý riêng ở Course.</div>
+        }
+        else if (Model.Role == "Student")
+        {
+            <span class="text-dark fw-semibold">Ngữ cảnh học tập chung</span>
+            <div class="small text-muted">Sinh viên không cần gán cứng với một môn duy nhất trong bảng Users.</div>
+        }
+        else
+        {
+            <span class="text-dark fw-semibold">Toàn hệ thống</span>
+            <div class="small text-muted">Toàn quyền cấu hình và điều phối.</div>
+        }
+    </td>
+    <td class="text-center">
+        <a asp-page="/Users/Edit" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-warning rounded-pill px-3"><i class="bi bi-pencil"></i></a>
+        <a asp-page="/Users/Delete" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-danger rounded-pill px-3"><i class="bi bi-trash"></i></a>
+    </td>
+</tr>

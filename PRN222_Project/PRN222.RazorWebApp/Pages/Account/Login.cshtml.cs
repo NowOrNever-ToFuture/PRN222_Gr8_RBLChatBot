@@ -39,11 +39,7 @@ namespace PRN222.RazorWebApp.Pages.Account
                 return Page();
             }
 
-            if (user.Role == "Lecturer" && user.CourseId == null)
-            {
-                ModelState.AddModelError("", "Tài khoản Giảng viên của bạn chưa được gán môn học hoặc môn học gán đã bị xóa. Vui lòng liên hệ Admin.");
-                return Page();
-            }
+
 
             var claims = new List<Claim>
             {

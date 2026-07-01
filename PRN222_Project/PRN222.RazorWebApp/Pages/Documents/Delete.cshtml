@@ -21,7 +21,7 @@
                         <div class="card-body">
                             <p class="mb-2"><strong>Tên tệp:</strong><br /><code>@Model.Document?.FileName</code></p>
                             <p class="mb-2"><strong>Môn học:</strong><br />@Model.Document?.Course?.Code - @Model.Document?.Course?.Name</p>
-                            <p class="mb-2"><strong>Ngày tải lên:</strong><br />@Model.Document?.UploadDate.ToString("dd/MM/yyyy HH:mm:ss")</p>
+                            <p class="mb-2"><strong>Ngày tải lên:</strong><br />@Model.Document?.UploadDate.AddHours(7).ToString("dd/MM/yyyy HH:mm:ss")</p>
                             <p class="mb-0"><strong>Trạng thái:</strong><br /><span class="badge bg-warning">@Model.Document?.Status</span></p>
                         </div>
                     </div>

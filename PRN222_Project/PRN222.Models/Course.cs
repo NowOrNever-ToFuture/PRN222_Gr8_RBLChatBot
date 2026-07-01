@@ -9,6 +9,10 @@ namespace PRN222.Models
         public DateTime CreatedDate { get; set; }
 
         // Navigation properties
+        public Guid? ManagedById { get; set; }
+        public User? ManagedBy { get; set; }
+
+        public ICollection<CourseLecturer> CourseLecturers { get; set; } = new List<CourseLecturer>();
         public ICollection<Document> Documents { get; set; } = new List<Document>();
         public ICollection<TestQuestion> TestQuestions { get; set; } = new List<TestQuestion>();
     }

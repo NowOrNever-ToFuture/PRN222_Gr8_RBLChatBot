@@ -10,11 +10,33 @@ namespace PRN222.RazorWebApp.Pages.Chat
     public class IndexModel : PageModel
     {
         private readonly IChatService _chatService;
-        public IndexModel(IChatService chatService) => _chatService = chatService ?? throw new ArgumentNullException(nameof(chatService));
+        private readonly ICourseService _courseService;
 
-        public IActionResult OnGet() => Page();
+        public IndexModel(IChatService chatService, ICourseService courseService)
+        {
+            _chatService = chatService ?? throw new ArgumentNullException(nameof(chatService));
+            _courseService = courseService ?? throw new ArgumentNullException(nameof(courseService));
+        }
 
-        public async Task<IActionResult> OnPostAskAsync(string query)
+        public Guid? CourseId { get; set; }
+        public string? CourseName { get; set; }
+
+        public async Task<IActionResult> OnGetAsync(Guid? courseId)
+        {
+            CourseId = courseId;
+            if (courseId.HasValue)
+            {
+                try
+                {
+                    var course = await _courseService.GetCourseByIdAsync(courseId.Value);
+                    CourseName = $"{course.Name} ({course.Code})";
+                }
+                catch { }
+            }
+            return Page();
+        }
+
+        public async Task<IActionResult> OnPostAskAsync(string query, Guid? courseId)
         {
             if (string.IsNullOrWhiteSpace(query))
                 return new JsonResult(new { success = false, message = "Vui lòng nhập câu hỏi." });
@@ -23,7 +45,7 @@ namespace PRN222.RazorWebApp.Pages.Chat
                 var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
                 if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId)) return Unauthorized();
                 await _chatService.SaveMessageAsync(userId, "User", query);
-                var ragResponse = await _chatService.GenerateRagResponseAsync(query);
+                var ragResponse = await _chatService.GenerateRagResponseAsync(query, courseId);
                 string citedIds = string.Join(",", ragResponse.Sources.Select(s => s.ChunkIndex));
                 await _chatService.SaveMessageAsync(userId, "Assistant", ragResponse.Answer, citedIds);
                 return new JsonResult(new

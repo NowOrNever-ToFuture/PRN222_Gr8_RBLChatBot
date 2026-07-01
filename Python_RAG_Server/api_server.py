@@ -185,7 +185,7 @@ def chunk_by_sentence(text: str, max_chunk_size: int = 800) -> list[str]:
     return chunks
 
 
-def chunk_markdown(markdown_result: str, chunk_strategy: str) -> list[str]:
+def chunk_markdown(markdown_result: str, chunk_strategy: str, chunk_size: int = 500) -> list[str]:
     chunk_strategy = (chunk_strategy or "markdown_header").lower()
     chunks = []
 
@@ -197,13 +197,15 @@ def chunk_markdown(markdown_result: str, chunk_strategy: str) -> list[str]:
         return chunks
 
     if chunk_strategy == "fixed_size":
-        return chunk_fixed_size(markdown_result, 800, 0)
+        return chunk_fixed_size(markdown_result, chunk_size, 0)
 
     if chunk_strategy == "fixed_size_overlap":
-        return chunk_fixed_size(markdown_result, 800, 100)
+        # Overlap default là 50 hoặc 100
+        overlap = min(100, chunk_size // 5)
+        return chunk_fixed_size(markdown_result, chunk_size, overlap)
 
     if chunk_strategy == "sentence":
-        return chunk_by_sentence(markdown_result, 800)
+        return chunk_by_sentence(markdown_result, chunk_size)
 
     if chunk_strategy != "paragraph":
         raise HTTPException(status_code=400, detail=f"Khong ho tro chunk_strategy {chunk_strategy}")
@@ -211,7 +213,7 @@ def chunk_markdown(markdown_result: str, chunk_strategy: str) -> list[str]:
     paragraphs = markdown_result.split("\n\n")
     current_chunk = ""
     for paragraph in paragraphs:
-        if len(current_chunk) + len(paragraph) < 800:
+        if len(current_chunk) + len(paragraph) < chunk_size:
             current_chunk += paragraph + "\n\n"
         else:
             if current_chunk.strip():
@@ -229,6 +231,7 @@ async def parse_and_process_document(
     file: UploadFile = File(...),
     model_name: str = Form("bge-m3"),
     chunk_strategy: str = Form("markdown_header"),
+    chunk_size: int = Form(500),
 ):
     if model_name not in SUPPORTED_MODELS:
         raise HTTPException(status_code=400, detail="Mo hinh khong duoc ho tro")
@@ -255,7 +258,7 @@ async def parse_and_process_document(
         else:
             raise HTTPException(status_code=400, detail=f"Khong ho tro file {extension}")
 
-        chunks = chunk_markdown(markdown_result, chunk_strategy)
+        chunks = chunk_markdown(markdown_result, chunk_strategy, chunk_size)
         model = get_model(model_name)
         processed_chunks = []
         for index, chunk_text in enumerate(chunks):

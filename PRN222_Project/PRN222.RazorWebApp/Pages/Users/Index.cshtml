@@ -1,77 +1,100 @@
-@page
+﻿@page
 @model PRN222.RazorWebApp.Pages.Users.IndexModel
 @{
     ViewData["Title"] = "Quản lý nhân sự";
 }
 
-<div class="container-fluid mt-5">
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <h2 class="fw-bold"><i class="bi bi-people-fill" style="color: #667eea;"></i> Quản lý nhân sự</h2>
+<div class="app-page">
+    <section class="app-hero">
+        <div class="app-hero-content">
+            <div class="app-eyebrow"><i class="bi bi-people"></i> User administration</div>
+            <h2>Quản lý tài khoản và phân vai trò</h2>
+            <p>Tập trung vào các thao tác quan trọng nhất của admin: tạo tài khoản, nhìn rõ vai trò và chỉnh sửa nhanh mà không rối mắt.</p>
         </div>
-        <div class="col-md-6 text-end">
-            <a asp-page="/Users/Create" class="btn btn-primary" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
-                <i class="bi bi-person-plus"></i> Tạo tài khoản mới
-            </a>
+        <div class="app-hero-actions">
+            <a asp-page="/Users/Create" class="app-btn-secondary"><i class="bi bi-person-plus"></i> Tạo tài khoản mới</a>
         </div>
-    </div>
+    </section>
 
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="alert alert-success alert-dismissible fade show">
+        <div class="alert alert-success alert-dismissible fade show rounded-4 shadow-sm border-0">
             <i class="bi bi-check-circle"></i> @TempData["SuccessMessage"]
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     }
     @if (TempData["ErrorMessage"] != null)
     {
-        <div class="alert alert-danger alert-dismissible fade show">
+        <div class="alert alert-danger alert-dismissible fade show rounded-4 shadow-sm border-0">
             <i class="bi bi-exclamation-circle"></i> @TempData["ErrorMessage"]
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     }
 
-    <div class="card border-0 shadow-sm">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-                        <tr>
-                            <th>Tên đăng nhập</th>
-                            <th>Vai trò</th>
-                            <th>Ngày tạo</th>
-                            <th class="text-center" style="width: 150px;">Thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var user in Model.Users)
-                        {
-                            <tr>
-                                <td><strong>@user.Username</strong></td>
-                                <td>
-                                    @if (user.Role == "Admin")
-                                    {
-                                        <span class="badge bg-danger"><i class="bi bi-shield-lock"></i> Admin</span>
-                                    }
-                                    else if (user.Role == "Lecturer")
-                                    {
-                                        <span class="badge bg-success"><i class="bi bi-person-workspace"></i> Lecturer</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-info"><i class="bi bi-person"></i> Student</span>
-                                    }
-                                </td>
-                                <td><small class="text-muted">@DateTime.Now.ToString("dd/MM/yyyy")</small></td>
-                                <td class="text-center">
-                                    <a asp-page="/Users/Edit" asp-route-id="@user.Id" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i></a>
-                                    <a asp-page="/Users/Delete" asp-route-id="@user.Id" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></a>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
+    <section class="app-panel overflow-hidden">
+        <div class="p-4 border-bottom" style="border-color: rgba(120, 138, 170, 0.12) !important;">
+            <div class="app-card-title mb-1"><i class="bi bi-person-lines-fill text-primary"></i> Danh sách người dùng</div>
+            <div class="app-muted">Bảng này ưu tiên khả năng quét nhanh: tên đăng nhập, vai trò và phạm vi học phần liên quan.</div>
         </div>
-    </div>
+        <div class="table-responsive">
+            <table class="table app-table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Tên đăng nhập</th>
+                        <th>Vai trò</th>
+                        <th>Phạm vi phụ trách</th>
+                        <th class="text-center" style="width: 150px;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody id="users-table-body">
+                    @foreach (var user in Model.Users)
+                    {
+                        <partial name="_UserRow" model="user" />
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
 </div>
+
+@section Scripts {
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+<script>
+    $(document).ready(function () {
+        const connection = new signalR.HubConnectionBuilder().withUrl("/hubs/user").withAutomaticReconnect().build();
+        const tbody = $('#users-table-body');
+
+        function upsertRow(userId) {
+            $.get(`/Users/Index?handler=RowHtml&id=${userId}`, function (html) {
+                const existingRow = $(`#user-${userId}`);
+                if (existingRow.length) {
+                    existingRow.replaceWith(html);
+                } else {
+                    tbody.prepend(html);
+                }
+            });
+        }
+
+        connection.on("ReceiveNewUser", function (user) {
+            if (!user || !user.id) return;
+            upsertRow(user.id);
+        });
+
+        connection.on("ReceiveUpdatedUser", function (user) {
+            if (!user || !user.id) return;
+            upsertRow(user.id);
+        });
+
+        connection.on("ReceiveDeletedUser", function (userId) {
+            const row = $(`#user-${userId}`);
+            if (row.length) {
+                row.fadeOut(150, function () {
+                    $(this).remove();
+                });
+            }
+        });
+
+        connection.start().catch(err => console.error("SignalR UserHub Connection Error:", err));
+    });
+</script>
+}

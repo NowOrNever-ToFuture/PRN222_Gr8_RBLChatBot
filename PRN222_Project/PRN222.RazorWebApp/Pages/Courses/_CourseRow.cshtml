@@ -1,0 +1,51 @@
+@model PRN222.Models.Course
+@{
+    var isAdmin = User.IsInRole("Admin");
+    var teachingLecturers = Model.CourseLecturers?
+        .Where(cl => cl.Lecturer != null)
+        .OrderBy(cl => cl.Lecturer.FullName)
+        .Select(cl => cl.Lecturer.FullName)
+        .Distinct()
+        .ToList() ?? new List<string>();
+}
+
+<td class="row-num"></td>
+<td><span class="badge bg-info text-dark">@Model.Code</span></td>
+<td class="fw-bold">
+    <div class="d-flex flex-column gap-2">
+        <div>
+            <div class="fs-6 text-primary fw-bold">@Model.Name</div>
+            <div class="text-muted small">@Model.Description</div>
+        </div>
+        <div class="small text-muted">Giảng dạy: @(teachingLecturers.Count > 0 ? string.Join(", ", teachingLecturers) : "Chưa có giảng viên được gán")</div>
+        <a asp-page="/Documents/Index" asp-route-courseId="@Model.Id" class="btn btn-sm btn-outline-primary align-self-start">
+            <i class="bi bi-folder2-open"></i> Xem tài liệu
+        </a>
+    </div>
+</td>
+<td>
+    @if (Model.ManagedBy != null)
+    {
+        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1">
+            <i class="bi bi-person-fill"></i> @Model.ManagedBy.FullName
+        </span>
+    }
+    else
+    {
+        <span class="text-muted italic"><i class="bi bi-person"></i> Chưa gán</span>
+    }
+</td>
+@if (isAdmin)
+{
+    <td>
+        <button class="btn btn-sm btn-outline-primary btn-edit"
+                data-id="@Model.Id" data-code="@Model.Code"
+                data-name="@Model.Name" data-desc="@Model.Description"
+                data-managedby="@(Model.ManagedById?.ToString() ?? "")">
+            <i class="bi bi-pencil"></i>
+        </button>
+        <button class="btn btn-sm btn-outline-danger btn-delete" data-id="@Model.Id">
+            <i class="bi bi-trash"></i>
+        </button>
+    </td>
+}

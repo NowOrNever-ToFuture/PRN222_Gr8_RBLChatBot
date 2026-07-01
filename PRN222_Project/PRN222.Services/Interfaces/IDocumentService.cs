@@ -37,8 +37,9 @@ namespace PRN222.Services.Interfaces
         /// </summary>
         /// <param name="userId">Current user ID</param>
         /// <param name="role">User role (Admin/Student)</param>
+        /// <param name="courseId">Optional course ID to filter by</param>
         /// <returns>Filtered list of documents</returns>
-        Task<List<Document>> GetDocumentsAsync(Guid userId, string role);
+        Task<List<Document>> GetDocumentsAsync(Guid userId, string role, Guid? courseId = null);
 
         Task<Document?> GetDocumentByIdAsync(Guid id);
         Task<Document?> GetDocumentWithDetailsAsync(Guid id);
