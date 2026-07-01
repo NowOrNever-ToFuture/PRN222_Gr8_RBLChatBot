@@ -89,6 +89,7 @@ qwen_lora/
 unsloth_compiled_cache/
 **/wwwroot/uploads/
 .claude/
+temp_files/
 
 
 ##############################
