@@ -160,6 +160,7 @@ namespace PRN222.RazorWebApp.Pages.Users
         }
 
         public PRN222.Models.User? UserToDelete { get; set; }
+        public bool CanDeleteUser { get; set; } = true;
 
         public async Task<IActionResult> OnGetAsync(Guid id)
         {
@@ -169,12 +170,19 @@ namespace PRN222.RazorWebApp.Pages.Users
                 return NotFound();
             }
 
+            var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            CanDeleteUser = !Guid.TryParse(currentUserId, out var currentUserGuid) || currentUserGuid != id;
             return Page();
         }
 
         public async Task<IActionResult> OnPostAsync(Guid id)
         {
             var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (Guid.TryParse(currentUserId, out var currentUserGuid) && currentUserGuid == id)
+            {
+                TempData["ErrorMessage"] = "You cannot delete the currently signed-in account.";
+                return RedirectToPage("/Users/Index");
+            }
             var (success, errorMessage) = await _userService.DeleteUserAsync(id, currentUserId ?? string.Empty);
             if (!success)
             {

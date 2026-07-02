@@ -223,15 +223,6 @@ namespace PRN222.Services
                 throw new InvalidOperationException("Chỉ tài khoản có role Lecturer mới được gán làm trưởng bộ môn.");
             }
 
-            var alreadyManagedCourse = await _dbContext.Courses
-                .AsNoTracking()
-                .FirstOrDefaultAsync(c => c.ManagedById == managedById.Value && c.Id != currentCourseId);
-
-            if (alreadyManagedCourse != null)
-            {
-                throw new InvalidOperationException(
-                    $"Giảng viên này đang là trưởng bộ môn của {alreadyManagedCourse.Code} - {alreadyManagedCourse.Name}. Muốn chuyển sang môn khác thì hủy gỡ quyền trưởng bộ môn ở môn hiện tại trước.");
-            }
         }
 
         private async Task EnsureHeadLecturerAlsoAssignedAsync(Guid courseId, Guid? managedById)
@@ -262,3 +253,5 @@ namespace PRN222.Services
 
     public class CourseHub : Hub { }
 }
+
+
