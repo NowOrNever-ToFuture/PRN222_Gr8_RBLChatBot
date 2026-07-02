@@ -17,6 +17,12 @@
                         <strong>Cảnh báo!</strong> Bạn đang định xóa tài khoản <strong>@Model.UserToDelete?.Username</strong>.
                         <br />Hành động này <strong>không thể hoàn tác</strong>.
                     </div>
+                    @if (!Model.CanDeleteUser)
+                    {
+                        <div class="alert alert-info">
+                            Khong the xoa tai khoan dang dang nhap. Ban chi co the cap nhat thong tin cua tai khoan nay.
+                        </div>
+                    }
                     <div class="card bg-light mb-4">
                         <div class="card-body">
                             <p class="mb-2"><strong>Tên đăng nhập:</strong> @Model.UserToDelete?.Username</p>
@@ -28,11 +34,18 @@
                         @Html.AntiForgeryToken()
                         <div class="row mt-5">
                             <div class="col-md-6">
-                                <button type="submit" class="btn btn-lg w-100 fw-semibold text-white" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); border: none; border-radius: 8px;">
-                                    <i class="bi bi-trash"></i> Xóa tài khoản
-                                </button>
-                            </div>
-                            <div class="col-md-6">
+                                @if (Model.CanDeleteUser)
+                                {
+                                    <button type="submit" class="btn btn-lg w-100 fw-semibold text-white" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); border: none; border-radius: 8px;">
+                                        <i class="bi bi-trash"></i> Xóa tài khoản
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button type="button" class="btn btn-lg w-100 fw-semibold btn-secondary" style="border-radius: 8px;" disabled aria-disabled="true">
+                                        <i class="bi bi-shield-lock"></i> Không thể xóa tài khoản này
+                                    </button>
+                                }
                                 <a asp-page="/Users/Index" class="btn btn-lg w-100 fw-semibold" style="background-color: #e9ecef; border: none; border-radius: 8px;">
                                     <i class="bi bi-arrow-left"></i> Hủy
                                 </a>

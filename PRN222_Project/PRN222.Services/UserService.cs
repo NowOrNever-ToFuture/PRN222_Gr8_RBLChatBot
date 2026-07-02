@@ -191,7 +191,7 @@ namespace PRN222.Services
                 return (false, "Không tìm thấy tài khoản.");
             }
 
-            if (currentUserId == user.Id.ToString())
+            if (Guid.TryParse(currentUserId, out var currentUserGuid) && currentUserGuid == user.Id)
             {
                 return (false, "Bạn không thể xóa tài khoản đang đăng nhập.");
             }
