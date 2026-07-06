@@ -1,0 +1,97 @@
+@model PRN222.Models.Course
+@{
+    var isAdmin = User.IsInRole("Admin");
+    var isStudent = User.IsInRole("Student");
+    var teachingLecturers = Model.CourseLecturers?
+        .Where(cl => cl.Lecturer != null)
+        .OrderBy(cl => cl.Lecturer.FullName)
+        .Select(cl => cl.Lecturer)
+        .DistinctBy(l => l.Id)
+        .ToList() ?? new List<PRN222.Models.User>();
+}
+
+@Html.Raw($"<a href=\"/Documents/Index?courseId={Model.Id}\" class=\"course-card-main\">")
+    <div class="course-card-top">
+        <span class="course-code">@Model.Code</span>
+        <span class="course-doc-count"><i class="bi bi-folder2-open"></i> @(Model.Documents?.Count ?? 0) tài liệu</span>
+    </div>
+    <div class="course-card-body">
+        <h3>@Model.Name</h3>
+        <p>@Model.Description</p>
+        <div class="course-card-sections">
+            <div class="course-card-section head">
+                <span class="course-section-label">Trưởng bộ môn</span>
+                @if (Model.ManagedBy != null)
+                {
+                    <span class="course-head-name"><i class="bi bi-person-badge-fill"></i> @Model.ManagedBy.FullName</span>
+                }
+                else
+                {
+                    <span class="course-empty-state">Chưa gán người chịu trách nhiệm chính.</span>
+                }
+            </div>
+            <div class="course-card-section teaching">
+                <span class="course-section-label">Giảng viên giảng dạy</span>
+                @if (teachingLecturers.Count > 0)
+                {
+                    <div class="course-teaching-list">
+                        @foreach (var lecturer in teachingLecturers)
+                        {
+                            <span class="course-teaching-pill"><i class="bi bi-person-workspace"></i> @lecturer.FullName</span>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <span class="course-empty-state">Chưa có giảng viên nào được gán dạy môn này.</span>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="course-card-footer">
+        <span>@teachingLecturers.Count giảng viên đang dạy</span>
+        <span class="open-link">Xem tài liệu <i class="bi bi-arrow-right"></i></span>
+    </div>
+
+    @if (isStudent)
+    {
+        <div class="course-student-docs mt-3 pt-3 border-top">
+            <h6 class="mb-2 fw-bold text-dark" style="font-size: 14px;"><i class="bi bi-file-earmark-text"></i> Tài liệu môn học</h6>
+            <div class="list-group docs-list" id="docs-list-@Model.Id">
+                @if (Model.Documents != null && Model.Documents.Any(d => d.Status == "Completed"))
+                {
+                    foreach (var doc in Model.Documents.Where(d => d.Status == "Completed").OrderByDescending(d => d.UploadDate))
+                    {
+                        <a href="/uploads/@doc.FileName" target="_blank" class="list-group-item list-group-item-action py-2 px-3 doc-item border-0 bg-light mb-1 rounded-3" id="student-doc-@doc.Id">
+                            <div class="d-flex w-100 justify-content-between align-items-center">
+                                <div class="text-truncate flex-grow-1" style="font-size: 14px; font-weight: 500;">
+                                    <i class="bi bi-file-earmark-pdf-fill text-danger me-2"></i>@doc.FileName
+                                </div>
+                                <small class="text-muted ms-2" style="font-size: 12px;">@doc.UploadDate.ToString("dd/MM/yyyy")</small>
+                            </div>
+                        </a>
+                    }
+                }
+                else
+                {
+                    <div class="text-muted small empty-docs-msg" id="empty-docs-@Model.Id">Chưa có tài liệu nào.</div>
+                }
+            </div>
+        </div>
+    }
+@Html.Raw("</a>")
+
+@if (isAdmin)
+{
+    <div class="course-card-actions">
+        <button class="btn btn-outline-primary btn-sm btn-edit"
+                data-id="@Model.Id" data-code="@Model.Code"
+                data-name="@Model.Name" data-desc="@Model.Description"
+                data-managedby="@(Model.ManagedById?.ToString() ?? "")">
+            <i class="bi bi-pencil"></i>
+        </button>
+        <button class="btn btn-outline-danger btn-sm btn-delete" data-id="@Model.Id">
+            <i class="bi bi-trash"></i>
+        </button>
+    </div>
+}

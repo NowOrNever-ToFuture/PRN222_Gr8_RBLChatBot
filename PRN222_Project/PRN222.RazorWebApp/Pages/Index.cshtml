@@ -1,0 +1,121 @@
+﻿@page
+@model PRN222.RazorWebApp.Pages.IndexModel
+@{
+    ViewData["Title"] = "Trang chủ";
+    var isAdmin = User.IsInRole("Admin");
+    var isLecturer = User.IsInRole("Lecturer");
+    var isStudent = User.IsInRole("Student");
+}
+
+<div class="app-page">
+    <section class="app-hero">
+        <div class="app-hero-content">
+            <div class="app-eyebrow"><i class="bi bi-stars"></i> AI learning companion</div>
+            <h1>Không gian học tập gọn gàng cho từng vai trò</h1>
+            <p>
+                Quản lý môn học, tài liệu và hỏi đáp AI trong cùng một trải nghiệm rõ ràng, dễ dùng và thân thiện hơn cho admin, giảng viên lẫn sinh viên.
+            </p>
+        </div>
+        <div class="app-hero-actions">
+            @if (User.Identity?.IsAuthenticated ?? false)
+            {
+                <a asp-page="/Courses/Index" class="app-btn-secondary"><i class="bi bi-journal-richtext"></i> Mở môn học</a>
+                <a asp-page="/Chat/Index" class="app-btn-ghost"><i class="bi bi-chat-dots-fill"></i> Vào AI Workspace</a>
+            }
+            else
+            {
+                <a asp-page="/Account/Login" class="app-btn-secondary"><i class="bi bi-box-arrow-in-right"></i> Đăng nhập</a>
+                <a asp-page="/Account/Register" class="app-btn-ghost"><i class="bi bi-person-plus"></i> Tạo tài khoản</a>
+            }
+        </div>
+    </section>
+
+    <section class="app-grid-3">
+        @if (isAdmin)
+        {
+            <article class="app-card">
+                <div class="app-card-title"><i class="bi bi-speedometer2 text-primary"></i> Điều hành hệ thống</div>
+                <p class="app-muted">Theo dõi benchmark, cấu hình model và kiểm tra chất lượng trả lời AI từ một nơi tập trung.</p>
+                <a asp-page="/Dashboard/Index" class="app-btn-primary mt-3">Mở dashboard</a>
+            </article>
+            <article class="app-card">
+                <div class="app-card-title"><i class="bi bi-people-fill text-success"></i> Quản trị nhân sự</div>
+                <p class="app-muted">Tạo tài khoản, phân vai trò và giữ luồng vận hành rõ ràng giữa admin, lecturer và student.</p>
+                <a asp-page="/Users/Index" class="app-btn-primary mt-3">Quản lý người dùng</a>
+            </article>
+            <article class="app-card">
+                <div class="app-card-title"><i class="bi bi-journal-bookmark-fill text-warning"></i> Điều phối môn học</div>
+                <p class="app-muted">Gắn trưởng bộ môn, kiểm soát tài liệu theo môn và tạo điểm vào chat theo từng course.</p>
+                <a asp-page="/Courses/Index" class="app-btn-primary mt-3">Xem môn học</a>
+            </article>
+        }
+        else if (isLecturer)
+        {
+            <article class="app-card">
+                <div class="app-card-title"><i class="bi bi-journal-richtext text-primary"></i> Quản lý môn bạn phụ trách</div>
+                <p class="app-muted">Đi từ danh sách môn học vào đúng kho tài liệu, chat theo môn và các quyền thao tác bạn được giao.</p>
+                <a asp-page="/Courses/Index" class="app-btn-primary mt-3">Vào môn học</a>
+            </article>
+            <article class="app-card">
+                <div class="app-card-title"><i class="bi bi-cloud-arrow-up-fill text-success"></i> Cập nhật học liệu</div>
+                <p class="app-muted">Tải lên tài liệu, theo dõi trạng thái xử lý và re-index dễ hơn mà không phải đi qua nhiều bước.</p>
+                <a asp-page="/Courses/Index" class="app-btn-primary mt-3">Mở kho tài liệu</a>
+            </article>
+            <article class="app-card">
+                <div class="app-card-title"><i class="bi bi-chat-square-dots-fill text-warning"></i> Kiểm thử AI theo môn</div>
+                <p class="app-muted">Hỏi thử nội dung thực tế để đánh giá chất lượng tìm kiếm và câu trả lời dựa trên tài liệu đã tải lên.</p>
+                <a asp-page="/Chat/Index" class="app-btn-primary mt-3">Bắt đầu chat</a>
+            </article>
+        }
+        else if (isStudent)
+        {
+            <article class="app-card">
+                <div class="app-card-title"><i class="bi bi-journal-text text-primary"></i> Học theo môn</div>
+                <p class="app-muted">Chọn đúng môn học trước, sau đó xem tài liệu và đặt câu hỏi trong bối cảnh rõ ràng hơn.</p>
+                <a asp-page="/Courses/Index" class="app-btn-primary mt-3">Chọn môn học</a>
+            </article>
+            <article class="app-card">
+                <div class="app-card-title"><i class="bi bi-robot text-success"></i> Hỏi AI có nguồn</div>
+                <p class="app-muted">Nhận câu trả lời dựa trên dữ liệu thật, kèm nguồn tham khảo để học nhanh mà vẫn tin cậy.</p>
+                <a asp-page="/Chat/Index" class="app-btn-primary mt-3">Trò chuyện ngay</a>
+            </article>
+            <article class="app-card">
+                <div class="app-card-title"><i class="bi bi-compass text-warning"></i> Trải nghiệm ít nhiễu hơn</div>
+                <p class="app-muted">Navigation đã được tinh gọn để tập trung vào hai việc chính: vào môn học và hỏi đáp AI.</p>
+            </article>
+        }
+        else
+        {
+            <article class="app-card">
+                <div class="app-card-title"><i class="bi bi-lightning-charge-fill text-primary"></i> Truy cập nhanh</div>
+                <p class="app-muted">Đăng nhập để vào không gian học tập theo vai trò, hoặc tạo tài khoản mới để bắt đầu.</p>
+            </article>
+            <article class="app-card">
+                <div class="app-card-title"><i class="bi bi-shield-check text-success"></i> Nội dung có kiểm soát</div>
+                <p class="app-muted">AI trả lời dựa trên học liệu được quản trị thay vì dữ liệu ngẫu nhiên ngoài luồng.</p>
+            </article>
+            <article class="app-card">
+                <div class="app-card-title"><i class="bi bi-layout-text-sidebar-reverse text-warning"></i> Luồng dùng dễ hiểu</div>
+                <p class="app-muted">Giao diện mới ưu tiên ít điểm chạm hơn, dễ định hướng hơn trên cả desktop và mobile.</p>
+            </article>
+        }
+    </section>
+
+    <section class="app-grid-3">
+        <div class="app-kpi">
+            <div class="app-kpi-label">Điểm mạnh 01</div>
+            <div class="app-kpi-value">Theo vai trò</div>
+            <div class="app-kpi-meta">Mỗi nhóm người dùng nhìn thấy đúng hành động quan trọng nhất.</div>
+        </div>
+        <div class="app-kpi">
+            <div class="app-kpi-label">Điểm mạnh 02</div>
+            <div class="app-kpi-value">Theo môn học</div>
+            <div class="app-kpi-meta">Luồng điều hướng xoay quanh course để giảm lạc hướng và nhầm dữ liệu.</div>
+        </div>
+        <div class="app-kpi">
+            <div class="app-kpi-label">Điểm mạnh 03</div>
+            <div class="app-kpi-value">Theo ngữ cảnh</div>
+            <div class="app-kpi-meta">Chat, tài liệu và quản trị được gắn với ngữ cảnh sử dụng thay vì dàn trải.</div>
+        </div>
+    </section>
+</div>

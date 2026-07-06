@@ -1,0 +1,379 @@
+﻿@page
+@model PRN222.RazorWebApp.Pages.Chat.IndexModel
+@{
+    ViewData["Title"] = "AI Workspace";
+}
+
+<div class="app-page chat-page">
+    <section class="app-hero">
+        <div class="app-hero-content">
+            <div class="app-eyebrow"><i class="bi bi-chat-quote"></i> Guided AI conversation</div>
+            <h2>Không gian hỏi đáp tập trung hơn</h2>
+            <p>
+                Hỏi AI theo đúng môn học, đọc câu trả lời có nguồn và thao tác hội thoại trong một giao diện bớt nặng mắt, dễ theo dõi hơn.
+            </p>
+        </div>
+        <div class="app-hero-actions">
+            @if (!string.IsNullOrEmpty(Model.CourseName))
+            {
+                <span class="app-chip"><i class="bi bi-pin-angle-fill"></i> @Model.CourseName</span>
+            }
+            <button id="clearChatBtn" class="btn btn-light fw-bold rounded-pill px-4 py-2">
+                <i class="bi bi-trash3-fill"></i> Xóa hội thoại
+            </button>
+        </div>
+    </section>
+
+    <section class="app-panel overflow-hidden">
+        <div class="chat-topbar">
+            <div class="d-flex align-items-center gap-3">
+                <div class="chat-topbar-icon"><i class="bi bi-robot"></i></div>
+                <div>
+                    <div class="fw-bold fs-5 text-white">Trợ lý AI học thuật</div>
+                    <div class="small text-white-50">RAG · Trích dẫn nguồn · Theo ngữ cảnh môn học</div>
+                </div>
+            </div>
+            @if (User.IsInRole("Admin"))
+            {
+                <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+                    <label class="text-white-50 small mb-0">Model</label>
+                    <select id="modelSelect" class="form-select form-select-sm chat-model-select">
+                        <option value="bge-m3">BGE-M3</option>
+                        <option value="e5">Multilingual E5</option>
+                        <option value="phobert">PhoBERT</option>
+                        <option value="OpenAI">OpenAI</option>
+                    </select>
+                    <button id="switchModelBtn" class="btn btn-light btn-sm fw-bold rounded-pill px-3">Đổi</button>
+                </div>
+            }
+        </div>
+
+        <div class="chat-layout">
+            <aside class="chat-sidebar">
+                <div class="app-card h-100">
+                    <div class="app-card-title"><i class="bi bi-lightbulb text-warning"></i> Gợi ý nhanh</div>
+                    <div id="quickSuggestions" class="d-grid gap-2">
+                        <button type="button" class="quick-prompt-tag" data-prompt="Ý nghĩa phương pháp luận của quy luật chuyển hóa từ những sự thay đổi về lượng thành những sự thay đổi về chất và ngược lại?">Quy luật Lượng - Chất</button>
+                        <button type="button" class="quick-prompt-tag" data-prompt="Định nghĩa vật chất của Lênin và ý nghĩa khoa học của định nghĩa này?">Định nghĩa Vật chất</button>
+                        <button type="button" class="quick-prompt-tag" data-prompt="Mối quan hệ biện chứng giữa Cơ sở hạ tầng và Kiến trúc thượng tầng?">Cơ sở hạ tầng & Kiến trúc thượng tầng</button>
+                        <button type="button" class="quick-prompt-tag" data-prompt="Vai trò của thực tiễn đối với nhận thức theo quan điểm triết học Mác - Lênin?">Vai trò của Thực tiễn</button>
+                    </div>
+                    <div class="small app-muted mt-3">
+                        Trả lời được ưu tiên dựa trên tài liệu thực tế đã tải lên trong hệ thống.
+                    </div>
+                </div>
+            </aside>
+
+            <div class="chat-main">
+                <div id="chatMessages" class="chat-messages">
+                    <div class="d-flex mb-3">
+                        <div class="chat-avatar me-2"><i class="bi bi-robot"></i></div>
+                        <div class="bot-bubble chat-bubble bot">
+                            <p class="mb-1">Xin chào! Tôi sẵn sàng hỗ trợ bạn tìm câu trả lời dựa trên học liệu đã có trong hệ thống.</p>
+                            <p class="mb-0 text-muted small">Hãy đặt một câu hỏi cụ thể để tôi truy xuất đúng ngữ cảnh và trả lời có nguồn.</p>
+                        </div>
+                    </div>
+                </div>
+                <button id="scrollToBottomBtn" class="btn btn-light shadow-sm rounded-circle d-none chat-scroll-btn">
+                    <i class="bi bi-arrow-down-short fs-4" style="color: #1456b8;"></i>
+                </button>
+                <div class="chat-composer">
+                    <div id="modelSwitchAlert" class="alert alert-success py-2 small d-none mb-3 rounded-4">
+                        <i class="bi bi-check-circle"></i> <span id="modelSwitchMsg"></span>
+                    </div>
+                    <div class="input-group chat-input-group">
+                        <input type="text" id="queryInput" class="form-control border-0 px-4 py-3"
+                               placeholder="Nhập câu hỏi về nội dung môn học..." />
+                        <button id="sendBtn" class="btn px-4 fw-bold text-white chat-send-btn">
+                            <i class="bi bi-send-fill"></i>
+                        </button>
+                    </div>
+                    <div class="text-muted small mt-3 px-1 d-flex flex-wrap gap-3">
+                        <span><i class="bi bi-shield-check text-success"></i> Câu trả lời dựa trên tài liệu thật</span>
+                        <span><i class="bi bi-book text-primary"></i> Có trích dẫn nguồn</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<style>
+    .chat-topbar {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: center;
+        padding: 22px 24px;
+        background: linear-gradient(135deg, #0f1d3a 0%, #1456b8 58%, #0f9d7a 100%);
+    }
+    .chat-topbar-icon,
+    .chat-avatar {
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        background: rgba(255,255,255,0.14);
+        color: white;
+    }
+    .chat-layout {
+        display: grid;
+        grid-template-columns: 280px minmax(0, 1fr);
+        gap: 0;
+    }
+    .chat-sidebar {
+        padding: 20px;
+        border-right: 1px solid rgba(120, 138, 170, 0.14);
+        background: rgba(244, 248, 255, 0.76);
+    }
+    .chat-main {
+        position: relative;
+        background: linear-gradient(180deg, rgba(248,251,255,0.88) 0%, rgba(243,247,252,0.96) 100%);
+    }
+    .chat-messages {
+        height: 520px;
+        max-height: calc(100vh - 360px);
+        overflow-y: auto;
+        padding: 24px 24px 12px;
+        scroll-behavior: smooth;
+    }
+    .chat-composer {
+        border-top: 1px solid rgba(120, 138, 170, 0.14);
+        background: rgba(255,255,255,0.88);
+        padding: 20px 24px 22px;
+    }
+    .chat-input-group {
+        border-radius: 999px;
+        overflow: hidden;
+        background: white;
+        box-shadow: 0 12px 30px rgba(18, 39, 74, 0.08);
+    }
+    .chat-send-btn {
+        background: linear-gradient(135deg, #1f6feb 0%, #0f9d7a 100%);
+        border: none;
+        min-width: 84px;
+    }
+    .chat-model-select {
+        width: auto;
+        min-width: 150px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.18);
+        border: 1px solid rgba(255,255,255,0.22);
+        color: white;
+    }
+    .chat-model-select option {
+        color: #172033;
+    }
+    .chat-bubble {
+        max-width: min(820px, 100%);
+        border-radius: 18px;
+        padding: 16px 18px;
+        line-height: 1.7;
+        box-shadow: 0 12px 28px rgba(18, 39, 74, 0.08);
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+    .chat-bubble.bot {
+        background: white;
+        border: 1px solid rgba(120, 138, 170, 0.16);
+        border-top-left-radius: 6px;
+    }
+    .chat-bubble.user {
+        background: linear-gradient(135deg, #1f6feb 0%, #1456b8 100%);
+        color: white;
+        border-top-right-radius: 6px;
+    }
+    .quick-prompt-tag {
+        text-align: left;
+        border: 1px solid rgba(31, 111, 235, 0.12);
+        border-radius: 16px;
+        padding: 12px 14px;
+        background: white;
+        color: #24324d;
+        font-weight: 600;
+        transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+    }
+    .quick-prompt-tag:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 24px rgba(18, 39, 74, 0.08);
+        border-color: rgba(31, 111, 235, 0.28);
+    }
+    .chat-scroll-btn {
+        position: absolute;
+        bottom: 116px;
+        right: 22px;
+        z-index: 4;
+        width: 42px;
+        height: 42px;
+        border: 1px solid rgba(120, 138, 170, 0.16);
+    }
+    .bot-bubble, .user-bubble { animation: fadeIn .25s ease-in; }
+    @@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    .typing-dots span { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #999; margin: 0 2px; animation: bounce 1.2s infinite; }
+    .typing-dots span:nth-child(2) { animation-delay: .2s; }
+    .typing-dots span:nth-child(3) { animation-delay: .4s; }
+    @@keyframes bounce { 0%, 80%, 100% { transform: scale(0.8); opacity: .6; } 40% { transform: scale(1.1); opacity: 1; } }
+    #chatMessages::-webkit-scrollbar { width: 7px; }
+    #chatMessages::-webkit-scrollbar-thumb { background: rgba(95, 107, 133, 0.3); border-radius: 999px; }
+    .message-time { font-size: 11px; color: #8a94a8; margin-top: 4px; }
+    @@media (max-width: 991.98px) {
+        .chat-layout { grid-template-columns: 1fr; }
+        .chat-sidebar { border-right: 0; border-bottom: 1px solid rgba(120, 138, 170, 0.14); }
+    }
+</style>
+
+@section Scripts {
+<script>
+    $(document).ready(function () {
+        const currentCourseId = "@(Model.CourseId?.ToString() ?? "")" || null;
+        loadChatHistory();
+
+        function loadChatHistory() {
+            const welcomeHtml = `<div class="d-flex mb-3"><div class="chat-avatar me-2"><i class="bi bi-robot"></i></div><div class="bot-bubble chat-bubble bot"><p class="mb-1">Xin chào! Tôi sẵn sàng hỗ trợ bạn tìm câu trả lời dựa trên học liệu đã có trong hệ thống.</p><p class="mb-0 text-muted small">Hãy đặt một câu hỏi cụ thể để tôi truy xuất đúng ngữ cảnh và trả lời có nguồn.</p></div></div>`;
+            $('#chatMessages').html(welcomeHtml);
+            $.ajax({
+                url: '/Chat/Index?handler=History', type: 'GET',
+                success: function (res) {
+                    if (res && res.success && res.history && res.history.length > 0) {
+                        $('#chatMessages').empty();
+                        res.history.forEach(function (msg) { if (msg.role === 'User') appendMessage(msg.content, 'user'); else appendBotMessage(msg.content, []); });
+                        scrollToBottom();
+                    }
+                }
+            });
+        }
+
+        $('#switchModelBtn').click(function () {
+            const model = $('#modelSelect').val();
+            if (!model) return;
+            const btn = $(this);
+            btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
+            $.ajax({
+                url: '/SystemSettings/Index?handler=UpdateActiveModelAjax', type: 'POST',
+                data: { activeModel: model, __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val() },
+                success: function (res) {
+                    $('#modelSwitchMsg').text(res && res.success ? `Đã chuyển sang model: ${model}` : `Đã lưu: ${model}`);
+                    $('#modelSwitchAlert').removeClass('d-none');
+                    setTimeout(() => $('#modelSwitchAlert').addClass('d-none'), 3000);
+                },
+                complete: function () { btn.prop('disabled', false).html('Đổi'); }
+            });
+        });
+
+        $('#sendBtn').click(sendMessage);
+        $('#queryInput').keypress(function (e) { if (e.which === 13) { sendMessage(); return false; } });
+        $('.quick-prompt-tag').click(function () { const prompt = $(this).attr('data-prompt'); if (prompt) { $('#queryInput').val(prompt); sendMessage(); } });
+
+        $('#clearChatBtn').click(function () {
+            if (confirm('Bạn có chắc chắn muốn xóa toàn bộ lịch sử trò chuyện?')) {
+                $.ajax({
+                    url: '/Chat/Index?handler=ClearHistory', type: 'POST',
+                    data: { __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val() },
+                    success: function (res) {
+                        if (res && res.success) { loadChatHistory(); $('#scrollToBottomBtn').addClass('d-none'); }
+                        else alert('Không thể xóa lịch sử: ' + (res.message || 'Lỗi không xác định'));
+                    }
+                });
+            }
+        });
+
+        const chatMsgsEl = $('#chatMessages');
+        chatMsgsEl.on('scroll', function () {
+            const scrollTop = chatMsgsEl.scrollTop(), scrollHeight = chatMsgsEl[0].scrollHeight, clientHeight = chatMsgsEl[0].clientHeight;
+            if (scrollHeight - scrollTop - clientHeight > 150) $('#scrollToBottomBtn').removeClass('d-none');
+            else $('#scrollToBottomBtn').addClass('d-none');
+        });
+        $('#scrollToBottomBtn').click(function () { chatMsgsEl.animate({ scrollTop: chatMsgsEl[0].scrollHeight }, 300); });
+
+        function sendMessage() {
+            const query = $('#queryInput').val().trim();
+            if (!query) { $('#queryInput').focus(); return; }
+            appendMessage(query, 'user');
+            $('#queryInput').val('').focus();
+            const $sendBtn = $('#sendBtn');
+            $sendBtn.prop('disabled', true);
+            const typingId = 'typing-' + Date.now();
+            appendTyping(typingId);
+            $.ajax({
+                url: '/Chat/Index?handler=Ask', type: 'POST',
+                data: { query: query, courseId: currentCourseId, __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val() },
+                timeout: 30000,
+                success: function (result) {
+                    $(`#${typingId}`).remove();
+                    if (result.success) appendBotMessage(result.response, result.sources);
+                    else appendBotMessage('Cảnh báo: ' + (result.message || 'Không thể xử lý câu hỏi này.'), []);
+                },
+                error: function (xhr, status) {
+                    $(`#${typingId}`).remove();
+                    appendBotMessage(status === 'timeout' ? 'Yêu cầu quá lâu. Vui lòng thử lại.' : `Lỗi ${xhr.status}. Vui lòng thử lại.`, []);
+                },
+                complete: function () { $sendBtn.prop('disabled', false); $('#queryInput').focus(); }
+            });
+        }
+
+        function appendMessage(content, type) {
+            const isUser = type === 'user';
+            const timestamp = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+            const html = isUser
+                ? `<div class="d-flex justify-content-end mb-3"><div style="text-align:right;margin-right:8px;"><div class="user-bubble chat-bubble user">${escapeHtml(content)}</div><small class="message-time d-block">${timestamp}</small></div></div>`
+                : `<div class="d-flex mb-3"><div class="chat-avatar me-2"><i class="bi bi-robot"></i></div><div style="flex-grow:1;"><div class="bot-bubble chat-bubble bot">${content}</div><small class="message-time" style="margin-left:8px;">${timestamp}</small></div></div>`;
+            $('#chatMessages').append(html);
+            scrollToBottom();
+        }
+
+        function appendBotMessage(content, sources) {
+            if (sources && sources.length > 0) {
+                const citationMarker = '\n---\n📚 **Nguồn tham khảo:**';
+                const citationMarkerAlt = '\n---\n📚 Nguồn tham khảo:';
+                let markerIndex = content.indexOf(citationMarker);
+                if (markerIndex === -1) markerIndex = content.indexOf(citationMarker.replace(/\n/g, '\r\n'));
+                if (markerIndex === -1) markerIndex = content.indexOf(citationMarkerAlt);
+                if (markerIndex === -1) markerIndex = content.indexOf(citationMarkerAlt.replace(/\n/g, '\r\n'));
+                if (markerIndex === -1) {
+                    const simpleMarker = '\n---';
+                    const simpleIndex = content.lastIndexOf(simpleMarker);
+                    if (simpleIndex !== -1 && simpleIndex > content.length - 400) markerIndex = simpleIndex;
+                }
+                if (markerIndex !== -1) content = content.substring(0, markerIndex).trim();
+            }
+            let formatted = escapeHtml(content);
+            formatted = formatted.replace(/^### (.+)$/gm, '<h5 class="mt-2 mb-1" style="color:#1456b8;">$1</h5>');
+            formatted = formatted.replace(/^## (.+)$/gm, '<h4 class="mt-2 mb-1" style="color:#0f1d3a;">$1</h4>');
+            formatted = formatted.replace(/^# (.+)$/gm, '<h4 class="mt-3 mb-1 fw-bold" style="color:#0f1d3a;">$1</h4>');
+            formatted = formatted.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            formatted = formatted.replace(/\*(.+?)\*/g, '<em>$1</em>');
+            formatted = formatted.replace(/`([^`]+)`/g, '<code style="background:#eff5ff;padding:1px 5px;border-radius:6px;font-size:0.9em;">$1</code>');
+            formatted = formatted.replace(/^[\-\*] (.+)$/gm, '<li style="margin-left:16px;list-style:disc;">$1</li>');
+            formatted = formatted.replace(/^\d+\. (.+)$/gm, '<li style="margin-left:16px;list-style:decimal;">$1</li>');
+            formatted = formatted.replace(/^&gt; (.+)$/gm, '<blockquote style="border-left:3px solid #1456b8;padding-left:10px;color:#555;margin:4px 0;">$1</blockquote>');
+            formatted = formatted.replace(/^---$/gm, '<hr style="border-top:1px solid #e0e7f2;margin:8px 0;">');
+            formatted = formatted.replace(/\n/g, '<br>');
+            let sourcesHtml = '';
+            if (sources && sources.length > 0) {
+                sourcesHtml = `<div class="mt-3 pt-3 border-top" style="border-color:#edf2fb !important;"><small class="text-muted fw-bold d-block mb-2">Nguồn tham khảo:</small>`;
+                sources.forEach((s) => {
+                    const score = (s.score * 100).toFixed(0);
+                    const badgeClass = score >= 80 ? 'app-badge-green' : score >= 60 ? 'app-badge-blue' : 'app-badge-amber';
+                    sourcesHtml += `<small class="d-flex align-items-center gap-2 text-muted mb-2"><span>📄 <em>${s.fileName}</em></span><span class="app-badge-soft ${badgeClass}">${score}%</span></small>`;
+                });
+                sourcesHtml += '</div>';
+            }
+            const timestamp = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+            const html = `<div class="d-flex mb-3"><div class="chat-avatar me-2"><i class="bi bi-robot"></i></div><div style="flex-grow:1;"><div class="bot-bubble chat-bubble bot">${formatted}${sourcesHtml}</div><small class="message-time" style="margin-left:8px;">${timestamp}</small></div></div>`;
+            $('#chatMessages').append(html);
+            scrollToBottom();
+        }
+
+        function appendTyping(id) {
+            const html = `<div id="${id}" class="d-flex mb-3"><div class="chat-avatar me-2"><i class="bi bi-robot"></i></div><div style="flex-grow:1;"><div class="bot-bubble chat-bubble bot"><div class="typing-dots"><span></span><span></span><span></span></div></div></div></div>`;
+            $('#chatMessages').append(html);
+            scrollToBottom();
+        }
+
+        function scrollToBottom() { const el = document.getElementById('chatMessages'); el.scrollTop = el.scrollHeight; }
+        function escapeHtml(text) { const div = document.createElement('div'); div.appendChild(document.createTextNode(text)); return div.innerHTML; }
+    });
+</script>
+@Html.AntiForgeryToken()
+}

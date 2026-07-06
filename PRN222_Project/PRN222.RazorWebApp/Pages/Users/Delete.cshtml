@@ -1,0 +1,59 @@
+@page "{id:guid}"
+@model PRN222.RazorWebApp.Pages.Users.DeleteModel
+@{
+    ViewData["Title"] = "Xác nhận xóa";
+}
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card border-0 shadow-lg" style="border-radius: 12px;">
+                <div class="card-header" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: white; border-radius: 12px 12px 0 0;">
+                    <h3 class="mb-0"><i class="bi bi-exclamation-triangle-fill"></i> Xác nhận xóa</h3>
+                </div>
+                <div class="card-body p-5">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-circle"></i>
+                        <strong>Cảnh báo!</strong> Bạn đang định xóa tài khoản <strong>@Model.UserToDelete?.Username</strong>.
+                        <br />Hành động này <strong>không thể hoàn tác</strong>.
+                    </div>
+                    @if (!Model.CanDeleteUser)
+                    {
+                        <div class="alert alert-info">
+                            Khong the xoa tai khoan dang dang nhap. Ban chi co the cap nhat thong tin cua tai khoan nay.
+                        </div>
+                    }
+                    <div class="card bg-light mb-4">
+                        <div class="card-body">
+                            <p class="mb-2"><strong>Tên đăng nhập:</strong> @Model.UserToDelete?.Username</p>
+                            <p class="mb-2"><strong>Vai trò:</strong> @Model.UserToDelete?.Role</p>
+                            <p class="mb-0"><strong>Tài liệu của môn học sẽ được giữ lại để lecturer được phân công sau này vẫn có thể sử dụng.</strong></p>
+                        </div>
+                    </div>
+                    <form method="post" onsubmit="return confirm('Bạn có chắc muốn xóa tài khoản này? Tài khoản sẽ không thể khôi phục.');">
+                        @Html.AntiForgeryToken()
+                        <div class="row mt-5">
+                            <div class="col-md-6">
+                                @if (Model.CanDeleteUser)
+                                {
+                                    <button type="submit" class="btn btn-lg w-100 fw-semibold text-white" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); border: none; border-radius: 8px;">
+                                        <i class="bi bi-trash"></i> Xóa tài khoản
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button type="button" class="btn btn-lg w-100 fw-semibold btn-secondary" style="border-radius: 8px;" disabled aria-disabled="true">
+                                        <i class="bi bi-shield-lock"></i> Không thể xóa tài khoản này
+                                    </button>
+                                }
+                                <a asp-page="/Users/Index" class="btn btn-lg w-100 fw-semibold" style="background-color: #e9ecef; border: none; border-radius: 8px;">
+                                    <i class="bi bi-arrow-left"></i> Hủy
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

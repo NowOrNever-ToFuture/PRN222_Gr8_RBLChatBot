@@ -1,0 +1,353 @@
+@page
+@model PRN222.RazorWebApp.Pages.Courses.IndexModel
+@{
+    ViewData["Title"] = "Danh sách môn học";
+    var isAdmin = User.IsInRole("Admin");
+}
+
+<div class="course-shell app-page">
+    <section class="course-hero app-hero">
+        <div class="app-hero-content">
+            <div class="app-eyebrow">Course governance</div>
+            <h1>Danh sách môn học</h1>
+            <p class="course-hero-copy">Phân tách rõ giảng viên giảng dạy và trưởng bộ môn để Admin giao việc đúng ngữ cảnh, đúng quyền.</p>
+        </div>
+        <div class="course-hero-actions app-hero-actions">
+            @if (isAdmin)
+            {
+                <button class="btn btn-light btn-lg rounded-pill px-4 fw-bold" data-bs-toggle="modal" data-bs-target="#createModal">
+                    <i class="bi bi-plus-circle"></i> Thêm môn học mới
+                </button>
+            }
+        </div>
+    </section>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show mt-4 rounded-4 border-0 shadow-sm" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show mt-4 rounded-4 border-0 shadow-sm" role="alert">
+            @Html.Raw(TempData["ErrorMessage"])
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="course-grid">
+        @foreach (var course in Model.Courses)
+        {
+            <div class="course-card" id="course-@course.Id">
+                <partial name="_CourseCard" model="course" />
+            </div>
+        }
+    </div>
+</div>
+
+@if (isAdmin)
+{
+    <div class="modal fade" id="createModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg course-modal">
+                <div class="modal-header">
+                    <div>
+                        <h5 class="modal-title"><i class="bi bi-journal-plus"></i> Thêm môn học mới</h5>
+                        <div class="modal-subtitle">Chỉ giao trưởng bộ môn tại đây. Danh sách giảng viên giảng dạy được quản lý ở phần Users.</div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="course-modal-callout mb-4">
+                        <strong>Quyền được tách riêng:</strong> lecturer được gán dạy nhiều môn, nhưng lecturer được chọn ở đây sẽ là người chịu trách nhiệm chính cho môn học.
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Mã môn học</label>
+                            <input type="text" id="create-code" class="form-control" placeholder="VD: PRN222" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Tên môn học</label>
+                            <input type="text" id="create-name" class="form-control" placeholder="VD: Lập trình C#" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Trưởng bộ môn</label>
+                            <select id="create-managedby" class="form-select">
+                                <option value="">-- Chưa gán trưởng bộ môn --</option>
+                                @foreach (var lecturer in Model.Lecturers)
+                                {
+                                    <option value="@lecturer.Id">@lecturer.FullName (@lecturer.Username)</option>
+                                }
+                            </select>
+                            <div class="form-text">Nếu lecturer này đang là trưởng bộ môn của môn khác, hệ thống sẽ chặn và yêu cầu gỡ quyền ở môn cũ trước.</div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Mô tả</label>
+                            <textarea id="create-desc" class="form-control" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 px-4 pb-4 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-primary px-4 rounded-pill" id="btnCreate">Lưu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="editModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg course-modal edit-modal">
+                <div class="modal-header">
+                    <div>
+                        <h5 class="modal-title"><i class="bi bi-pencil-square"></i> Cập nhật môn học</h5>
+                        <div class="modal-subtitle">Cập nhật thông tin môn và trưởng bộ môn mà không làm rối vai trò giảng dạy.</div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <input type="hidden" id="edit-id" />
+                    <div class="course-modal-callout mb-4 warning">
+                        <strong>Lưu ý:</strong> đổi trưởng bộ môn không tự động thay đổi toàn bộ danh sách giảng viên dạy môn. Danh sách dạy học vẫn được giữ riêng.
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Mã môn học</label>
+                            <input type="text" id="edit-code" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Tên môn học</label>
+                            <input type="text" id="edit-name" class="form-control" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Trưởng bộ môn</label>
+                            <select id="edit-managedby" class="form-select">
+                                <option value="">-- Chưa gán trưởng bộ môn --</option>
+                                @foreach (var lecturer in Model.Lecturers)
+                                {
+                                    <option value="@lecturer.Id">@lecturer.FullName (@lecturer.Username)</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Mô tả</label>
+                            <textarea id="edit-desc" class="form-control" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 px-4 pb-4 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-warning px-4 text-dark fw-semibold rounded-pill" id="btnUpdate">Cập nhật</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .course-shell { padding-bottom: 32px; }
+    .course-hero { box-shadow: var(--app-shadow); }
+    .course-hero-copy { max-width: 680px; margin: 0; color: rgba(255,255,255,.88); }
+    .course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; margin-top: 22px; }
+    .course-card { position: relative; border-radius: 28px; background: linear-gradient(180deg, #fff 0%, #f8fafc 100%); border: 1px solid #e2e8f0; box-shadow: 0 10px 30px rgba(15,23,42,.06); overflow: hidden; transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+    .course-card:hover { transform: translateY(-4px); border-color: #93c5fd; box-shadow: 0 20px 42px rgba(15,23,42,.12); }
+    .course-card-main { display: block; text-decoration: none; color: inherit; padding: 22px; }
+    .course-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; gap: 12px; }
+    .course-code { display: inline-flex; align-items: center; padding: 7px 12px; border-radius: 999px; background: rgba(59,130,246,.1); color: #2563eb; font-weight: 800; }
+    .course-doc-count { font-size: 13px; color: #64748b; font-weight: 700; }
+    .course-card-body h3 { font-size: 22px; font-weight: 800; color: #0f172a; margin-bottom: 8px; }
+    .course-card-body p { color: #475569; min-height: 48px; margin-bottom: 18px; }
+    .course-card-sections { display: grid; gap: 12px; }
+    .course-card-section { padding: 14px 15px; border-radius: 18px; background: #f8fbff; border: 1px solid #e6eef8; }
+    .course-card-section.head { background: linear-gradient(135deg, rgba(15,118,110,.10), rgba(16,185,129,.12)); border-color: rgba(16,185,129,.22); }
+    .course-card-section.teaching { background: linear-gradient(135deg, rgba(37,99,235,.08), rgba(59,130,246,.12)); border-color: rgba(37,99,235,.18); }
+    .course-section-label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; font-weight: 800; color: #64748b; margin-bottom: 8px; }
+    .course-head-name { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; color: #0f172a; }
+    .course-empty-state { color: #7c8a9b; font-size: 14px; }
+    .course-teaching-list { display: flex; flex-wrap: wrap; gap: 8px; }
+    .course-teaching-pill { display: inline-flex; align-items: center; gap: 6px; padding: 8px 11px; border-radius: 999px; background: rgba(255,255,255,.85); border: 1px solid rgba(37,99,235,.14); color: #1e3a5f; font-weight: 600; font-size: 13px; }
+    .course-card-footer { display: flex; justify-content: space-between; gap: 12px; align-items: center; color: #64748b; font-size: 13px; flex-wrap: wrap; margin-top: 18px; }
+    .open-link { color: #2563eb; font-weight: 700; }
+    .course-card-actions { display: flex; gap: 8px; padding: 0 22px 22px; }
+    .course-modal .modal-header { background: linear-gradient(135deg, #1456b8, #0f9d7a); color: #fff; }
+    .course-modal .modal-header .btn-close { filter: brightness(0) invert(1); }
+    .modal-subtitle { margin-top: 4px; color: rgba(255,255,255,.82); font-size: 13px; }
+    .course-modal-callout { padding: 14px 16px; border-radius: 16px; background: #eef6ff; border: 1px solid #c7ddff; color: #1e3a5f; }
+    .course-modal-callout.warning { background: #fff7e9; border-color: #f0d8a8; color: #7a4d00; }
+</style>
+
+@section Scripts {
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const connection = new signalR.HubConnectionBuilder().withUrl("/hubs/course").withAutomaticReconnect().build();
+        connection.start().catch(err => console.error("SignalR CourseHub Connection Error: ", err));
+
+        connection.on("ReceiveNewCourse", (course) => {
+            if (document.getElementById(`course-${course.id}`)) return;
+            $.get(`/Courses/Index?handler=CardHtml&id=${course.id}`, function(html) {
+                if (!document.getElementById(`course-${course.id}`)) {
+                    const grid = document.querySelector('.course-grid');
+                    const cardDiv = document.createElement('div');
+                    cardDiv.className = 'course-card';
+                    cardDiv.id = `course-${course.id}`;
+                    cardDiv.innerHTML = html;
+                    grid.appendChild(cardDiv);
+                }
+            });
+        });
+
+        connection.on("ReceiveUpdatedCourse", (course) => {
+            const card = document.getElementById(`course-${course.id}`);
+            if (card) {
+                $.get(`/Courses/Index?handler=CardHtml&id=${course.id}`, function(html) {
+                    card.innerHTML = html;
+                });
+            }
+        });
+
+        connection.on("ReceiveDeletedCourse", (courseId) => {
+            const card = document.getElementById(`course-${courseId}`);
+            if (card) {
+                $(card).fadeOut(200, function() {
+                    $(this).remove();
+                });
+            }
+        });
+
+        const isStudent = @(User.IsInRole("Student") ? "true" : "false");
+        if (isStudent) {
+            const docConnection = new signalR.HubConnectionBuilder().withUrl("/hubs/documentupload").withAutomaticReconnect().build();
+            docConnection.start().catch(err => console.error("SignalR DocumentUploadHub Connection Error:", err));
+
+            const reloadCard = (courseId) => {
+                const card = document.getElementById(`course-${courseId}`);
+                if (card) {
+                    $.get(`/Courses/Index?handler=CardHtml&id=${courseId}`, function(html) {
+                        card.innerHTML = html;
+                    });
+                }
+            };
+
+            docConnection.on("DocumentAdded", (doc) => {
+                if (doc.status === "Completed") reloadCard(doc.courseId);
+            });
+
+            docConnection.on("DocumentUpdated", (doc) => {
+                reloadCard(doc.courseId);
+            });
+
+            docConnection.on("DocumentDeleted", (docId) => {
+                const docEl = document.getElementById(`student-doc-${docId}`);
+                if (docEl) {
+                    const docsList = docEl.closest('.docs-list');
+                    if (docsList) {
+                        const courseId = docsList.id.replace('docs-list-', '');
+                        docEl.remove();
+                        const currentDocs = docsList.querySelectorAll('.doc-item').length;
+                        if (currentDocs === 0) {
+                            docsList.innerHTML = `<div class="text-muted small empty-docs-msg" id="empty-docs-${courseId}">Chưa có tài liệu nào.</div>`;
+                        }
+                        const card = document.getElementById(`course-${courseId}`);
+                        if (card) {
+                            const countSpan = card.querySelector('.course-doc-count');
+                            if (countSpan) countSpan.innerHTML = `<i class="bi bi-folder2-open"></i> ${currentDocs} tài liệu`;
+                        }
+                    }
+                }
+            });
+        }
+    });
+
+    @if (isAdmin)
+    {
+        <text>
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('.btn-edit');
+            if (!btn) return;
+            document.getElementById('edit-id').value = btn.dataset.id;
+            document.getElementById('edit-code').value = btn.dataset.code;
+            document.getElementById('edit-name').value = btn.dataset.name;
+            document.getElementById('edit-desc').value = btn.dataset.desc;
+            document.getElementById('edit-managedby').value = btn.dataset.managedby || "";
+            new bootstrap.Modal(document.getElementById('editModal')).show();
+        });
+
+        document.getElementById('btnCreate').addEventListener('click', async () => {
+            const data = {
+                code: document.getElementById('create-code').value,
+                name: document.getElementById('create-name').value,
+                description: document.getElementById('create-desc').value,
+                managedById: document.getElementById('create-managedby').value || null
+            };
+            const res = await fetch('/Courses/Index?handler=Create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? ''
+                },
+                body: JSON.stringify(data)
+            });
+            const result = await res.json();
+            if (result.success) {
+                const modalEl = document.getElementById('createModal');
+                const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                modal.hide();
+                document.getElementById('create-code').value = '';
+                document.getElementById('create-name').value = '';
+                document.getElementById('create-desc').value = '';
+                document.getElementById('create-managedby').value = '';
+            } else {
+                alert('Loi: ' + result.message);
+            }
+        });
+
+        document.getElementById('btnUpdate').addEventListener('click', async () => {
+            const data = {
+                id: document.getElementById('edit-id').value,
+                code: document.getElementById('edit-code').value,
+                name: document.getElementById('edit-name').value,
+                description: document.getElementById('edit-desc').value,
+                managedById: document.getElementById('edit-managedby').value || null
+            };
+            const res = await fetch('/Courses/Index?handler=Edit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? ''
+                },
+                body: JSON.stringify(data)
+            });
+            const result = await res.json();
+            if (result.success) {
+                const modalEl = document.getElementById('editModal');
+                const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                modal.hide();
+            } else {
+                alert('Loi: ' + result.message);
+            }
+        });
+
+        document.addEventListener('click', async (e) => {
+            const btn = e.target.closest('.btn-delete');
+            if (!btn) return;
+            if (!confirm('Ban co chac muon xoa mon hoc nay?')) return;
+            const res = await fetch('/Courses/Index?handler=Delete', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? ''
+                },
+                body: JSON.stringify({ id: btn.dataset.id })
+            });
+            const result = await res.json();
+            if (!result.success) alert('Loi: ' + result.message);
+        });
+        </text>
+    }
+</script>
+@Html.AntiForgeryToken()
+}
+

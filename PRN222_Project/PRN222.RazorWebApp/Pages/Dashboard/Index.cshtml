@@ -1,0 +1,251 @@
+@page
+@model PRN222.RazorWebApp.Pages.Dashboard.IndexModel
+@using PRN222.Services.Interfaces
+@{
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<div class="app-page">
+    <section class="app-hero">
+        <div class="app-hero-content">
+            <div class="app-eyebrow"><i class="bi bi-activity"></i> Admin control center</div>
+            <h2>Điều hành hệ thống AI học tập</h2>
+            <p>Theo dõi sức khỏe dữ liệu, benchmark model và các hoạt động quan trọng trong cùng một không gian quản trị rõ ràng hơn.</p>
+        </div>
+        <div class="app-hero-actions">
+            <span class="app-chip"><i class="bi bi-cpu"></i> Active model: @Model.ActiveModel</span>
+            <a asp-page="/SystemSettings/Index" class="app-btn-secondary"><i class="bi bi-sliders"></i> Cấu hình</a>
+        </div>
+    </section>
+
+    @if (Model.Stats != null)
+    {
+        <section class="app-grid-4">
+            <div class="app-kpi">
+                <div class="app-kpi-label">Tổng môn học</div>
+                <div class="app-kpi-value">@Model.Stats.TotalCourses</div>
+                <div class="app-kpi-meta">Môn đang hoạt động trong hệ thống</div>
+            </div>
+            <div class="app-kpi">
+                <div class="app-kpi-label">Kho tri thức</div>
+                <div class="app-kpi-value">@Model.Stats.TotalDocuments</div>
+                <div class="app-kpi-meta">@Model.Stats.TotalChunks chunks đã index</div>
+            </div>
+            <div class="app-kpi">
+                <div class="app-kpi-label">Ngân hàng câu hỏi</div>
+                <div class="app-kpi-value">@Model.Stats.TotalQuestions</div>
+                <div class="app-kpi-meta">Dữ liệu dùng để benchmark và đánh giá</div>
+            </div>
+            <div class="app-kpi">
+                <div class="app-kpi-label">Lần benchmark</div>
+                <div class="app-kpi-value">@Model.Stats.TotalBenchmarkRuns</div>
+                <div class="app-kpi-meta">Các lượt chạy đã được lưu lại</div>
+            </div>
+        </section>
+    }
+
+    <section class="app-card">
+        <div class="app-card-title"><i class="bi bi-sliders2-vertical text-primary"></i> Chạy benchmark theo chiến lược chunking</div>
+        <p class="app-muted mb-4">Thao tác benchmark được gom lại để admin dễ chuyển model, re-index dữ liệu và theo dõi tiến độ theo thời gian thực.</p>
+        <form id="benchmarkForm" class="row g-3 align-items-end">
+            <div class="col-lg-4 col-md-6">
+                <label class="form-label fw-bold">Embedding model</label>
+                <select id="embeddingModel" name="embeddingModel" class="form-select">
+                    <option value="bge-m3">BGE-M3</option>
+                    <option value="e5">Multilingual E5</option>
+                    <option value="phobert">PhoBERT / Vietnamese SBERT</option>
+                </select>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <label class="form-label fw-bold">Chunking strategy</label>
+                <select id="chunkingStrategy" name="chunkingStrategy" class="form-select">
+                    <option value="markdown_header">Markdown header</option>
+                    <option value="paragraph">Paragraph window</option>
+                    <option value="sentence">Sentence window</option>
+                    <option value="fixed_size">Fixed size</option>
+                    <option value="fixed_size_overlap">Fixed size + overlap</option>
+                </select>
+            </div>
+            <div class="col-lg-4">
+                <button type="submit" id="runBenchmarkBtn" class="btn btn-warning btn-lg w-100 fw-bold">
+                    <i class="bi bi-play-fill"></i> Re-index & Benchmark
+                </button>
+            </div>
+        </form>
+        <div id="benchmarkStatus" class="alert alert-secondary mt-4 mb-0 d-none" style="border-radius: 16px;">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span id="benchmarkStatusText">Đang chuẩn bị benchmark...</span>
+                <span id="benchmarkPercent" class="fw-bold">0%</span>
+            </div>
+            <div class="progress" style="height: 8px; border-radius: 999px; overflow: hidden;">
+                <div id="benchmarkProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+            </div>
+            <div id="benchmarkLiveResult" class="small text-muted mt-2"></div>
+        </div>
+    </section>
+
+    <section class="app-grid-2">
+        <div class="app-card">
+            <div class="app-card-title"><i class="bi bi-bar-chart-fill text-primary"></i> Chất lượng model</div>
+            <div class="chart-area" style="position: relative; height:300px; width:100%">
+                <canvas id="barChart"></canvas>
+                <div id="noBarData" class="position-absolute top-50 start-50 translate-middle text-center w-100" style="display: none;">
+                    <i class="bi bi-inbox fs-1 text-muted mb-2 d-block"></i>
+                    <p class="text-muted mb-0">Chưa có dữ liệu benchmark.</p>
+                </div>
+            </div>
+        </div>
+        <div class="app-card">
+            <div class="app-card-title"><i class="bi bi-graph-up-arrow text-success"></i> Hiệu năng model</div>
+            <div class="chart-area" style="position: relative; height:300px; width:100%">
+                <canvas id="lineChart"></canvas>
+                <div id="noLineData" class="position-absolute top-50 start-50 translate-middle text-center w-100" style="display: none;">
+                    <i class="bi bi-inbox fs-1 text-muted mb-2 d-block"></i>
+                    <p class="text-muted mb-0">Chưa có dữ liệu benchmark.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="app-grid-3">
+        <div class="app-card">
+            <div class="app-card-title"><i class="bi bi-clock-history text-primary"></i> Lịch sử test gần đây</div>
+            @if (!Model.BenchmarkRuns.Any())
+            {
+                <div class="app-empty">
+                    <div class="app-empty-icon"><i class="bi bi-inbox"></i></div>
+                    <p class="mb-0 app-muted">Chưa có lịch sử benchmark nào.</p>
+                </div>
+            }
+            else
+            {
+                <div class="app-list">
+                    @foreach (var run in Model.BenchmarkRuns.Take(6))
+                    {
+                        <div class="app-list-item">
+                            <div>
+                                <div class="fw-bold">@run.EmbeddingModel</div>
+                                <div class="small app-muted">@run.ChunkingStrategy · @run.RunDate.AddHours(7).ToString("dd/MM HH:mm")</div>
+                            </div>
+                            <span class="app-badge-soft app-badge-blue">@(run.TotalTimeMs / 1000.0)s</span>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+        <div class="app-card">
+            <div class="app-card-title"><i class="bi bi-file-earmark-arrow-up text-success"></i> Tài liệu mới upload</div>
+            @if (!Model.RecentUploads.Any())
+            {
+                <div class="app-empty">
+                    <div class="app-empty-icon"><i class="bi bi-file-earmark"></i></div>
+                    <p class="mb-0 app-muted">Chưa có tài liệu nào.</p>
+                </div>
+            }
+            else
+            {
+                <div class="app-list">
+                    @foreach (var doc in Model.RecentUploads.Take(5))
+                    {
+                        <div class="app-list-item">
+                            <div>
+                                <div class="fw-bold text-truncate" style="max-width: 220px;" title="@doc.FileName">@doc.FileName</div>
+                                <div class="small app-muted">@doc.CourseName · @doc.UploadedBy · @doc.UploadDate.AddHours(7).ToString("dd/MM HH:mm")</div>
+                            </div>
+                            <span class="app-badge-soft @(doc.Status == "Completed" ? "app-badge-green" : doc.Status == "Failed" ? "app-badge-rose" : "app-badge-amber")">@doc.Status</span>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+        <div class="app-card">
+            <div class="app-card-title"><i class="bi bi-lightning-charge text-warning"></i> Thao tác nhanh</div>
+            <div class="d-grid gap-3">
+                <a asp-page="/TestQuestions/Index" class="btn btn-primary btn-lg text-start fw-bold"><i class="bi bi-question-circle me-2"></i> Câu hỏi test</a>
+                <a asp-page="/Chat/Index" class="btn btn-info btn-lg text-start text-white fw-bold"><i class="bi bi-chat-dots me-2"></i> Test chat AI</a>
+                <a asp-page="/Courses/Index" class="btn btn-success btn-lg text-start fw-bold"><i class="bi bi-journal-text me-2"></i> Quản lý môn học</a>
+                <a asp-page="/SystemSettings/Index" class="btn btn-dark btn-lg text-start fw-bold"><i class="bi bi-sliders me-2"></i> Đổi model AI</a>
+            </div>
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+<script>
+    let barChart = null, lineChart = null;
+    const activeModel = '@Model.ActiveModel';
+    const activeChunkingStrategy = '@Model.ActiveChunkingStrategy';
+    document.getElementById('embeddingModel').value = activeModel || 'bge-m3';
+    document.getElementById('chunkingStrategy').value = activeChunkingStrategy || 'markdown_header';
+
+    const benchmarkConnection = new signalR.HubConnectionBuilder().withUrl("/hubs/benchmark").withAutomaticReconnect().build();
+    benchmarkConnection.on("ReceiveProgress", (percent, message) => {
+        const status = document.getElementById('benchmarkStatus');
+        status.classList.remove('d-none', 'alert-danger');
+        status.classList.add('alert-secondary');
+        document.getElementById('benchmarkStatusText').textContent = message;
+        document.getElementById('benchmarkPercent').textContent = percent + '%';
+        document.getElementById('benchmarkProgressBar').style.width = percent + '%';
+        if (percent >= 100) { document.getElementById('runBenchmarkBtn').disabled = false; setTimeout(loadChartData, 1000); }
+    });
+    benchmarkConnection.on("ReceiveLiveResult", (index, question, answer, faithfulness, relevance) => {
+        document.getElementById('benchmarkLiveResult').textContent = `Câu ${index}: Faithfulness ${Number(faithfulness).toFixed(2)}, Relevance ${Number(relevance).toFixed(2)}`;
+    });
+    benchmarkConnection.start().catch(err => console.error("Benchmark SignalR Error:", err));
+
+    document.getElementById('benchmarkForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.currentTarget);
+        const status = document.getElementById('benchmarkStatus');
+        const runButton = document.getElementById('runBenchmarkBtn');
+        runButton.disabled = true;
+        status.classList.remove('d-none', 'alert-danger');
+        status.classList.add('alert-secondary');
+        document.getElementById('benchmarkStatusText').textContent = 'Đang re-index tài liệu...';
+        document.getElementById('benchmarkPercent').textContent = '0%';
+        document.getElementById('benchmarkProgressBar').style.width = '0%';
+        document.getElementById('benchmarkLiveResult').textContent = '';
+        try {
+            const response = await fetch('/Dashboard/Index?handler=RunBenchmark', { method: 'POST', body: formData, headers: { 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '' } });
+            const result = await response.json();
+            if (!result.success) throw new Error(result.message || 'Không chạy được benchmark.');
+            document.getElementById('benchmarkStatusText').textContent = result.message;
+        } catch (err) {
+            runButton.disabled = false;
+            status.classList.remove('alert-secondary');
+            status.classList.add('alert-danger');
+            document.getElementById('benchmarkStatusText').textContent = err.message;
+        }
+    });
+
+    async function loadChartData() {
+        try {
+            const res = await fetch('/Dashboard/Index?handler=ChartData');
+            const data = await res.json();
+            if (data.length === 0) { document.getElementById('noBarData').style.display = 'block'; document.getElementById('noLineData').style.display = 'block'; return; }
+            document.getElementById('noBarData').style.display = 'none';
+            document.getElementById('noLineData').style.display = 'none';
+            const labels = data.map(d => d.model);
+            const faithfulness = data.map(d => d.avgFaithfulness);
+            const relevance = data.map(d => d.avgRelevance);
+            const latency = data.map(d => d.avgLatency);
+            if (barChart) barChart.destroy();
+            barChart = new Chart(document.getElementById('barChart').getContext('2d'), {
+                type: 'bar',
+                data: { labels, datasets: [{ label: 'Faithfulness', data: faithfulness, backgroundColor: 'rgba(31,111,235,0.8)', borderColor: 'rgba(31,111,235,1)', borderWidth: 1, borderRadius: 8 }, { label: 'Relevance', data: relevance, backgroundColor: 'rgba(245,158,11,0.8)', borderColor: 'rgba(245,158,11,1)', borderWidth: 1, borderRadius: 8 }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 1.0 } } }
+            });
+            if (lineChart) lineChart.destroy();
+            lineChart = new Chart(document.getElementById('lineChart').getContext('2d'), {
+                type: 'line',
+                data: { labels, datasets: [{ label: 'Latency (ms)', data: latency, borderColor: '#0f9d7a', backgroundColor: 'rgba(15,157,122,0.12)', fill: true, tension: 0.35, pointRadius: 5 }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+            });
+        } catch (err) { console.error('Lỗi load chart data:', err); }
+    }
+    document.addEventListener('DOMContentLoaded', loadChartData);
+</script>
+@Html.AntiForgeryToken()
+}

@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+pydantic
+python-multipart
+sentence-transformers
+pandas
+openpyxl
+python-docx
+python-pptx
+pypdf
+tabulate
