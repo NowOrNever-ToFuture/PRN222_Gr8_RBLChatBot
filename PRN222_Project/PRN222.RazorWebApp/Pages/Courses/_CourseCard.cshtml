@@ -10,14 +10,7 @@
         .ToList() ?? new List<PRN222.Models.User>();
 }
 
-@if (isStudent)
-{
-    @Html.Raw("<div class=\"course-card-main\">")
-}
-else
-{
-    @Html.Raw($"<a href=\"/Documents/Index?courseId={Model.Id}\" class=\"course-card-main\">")
-}
+@Html.Raw($"<a href=\"/Documents/Index?courseId={Model.Id}\" class=\"course-card-main\">")
     <div class="course-card-top">
         <span class="course-code">@Model.Code</span>
         <span class="course-doc-count"><i class="bi bi-folder2-open"></i> @(Model.Documents?.Count ?? 0) tài liệu</span>
@@ -57,10 +50,7 @@ else
     </div>
     <div class="course-card-footer">
         <span>@teachingLecturers.Count giảng viên đang dạy</span>
-        @if (!isStudent)
-        {
-            <span class="open-link">Xem tài liệu <i class="bi bi-arrow-right"></i></span>
-        }
+        <span class="open-link">Xem tài liệu <i class="bi bi-arrow-right"></i></span>
     </div>
 
     @if (isStudent)
@@ -89,15 +79,7 @@ else
             </div>
         </div>
     }
-
-@if (isStudent)
-{
-    @Html.Raw("</div>")
-}
-else
-{
-    @Html.Raw("</a>")
-}
+@Html.Raw("</a>")
 
 @if (isAdmin)
 {

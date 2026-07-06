@@ -72,9 +72,9 @@ namespace PRN222.RazorWebApp.Pages.Documents
 
             {
 
-                var isAssigned = await _courseService.IsLecturerAssignedToCourseAsync(userId, Document.CourseId);
+                var isCourseManager = Document.Course?.ManagedById == userId;
 
-                if (!isAssigned) return Forbid();
+                if (!isCourseManager) return Forbid();
 
             }
 
@@ -109,4 +109,5 @@ namespace PRN222.RazorWebApp.Pages.Documents
     }
 
 }
+
 
