@@ -15,7 +15,7 @@ Phân hệ Python đóng vai trò là microservice đảm nhận các tác vụ 
 Mở CMD hoặc PowerShell tại thư mục dự án:
 
 ```bat
-cd /d D:\ASM_PRN222\Python_RAG_Server
+cd Python_RAG_Server
 python -m venv venv
 venv\Scripts\activate
 ```
@@ -23,7 +23,7 @@ venv\Scripts\activate
 Khi kích hoạt thành công, đầu dòng lệnh sẽ xuất hiện:
 
 ```text
-(venv) D:\ASM_PRN222\Python_RAG_Server>
+(venv) Python_RAG_Server>
 ```
 
 ### Bước 2: Cài đặt thư viện
@@ -91,7 +91,7 @@ PRN222_Project/PRN222_Project.sln
 Kiểm tra file:
 
 ```text
-PRN222_Project/PRN222.WebApp/appsettings.json
+PRN222_Project/PRN222.RazorWebApp/appsettings.json
 ```
 
 Cần đảm bảo:
@@ -115,7 +115,7 @@ Mục tiêu là tạo cấu trúc bảng theo EF Core migration và thiết lậ
 Bấm `F5` trong Visual Studio hoặc chạy bằng CLI:
 
 ```bat
-cd /d D:\ASM_PRN222\PRN222_Project\PRN222.WebApp
+cd PRN222_Project\PRN222.RazorWebApp
 dotnet run
 ```
 
@@ -130,7 +130,7 @@ Nguyên nhân thường là chưa kích hoạt đúng môi trường ảo.
 Cách xử lý:
 
 ```bat
-cd /d D:\ASM_PRN222\Python_RAG_Server
+cd Python_RAG_Server
 venv\Scripts\activate
 python -m uvicorn api_server:app --port 8000
 ```
@@ -142,7 +142,7 @@ Nguyên nhân là terminal không đứng trong thư mục chứa `api_server.py
 Cách xử lý:
 
 ```bat
-cd /d D:\ASM_PRN222\Python_RAG_Server
+cd Python_RAG_Server
 python -m uvicorn api_server:app --port 8000
 ```
 

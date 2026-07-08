@@ -27,7 +27,7 @@ Tài liệu này hướng dẫn chi tiết cách cấu hình OpenAI API cho mô 
 4. **Copy mã key ngay lập tức** (mã có dạng `sk-proj-...`). *Lưu ý: Bạn sẽ không thể xem lại mã này sau khi đóng bảng.*
 
 ### 2. Điền Key vào Web Application C#
-Mở file [appsettings.json](file:///d:/ASM_PRN222/PRN222_Project/PRN222.WebApp/appsettings.json) và tiến hành thay thế giá trị mặc định bằng API Key của bạn:
+Mở file [appsettings.json](PRN222_Project/PRN222.RazorWebApp/appsettings.json) và tiến hành thay thế giá trị mặc định bằng API Key của bạn:
 
 ```json
 {
@@ -96,7 +96,7 @@ Hãy copy ID này và điền vào trường `FineTunedModel` trong file `appset
 Để chứng minh luận điểm nghiên cứu khoa học (RBL), hệ thống cung cấp luồng chạy đo lường trực quan thông qua bộ mã nguồn C# có sẵn.
 
 ### 1. Luồng hoạt động của RAG (Truy xuất + Nhập cảnh)
-Trong lớp [ChatService.cs](file:///d:/ASM_PRN222/PRN222_Project/PRN222.Services/ChatService.cs), luồng RAG được thực hiện bằng cách ghép nối thông tin động:
+Trong lớp [ChatService.cs](PRN222_Project/PRN222.Services/ChatService.cs), luồng RAG được thực hiện bằng cách ghép nối thông tin động:
 ```mermaid
 graph TD
     A[Câu hỏi của User] --> B[Local Python BGE-M3]
@@ -115,7 +115,7 @@ graph TD
     C --> D[Trả về câu trả lời từ trí nhớ của mô hình]
 ```
 
-Trong lớp [OpenAiService.cs](file:///d:/ASM_PRN222/PRN222_Project/PRN222.Services/OpenAiService.cs#L38-L43), luồng chuyển đổi diễn ra tự động nhờ tham số `isFineTuned`:
+Trong lớp [OpenAiService.cs](PRN222_Project/PRN222.Services/OpenAiService.cs), luồng chuyển đổi diễn ra tự động nhờ tham số `isFineTuned`:
 ```csharp
 public async Task<string> GenerateChatResponseAsync(string prompt, bool isFineTuned = false)
 {

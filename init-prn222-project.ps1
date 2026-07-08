@@ -36,20 +36,20 @@ if (-not (Test-Path $SolutionDir)) {
     dotnet new classlib -n PRN222.Models
     dotnet new classlib -n PRN222.Repositories
     dotnet new classlib -n PRN222.Services
-    dotnet new mvc -n PRN222.WebApp
+    dotnet new webapp -n PRN222.RazorWebApp
 
     dotnet sln "$SolutionName.sln" add PRN222.Models/PRN222.Models.csproj
     dotnet sln "$SolutionName.sln" add PRN222.Repositories/PRN222.Repositories.csproj
     dotnet sln "$SolutionName.sln" add PRN222.Services/PRN222.Services.csproj
-    dotnet sln "$SolutionName.sln" add PRN222.WebApp/PRN222.WebApp.csproj
+    dotnet sln "$SolutionName.sln" add PRN222.RazorWebApp/PRN222.RazorWebApp.csproj
 
     dotnet add PRN222.Repositories/PRN222.Repositories.csproj reference PRN222.Models/PRN222.Models.csproj
     dotnet add PRN222.Services/PRN222.Services.csproj reference PRN222.Repositories/PRN222.Repositories.csproj
-    dotnet add PRN222.WebApp/PRN222.WebApp.csproj reference PRN222.Services/PRN222.Services.csproj
+    dotnet add PRN222.RazorWebApp/PRN222.RazorWebApp.csproj reference PRN222.Services/PRN222.Services.csproj
 
     dotnet add PRN222.Repositories/PRN222.Repositories.csproj package Microsoft.EntityFrameworkCore --version 8.0.0
     dotnet add PRN222.Repositories/PRN222.Repositories.csproj package Microsoft.EntityFrameworkCore.SqlServer --version 8.0.0
-    dotnet add PRN222.WebApp/PRN222.WebApp.csproj package Microsoft.EntityFrameworkCore.Design --version 8.0.*
+    dotnet add PRN222.RazorWebApp/PRN222.RazorWebApp.csproj package Microsoft.EntityFrameworkCore.Design --version 8.0.*
 
     Pop-Location
 } else {
@@ -105,7 +105,7 @@ if (-not $SkipPythonVenv) {
 Write-Host ""
 Write-Host "Setup completed." -ForegroundColor Green
 Write-Host "Next steps:" -ForegroundColor Yellow
-Write-Host "  1. Review PRN222_Project\PRN222.WebApp\appsettings.json for SQL Server and API keys." -ForegroundColor White
+Write-Host "  1. Review PRN222_Project\PRN222.RazorWebApp\appsettings.json for SQL Server and API keys." -ForegroundColor White
 Write-Host "  2. Run EF migration in Visual Studio Package Manager Console: Update-Database" -ForegroundColor White
 Write-Host "  3. Start Python AI server:" -ForegroundColor White
 Write-Host "     cd /d $PythonDir" -ForegroundColor Gray

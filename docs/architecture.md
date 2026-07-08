@@ -37,9 +37,9 @@ flowchart TB
         ENT[Entity Models]
     end
 
-    subgraph PRES["Presentation Layer (PRN222.WebApp)"]
-        CTRL[Controllers]
-        VIEW[Views]
+    subgraph PRES["Presentation Layer (PRN222.RazorWebApp)"]
+        PAGE[Razor Pages]
+        CODEBEHIND[Code-behind]
         VM[ViewModels]
     end
 
