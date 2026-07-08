@@ -178,5 +178,7 @@ app.MapHub<DocumentUploadHub>("/hubs/documentupload");
 app.MapHub<CourseHub>("/hubs/course");
 app.MapHub<UserHub>("/hubs/user");
 app.MapHub<SystemSettingsHub>("/hubs/systemsettings");
+app.MapHub<TokenUsageHub>("/hubs/tokenusage");  // Phase 2
+app.MapHub<PaymentHub>("/hubs/payment");         // Phase 3
 
 app.Run();

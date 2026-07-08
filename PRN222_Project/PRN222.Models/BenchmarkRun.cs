@@ -7,6 +7,7 @@ namespace PRN222.Models
         public long TotalTimeMs { get; set; }
         public string EmbeddingModel { get; set; }
         public string ChunkingStrategy { get; set; }
+        public string LlmModel { get; set; } = "GPT";
         public string Status { get; set; } // "Running", "Completed", "Failed"
         public string ResultSummary { get; set; }
 
