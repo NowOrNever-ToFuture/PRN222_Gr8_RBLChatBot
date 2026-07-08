@@ -192,7 +192,6 @@ namespace PRN222.Repositories
             modelBuilder.Entity<BenchmarkResult>()
                 .Property(br => br.BotAnswer)
                 .HasColumnType("nvarchar(max)");
-
             // ── Phase 2: TokenUsageLog ──────────────────────────────────
             modelBuilder.Entity<TokenUsageLog>().HasKey(t => t.Id);
             modelBuilder.Entity<TokenUsageLog>()
