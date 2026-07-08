@@ -15,7 +15,7 @@ Phân hệ Python là microservice phụ trách các tác vụ nặng: parse tà
 ### Tạo môi trường ảo
 
 ```bat
-cd /d D:\ASM_PRN222\Python_RAG_Server
+cd Python_RAG_Server
 python -m venv venv
 venv\Scripts\activate
 ```
@@ -23,7 +23,7 @@ venv\Scripts\activate
 Khi kích hoạt thành công, đầu dòng lệnh sẽ có dạng:
 
 ```text
-(venv) D:\ASM_PRN222\Python_RAG_Server>
+(venv) Python_RAG_Server>
 ```
 
 ### Cài thư viện
@@ -86,7 +86,7 @@ python -m uvicorn api_server:app --port 8000
 **Cách xử lý:** Đảm bảo terminal đang đứng trong thư mục chứa file:
 
 ```bat
-cd /d D:\ASM_PRN222\Python_RAG_Server
+cd Python_RAG_Server
 ```
 
 **Lỗi:** server tải model quá lâu lần đầu  

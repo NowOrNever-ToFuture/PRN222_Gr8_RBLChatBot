@@ -1,4 +1,4 @@
-# AGENTS.md — PRN222 Group 8 Assignment 2
+# AGENTS.md — PRN222 Group 8 Assignment 3
 
 Tài liệu này dành cho AI Agent (Copilot, Cursor, Kiro, v.v.) khi làm việc với codebase này.
 Đọc kỹ trước khi sinh code, refactor, hoặc thêm tính năng mới.
@@ -8,23 +8,23 @@ Tài liệu này dành cho AI Agent (Copilot, Cursor, Kiro, v.v.) khi làm việ
 ## 1. Tổng quan kiến trúc
 
 ```
-PRN222_Gr8_Asm2/
-├── PRN222_Project/          # .NET 8 ASP.NET Core MVC
+PRN222_Gr8_RBLChatBot/
+├── PRN222_Project/          # .NET 8 ASP.NET Core Razor Pages
 │   ├── PRN222.Models/       # Entity models — không có business logic
 │   ├── PRN222.Repositories/ # EF Core DbContext + Migrations
-│   ├── PRN222.Services/     # Business logic, Interfaces, DTOs
-│   └── PRN222.WebApp/       # Controllers, Views, ViewModels, Program.cs
+│   ├── PRN222.Services/     # Business logic, Interfaces, DTOs, SignalR Hubs
+│   └── PRN222.RazorWebApp/  # Pages, Models (ViewModels), Program.cs
 └── Python_RAG_Server/       # FastAPI microservice (embedding + document parsing)
     └── api_server.py
 ```
 
 **Dependency flow (một chiều, không được đảo ngược):**
 ```
-WebApp → Services → Repositories → Models
+RazorWebApp → Services → Repositories → Models
 ```
 
-- `WebApp` KHÔNG được tham chiếu trực tiếp `Repositories` hay `Models` ngoài DI setup.
-- `Services` KHÔNG được tham chiếu `WebApp`.
+- `RazorWebApp` KHÔNG được tham chiếu trực tiếp `Repositories` hay `Models` ngoài DI setup.
+- `Services` KHÔNG được tham chiếu `RazorWebApp`.
 - `Models` KHÔNG được tham chiếu bất kỳ project nào khác.
 
 ---
@@ -50,19 +50,22 @@ WebApp → Services → Repositories → Models
 | PRN222.Services | `PRN222.Services` |
 | PRN222.Services (Interfaces) | `PRN222.Services.Interfaces` |
 | PRN222.Services (DTOs) | `PRN222.Services.DTOs` |
-| PRN222.WebApp (Controllers) | `PRN222.WebApp.Controllers` |
-| PRN222.WebApp (ViewModels) | `PRN222.WebApp.Models` |
+| PRN222.RazorWebApp (Pages) | `PRN222.RazorWebApp.Pages.<Feature>` |
+| PRN222.RazorWebApp (ViewModels) | `PRN222.RazorWebApp.Models` |
 
 ### 3.2 Classes & Files
 - **Entity models:** PascalCase, tên số ít — `User`, `Document`, `DocumentChunk`, `BenchmarkRun`
 - **Interfaces:** prefix `I` — `IDocumentService`, `IChatService`, `IEmbeddingService`
 - **Service implementations:** tên class = tên interface bỏ `I` — `DocumentService`, `ChatService`
-- **Controllers:** suffix `Controller` — `DocumentsController`, `ChatController`
-  - Tên controller dùng số nhiều nếu là CRUD resource: `Documents`, `Courses`, `Users`
-  - Tên controller dùng số ít nếu là single-page feature: `Chat`, `Dashboard`, `Account`
+- **Razor Pages (PageModel):** suffix `Model`, kế thừa `PageModel`
+  - File naming: `<Feature>/Index.cshtml` + `<Feature>/Index.cshtml.cs`
+  - Class naming: `IndexModel`, `LoginModel`, `CreateModel`, `UploadModel`
+  - Namespace: `PRN222.RazorWebApp.Pages.<Feature>`
 - **DTOs:** suffix `DTO` hoặc `Dto` — `UploadDocumentDTO`, `PythonParseResponseDto`
 - **ViewModels:** suffix `ViewModel` — `LoginViewModel`, `CreateUserViewModel`, `EditUserViewModel`
-- **Hubs (SignalR):** suffix `Hub` — `TestQuestionHub`, `BenchmarkHub`
+- **Hubs (SignalR):** suffix `Hub` — `TestQuestionHub`, `BenchmarkHub`, `CourseHub`
+  - Hub classes rỗng, đặt inline trong file service tương ứng (ví dụ `TestQuestionHub` trong `TestQuestionService.cs`)
+  - Inject `IHubContext<THub>` vào service constructor để bắn event
 
 ### 3.3 Members
 - **Private fields:** prefix `_` camelCase — `_documentService`, `_dbContext`, `_httpClientFactory`
@@ -95,12 +98,18 @@ WebApp → Services → Repositories → Models
   _service = service ?? throw new ArgumentNullException(nameof(service));
   ```
 
-### 4.2 Controllers
-- Luôn dùng `[Authorize]` ở class level, thêm `[AllowAnonymous]` cho action cụ thể nếu cần.
-- Không viết business logic trong controller — chỉ gọi service, xử lý kết quả, trả về View/Redirect.
+### 4.2 Pages (Razor Pages)
+- File naming: `<Feature>/Index.cshtml` + `<Feature>/Index.cshtml.cs` (code-behind là PageModel)
+- Class naming: suffix `Model` — `IndexModel`, `LoginModel`, `UploadModel`, `CreateModel`
+- Namespace: `PRN222.RazorWebApp.Pages.<Feature>`
+- Luôn dùng `[Authorize]` ở class level PageModel, thêm `[AllowAnonymous]` cho page cụ thể nếu cần.
+- Không viết business logic trong PageModel — chỉ gọi service, xử lý kết quả, trả về Page/Redirect.
+- Dùng `[BindProperty]` cho form binding (thay vì manual `Request.Form`).
+- Handler methods: `OnGetAsync()`, `OnPostAsync()`, `OnPostDeleteAsync()`, `OnPostXxxAsync()`.
+- `[ValidateAntiForgeryToken]` tự động cho POST trong Razor Pages — không cần thêm attribute thủ công.
+- Partial views: prefix `_` — ví dụ `_CourseCard.cshtml`, `_DocumentRow.cshtml`, `_UserRow.cshtml`
 - Dùng `TempData["SuccessMessage"]` và `TempData["ErrorMessage"]` để truyền thông báo sau redirect.
 - Validate user identity qua `User.FindFirst(ClaimTypes.NameIdentifier)` và `User.FindFirst(ClaimTypes.Role)`.
-- Dùng `[ValidateAntiForgeryToken]` cho tất cả POST actions.
 
 ### 4.3 Services & Interfaces
 - Mỗi service phải có interface tương ứng trong `Interfaces/`.
@@ -117,7 +126,7 @@ WebApp → Services → Repositories → Models
 ### 4.5 Error Handling
 - Ném `InvalidOperationException` cho lỗi business logic (validation, not found, forbidden).
 - Ném `ArgumentException` / `ArgumentNullException` cho lỗi input.
-- Không bắt `Exception` chung chung trong service — để controller xử lý và hiển thị lỗi.
+- Không bắt `Exception` chung chung trong service — để PageModel xử lý và hiển thị lỗi.
 - Log lỗi ra `Console.Error.WriteLine` tạm thời (chưa có logging framework).
 
 ### 4.6 File & Path
@@ -129,13 +138,38 @@ WebApp → Services → Repositories → Models
 
 ### 4.7 Authentication & Authorization
 - Cookie-based authentication, scheme: `CookieAuthenticationDefaults.AuthenticationScheme`.
-- Hai roles: `"Admin"` và `"Student"` (string literal, không dùng enum).
+- Ba roles: `"Admin"`, `"Student"`, và `"Lecturer"` (string literal, không dùng enum).
 - Login path: `/Account/Login`, Logout path: `/Account/Logout`.
 - Session expire: 24 giờ.
+- **Lecturer** được gán vào Course qua entity `CourseLecturer` (many-to-many join table).
+  - Lecturer chỉ upload/xóa document cho môn mà mình quản lý (`ManagedById`) hoặc được assign.
+- **Student** chỉ xem document đã indexed.
+- **Admin** quản lý tất cả (users, courses, settings) nhưng KHÔNG upload document học tập.
 
 ---
 
-## 5. Python RAG Server
+## 5. SignalR Hubs
+
+Hệ thống sử dụng **SignalR** để cập nhật real-time cho client.
+
+| Hub Class | Endpoint | Defined In |
+|---|---|---|
+| `TestQuestionHub` | `/hubs/testquestion` | `TestQuestionService.cs` |
+| `BenchmarkHub` | `/hubs/benchmark` | `BenchmarkRunnerService.cs` |
+| `DocumentUploadHub` | `/hubs/documentupload` | `DocumentService.cs` |
+| `CourseHub` | `/hubs/course` | `CourseService.cs` |
+| `UserHub` | `/hubs/user` | `UserService.cs` |
+| `SystemSettingsHub` | `/hubs/systemsettings` | `SystemSettingService.cs` |
+
+### Quy tắc:
+- Hub classes **rỗng** — chỉ khai báo `public class XxxHub : Hub { }`, đặt inline trong file service tương ứng.
+- Logic bắn event nằm trong Service, inject `IHubContext<THub>` qua constructor.
+- Endpoint mapping nằm trong `Program.cs`: `app.MapHub<TestQuestionHub>("/hubs/testquestion");`
+- Hub definitions thuộc project `PRN222.Services`, KHÔNG thuộc WebApp.
+
+---
+
+## 6. Python RAG Server
 
 - Framework: **FastAPI** + **uvicorn**, port `8000`.
 - Chạy từ thư mục `Python_RAG_Server/`: `uvicorn api_server:app --reload`
@@ -149,7 +183,7 @@ WebApp → Services → Repositories → Models
 
 ---
 
-## 6. Cấu hình môi trường
+## 7. Cấu hình môi trường
 
 - **Connection string:** `appsettings.json` → `ConnectionStrings:DefaultConnection`
   - Default: `Server=.\SQLEXPRESS;Database=PRN222_ChatbotDB;User Id=sa;Password=12345;TrustServerCertificate=True;`
@@ -160,22 +194,22 @@ WebApp → Services → Repositories → Models
 
 ---
 
-## 7. Migrations
+## 8. Migrations
 
 - Migration files nằm tại `PRN222.Repositories/Migrations/`.
 - Tạo migration mới: chạy từ thư mục `PRN222_Project/`
   ```
-  dotnet ef migrations add <TênMigration> --project PRN222.Repositories --startup-project PRN222.WebApp
+  dotnet ef migrations add <TênMigration> --project PRN222.Repositories --startup-project PRN222.RazorWebApp
   ```
 - Apply migration:
   ```
-  dotnet ef database update --project PRN222.Repositories --startup-project PRN222.WebApp
+  dotnet ef database update --project PRN222.Repositories --startup-project PRN222.RazorWebApp
   ```
 - Không sửa tay file migration đã tạo.
 
 ---
 
-## 8. Build & Run
+## 9. Build & Run
 
 ```bash
 # Restore & build
@@ -184,7 +218,7 @@ dotnet restore
 dotnet build
 
 # Run web app
-dotnet run --project PRN222.WebApp
+dotnet run --project PRN222.RazorWebApp
 
 # Run Python server (cần Python 3.10+, venv đã setup)
 cd Python_RAG_Server
@@ -196,7 +230,7 @@ uvicorn api_server:app --reload --port 8000
 
 ---
 
-## 9. Những điều KHÔNG được làm
+## 10. Những điều KHÔNG được làm
 
 - Không thêm project reference ngược chiều (ví dụ: `Models` tham chiếu `Services`).
 - Không dùng `static` class cho services — phải qua DI.

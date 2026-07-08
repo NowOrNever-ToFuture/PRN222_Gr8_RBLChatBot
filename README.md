@@ -44,7 +44,7 @@ Nếu chỉ muốn restore .NET mà chưa cài Python dependencies:
 ## Chạy Python AI Server
 
 ```bat
-cd /d D:\ASM_PRN222\Python_RAG_Server
+cd Python_RAG_Server
 venv\Scripts\activate
 python -m uvicorn api_server:app --port 8000
 ```
@@ -60,7 +60,7 @@ Lần đầu chạy, server sẽ tải các embedding model từ HuggingFace v�
 ## Chạy Web App
 
 1. Mở `PRN222_Project/PRN222_Project.sln` bằng Visual Studio.
-2. Kiểm tra `PRN222_Project/PRN222.WebApp/appsettings.json`.
+2. Kiểm tra `PRN222_Project/PRN222.RazorWebApp/appsettings.json`.
 3. Chạy migration trong Package Manager Console:
 
 ```powershell
