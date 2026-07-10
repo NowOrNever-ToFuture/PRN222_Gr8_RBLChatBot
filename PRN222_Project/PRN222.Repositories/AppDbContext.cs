@@ -16,6 +16,9 @@ namespace PRN222.Repositories
         public DbSet<BenchmarkRun> BenchmarkRuns { get; set; }
         public DbSet<BenchmarkResult> BenchmarkResults { get; set; }
         public DbSet<SystemSetting> SystemSettings { get; set; }
+        public DbSet<PricingPackage> PricingPackages { get; set; }
+        public DbSet<UserSubscription> UserSubscriptions { get; set; }
+        public DbSet<PaymentTransaction> PaymentTransactions { get; set; }
 
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
@@ -184,6 +187,53 @@ namespace PRN222.Repositories
             modelBuilder.Entity<BenchmarkResult>()
                 .Property(br => br.BotAnswer)
                 .HasColumnType("nvarchar(max)");
+
+            // PricingPackage
+            modelBuilder.Entity<PricingPackage>()
+                .HasKey(p => p.Id);
+            modelBuilder.Entity<PricingPackage>()
+                .Property(p => p.Id)
+                .HasDefaultValueSql("NEWSEQUENTIALID()");
+            modelBuilder.Entity<PricingPackage>()
+                .Property(p => p.Description)
+                .HasColumnType("nvarchar(max)");
+
+            // UserSubscription
+            modelBuilder.Entity<UserSubscription>()
+                .HasKey(us => us.Id);
+            modelBuilder.Entity<UserSubscription>()
+                .Property(us => us.Id)
+                .HasDefaultValueSql("NEWSEQUENTIALID()");
+            modelBuilder.Entity<UserSubscription>()
+                .HasOne(us => us.User)
+                .WithMany(u => u.UserSubscriptions)
+                .HasForeignKey(us => us.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<UserSubscription>()
+                .HasOne(us => us.PricingPackage)
+                .WithMany(p => p.UserSubscriptions)
+                .HasForeignKey(us => us.PricingPackageId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // PaymentTransaction
+            modelBuilder.Entity<PaymentTransaction>()
+                .HasKey(pt => pt.Id);
+            modelBuilder.Entity<PaymentTransaction>()
+                .Property(pt => pt.Id)
+                .HasDefaultValueSql("NEWSEQUENTIALID()");
+            modelBuilder.Entity<PaymentTransaction>()
+                .Property(pt => pt.TransactionCode)
+                .HasColumnType("nvarchar(max)");
+            modelBuilder.Entity<PaymentTransaction>()
+                .HasOne(pt => pt.User)
+                .WithMany(u => u.PaymentTransactions)
+                .HasForeignKey(pt => pt.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<PaymentTransaction>()
+                .HasOne(pt => pt.PricingPackage)
+                .WithMany()
+                .HasForeignKey(pt => pt.PricingPackageId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

@@ -153,6 +153,43 @@ using (var scope = app.Services.CreateScope())
         );
         dbContext.SaveChanges();
     }
+
+    if (!dbContext.PricingPackages.Any())
+    {
+        dbContext.PricingPackages.AddRange(
+            new PricingPackage
+            {
+                Id = Guid.NewGuid(),
+                Name = "Free",
+                Description = "Gói dùng thử miễn phí cho mọi tài khoản mới.",
+                Price = 0,
+                TokenQuota = 10000,
+                DurationDays = 30,
+                IsActive = true
+            },
+            new PricingPackage
+            {
+                Id = Guid.NewGuid(),
+                Name = "Standard",
+                Description = "Phù hợp cho học sinh học tập cơ bản hàng ngày.",
+                Price = 50000,
+                TokenQuota = 100000,
+                DurationDays = 30,
+                IsActive = true
+            },
+            new PricingPackage
+            {
+                Id = Guid.NewGuid(),
+                Name = "VIP",
+                Description = "Hạn mức lớn dành cho học tập chuyên sâu và tài liệu dài.",
+                Price = 100000,
+                TokenQuota = 250000,
+                DurationDays = 30,
+                IsActive = true
+            }
+        );
+        dbContext.SaveChanges();
+    }
 }
 
 if (!app.Environment.IsDevelopment())
@@ -178,5 +215,44 @@ app.MapHub<DocumentUploadHub>("/hubs/documentupload");
 app.MapHub<CourseHub>("/hubs/course");
 app.MapHub<UserHub>("/hubs/user");
 app.MapHub<SystemSettingsHub>("/hubs/systemsettings");
+
+app.MapHub<PaymentHub>("/hubs/payment");
+
+app.MapMethods("/api/payment/webhook", new[] { "GET", "POST" }, async (HttpContext ctx, IPaymentService paymentService) =>
+{
+    try
+    {
+        string data = "";
+        if (ctx.Request.Method == "POST")
+        {
+            using var reader = new System.IO.StreamReader(ctx.Request.Body);
+            data = await reader.ReadToEndAsync();
+        }
+        else
+        {
+            data = ctx.Request.QueryString.Value ?? "";
+            if (data.StartsWith("?"))
+            {
+                data = data.Substring(1);
+            }
+        }
+
+        var result = await paymentService.ProcessWebhookAsync(data);
+        if (result.Success)
+        {
+            return Results.Json(new { RspCode = "00", Message = "Confirm Success" });
+        }
+        else
+        {
+            Console.Error.WriteLine($"Webhook processing error: {result.Message}");
+            return Results.Json(new { RspCode = "99", Message = result.Message });
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine($"Webhook endpoint error: {ex.Message}");
+        return Results.Json(new { RspCode = "99", Message = ex.Message });
+    }
+});
 
 app.Run();

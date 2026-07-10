@@ -28,6 +28,7 @@ namespace PRN222.Services
             services.AddScoped<IBenchmarkRunnerService, BenchmarkRunnerService>();
             services.AddScoped<IDashboardService, DashboardService>();
             services.AddScoped<IChatService, ChatService>();
+            services.AddScoped<IPaymentService, PaymentService>();
 
             return services;
         }
