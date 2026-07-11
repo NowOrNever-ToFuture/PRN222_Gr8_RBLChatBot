@@ -9,3 +9,9 @@ python-docx
 python-pptx
 pypdf
 tabulate
+httpx
+torch
+transformers
+peft
+accelerate
+bitsandbytes
