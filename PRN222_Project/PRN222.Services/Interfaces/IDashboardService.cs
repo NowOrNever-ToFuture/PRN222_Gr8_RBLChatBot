@@ -15,6 +15,11 @@ namespace PRN222.Services.Interfaces
         Task<List<ChartDataDto>> GetChartDataAsync();
 
         /// <summary>
+        /// Lấy điểm chất lượng trung bình của từng LLM theo độ khó câu hỏi (1/2/3).
+        /// </summary>
+        Task<List<DifficultyChartDataDto>> GetDifficultyChartDataAsync();
+
+        /// <summary>
         /// Chạy benchmark ngầm (fire-and-forget).
         /// Trả về BenchmarkRunId để client theo dõi qua SignalR.
         /// </summary>
@@ -48,6 +53,16 @@ namespace PRN222.Services.Interfaces
         public double AvgLatency { get; set; }
         public double OverallScore { get; set; }
         public bool IsBest { get; set; }
+        public int TotalQuestions { get; set; }
+    }
+
+    public class DifficultyChartDataDto
+    {
+        public string Model { get; set; } = "";
+        public int Difficulty { get; set; } // 1: Dễ, 2: Trung bình, 3: Khó
+        public double AvgFaithfulness { get; set; }
+        public double AvgRelevance { get; set; }
+        public double QualityScore { get; set; } // Trung bình cộng của 2 điểm trên
         public int TotalQuestions { get; set; }
     }
 

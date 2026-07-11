@@ -106,6 +106,32 @@ namespace PRN222.Services
             return orderedData;
         }
 
+        public async Task<List<DifficultyChartDataDto>> GetDifficultyChartDataAsync()
+        {
+            return await _dbContext.BenchmarkResults
+                .Include(r => r.BenchmarkRun)
+                .Include(r => r.TestQuestion)
+                .Where(r => r.BenchmarkRun.Status == "Completed")
+                .GroupBy(r => new
+                {
+                    r.BenchmarkRun.LlmModel,
+                    r.TestQuestion.Difficulty
+                })
+                .Select(g => new DifficultyChartDataDto
+                {
+                    Model = g.Key.LlmModel,
+                    Difficulty = g.Key.Difficulty,
+                    AvgFaithfulness = Math.Round(g.Average(r => (double)r.FaithfulnessScore), 3),
+                    AvgRelevance = Math.Round(g.Average(r => (double)r.RelevanceScore), 3),
+                    QualityScore = Math.Round(
+                        g.Average(r => ((double)r.FaithfulnessScore + (double)r.RelevanceScore) / 2.0), 3),
+                    TotalQuestions = g.Count()
+                })
+                .OrderBy(d => d.Model)
+                .ThenBy(d => d.Difficulty)
+                .ToListAsync();
+        }
+
         /// <summary>
         /// Chạy benchmark NGẦM trên background thread.
         /// Tạo scope mới cho DI để tránh DbContext bị dispose.
