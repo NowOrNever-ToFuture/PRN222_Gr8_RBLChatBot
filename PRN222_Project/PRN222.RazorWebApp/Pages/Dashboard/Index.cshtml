@@ -45,9 +45,15 @@
     }
 
     <section class="app-card">
-        <div class="app-card-title"><i class="bi bi-sliders2-vertical text-primary"></i> Chạy benchmark theo chiến lược chunking</div>
-        <p class="app-muted mb-4">Thao tác benchmark được gom lại để admin dễ chuyển model, re-index dữ liệu và theo dõi tiến độ theo thời gian thực.</p>
-        <form id="benchmarkForm" class="row g-3 align-items-end">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+            <div>
+                <div class="app-card-title mb-1"><i class="bi bi-speedometer2 text-primary"></i> Đo benchmark 3 model AI</div>
+                <p class="app-muted mb-0">Re-index tri thức một lần rồi chạy tuần tự GPT-4o-mini · Gemini-2.5-Flash · Qwen-LoRA trên cùng bộ câu hỏi test để so sánh chất lượng &amp; hiệu năng.</p>
+            </div>
+            <span id="benchmarkStateBadge" class="app-badge-soft app-badge-blue"><i class="bi bi-circle-fill" style="font-size:.5rem"></i> Sẵn sàng</span>
+        </div>
+
+        <form id="benchmarkForm" class="row g-3 align-items-end mt-2">
             <div class="col-lg-4 col-md-6">
                 <label class="form-label fw-bold">Embedding model</label>
                 <select id="embeddingModel" name="embeddingModel" class="form-select">
@@ -67,20 +73,56 @@
                 </select>
             </div>
             <div class="col-lg-4">
-                <button type="submit" id="runBenchmarkBtn" class="btn btn-warning btn-lg w-100 fw-bold">
-                    <i class="bi bi-play-fill"></i> Re-index & Benchmark
+                <button type="submit" id="runBenchmarkBtn" class="app-btn-primary w-100" style="padding:12px 18px;">
+                    <i class="bi bi-play-fill"></i> Re-index &amp; Benchmark
                 </button>
             </div>
         </form>
-        <div id="benchmarkStatus" class="alert alert-secondary mt-4 mb-0 d-none" style="border-radius: 16px;">
+
+        <div id="benchmarkStatus" class="bench-progress d-none">
             <div class="d-flex justify-content-between align-items-center mb-2">
-                <span id="benchmarkStatusText">Đang chuẩn bị benchmark...</span>
-                <span id="benchmarkPercent" class="fw-bold">0%</span>
+                <span id="benchmarkStatusText" class="fw-semibold">Đang chuẩn bị benchmark...</span>
+                <span id="benchmarkPercent" class="fw-bold text-primary">0%</span>
             </div>
-            <div class="progress" style="height: 8px; border-radius: 999px; overflow: hidden;">
-                <div id="benchmarkProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+            <div class="bench-progress-track">
+                <div id="benchmarkProgressBar" class="bench-progress-bar" style="width: 0%"></div>
             </div>
-            <div id="benchmarkLiveResult" class="small text-muted mt-2"></div>
+        </div>
+
+        <div class="bench-models mt-4">
+            <div class="bench-model-card" data-model="GPT-4o-mini" style="--accent:#0f9d7a;">
+                <div class="bench-model-head">
+                    <div class="bench-model-name"><span class="bench-model-icon"><i class="bi bi-stars"></i></span> GPT-4o-mini</div>
+                    <span class="bench-status-dot" data-state="idle"></span>
+                </div>
+                <div class="bench-model-progress small app-muted">Chờ chạy…</div>
+                <div class="bench-metrics">
+                    <div class="bench-metric"><span>Faithfulness</span><strong data-metric="faithfulness">–</strong></div>
+                    <div class="bench-metric"><span>Relevance</span><strong data-metric="relevance">–</strong></div>
+                </div>
+            </div>
+            <div class="bench-model-card" data-model="Gemini-2.5-Flash" style="--accent:#2f7df6;">
+                <div class="bench-model-head">
+                    <div class="bench-model-name"><span class="bench-model-icon"><i class="bi bi-gem"></i></span> Gemini-2.5-Flash</div>
+                    <span class="bench-status-dot" data-state="idle"></span>
+                </div>
+                <div class="bench-model-progress small app-muted">Chờ chạy…</div>
+                <div class="bench-metrics">
+                    <div class="bench-metric"><span>Faithfulness</span><strong data-metric="faithfulness">–</strong></div>
+                    <div class="bench-metric"><span>Relevance</span><strong data-metric="relevance">–</strong></div>
+                </div>
+            </div>
+            <div class="bench-model-card" data-model="Qwen-2.5-1.5B-LoRA" style="--accent:#f59e0b;">
+                <div class="bench-model-head">
+                    <div class="bench-model-name"><span class="bench-model-icon"><i class="bi bi-cpu"></i></span> Qwen-2.5-1.5B-LoRA</div>
+                    <span class="bench-status-dot" data-state="idle"></span>
+                </div>
+                <div class="bench-model-progress small app-muted">Chờ chạy…</div>
+                <div class="bench-metrics">
+                    <div class="bench-metric"><span>Faithfulness</span><strong data-metric="faithfulness">–</strong></div>
+                    <div class="bench-metric"><span>Relevance</span><strong data-metric="relevance">–</strong></div>
+                </div>
+            </div>
         </div>
     </section>
 
@@ -107,6 +149,8 @@
         </div>
     </section>
 
+    <div id="benchmarkWinner" class="alert alert-success d-none" style="border-radius: 16px;"></div>
+
     <section class="app-grid-3">
         <div class="app-card">
             <div class="app-card-title"><i class="bi bi-clock-history text-primary"></i> Lịch sử test gần đây</div>
@@ -124,7 +168,7 @@
                     {
                         <div class="app-list-item">
                             <div>
-                                <div class="fw-bold">@run.EmbeddingModel</div>
+                                <div class="fw-bold">@run.LlmModel</div>
                                 <div class="small app-muted">@run.ChunkingStrategy · @run.RunDate.AddHours(7).ToString("dd/MM HH:mm")</div>
                             </div>
                             <span class="app-badge-soft app-badge-blue">@(run.TotalTimeMs / 1000.0)s</span>
@@ -180,18 +224,57 @@
     document.getElementById('embeddingModel').value = activeModel || 'bge-m3';
     document.getElementById('chunkingStrategy').value = activeChunkingStrategy || 'markdown_header';
 
+    // ----- Trạng thái live cho 3 thẻ model -----
+    const modelStats = {};
+    function benchCard(model) { return document.querySelector(`.bench-model-card[data-model="${model}"]`); }
+    function setStateBadge(icon, text, badgeClass) {
+        const badge = document.getElementById('benchmarkStateBadge');
+        badge.className = 'app-badge-soft ' + badgeClass;
+        badge.innerHTML = `<i class="bi ${icon}" style="font-size:.55rem"></i> ${text}`;
+    }
+    function resetBenchCards() {
+        for (const key of Object.keys(modelStats)) delete modelStats[key];
+        document.querySelectorAll('.bench-model-card').forEach(card => {
+            card.classList.remove('is-running');
+            card.querySelector('.bench-status-dot').dataset.state = 'idle';
+            card.querySelector('.bench-model-progress').textContent = 'Chờ chạy…';
+            card.querySelectorAll('.bench-metric strong').forEach(el => el.textContent = '–');
+        });
+    }
+    function markCardsDone() {
+        document.querySelectorAll('.bench-model-card').forEach(card => {
+            card.classList.remove('is-running');
+            const dot = card.querySelector('.bench-status-dot');
+            if (dot.dataset.state === 'running') dot.dataset.state = 'done';
+        });
+    }
+
     const benchmarkConnection = new signalR.HubConnectionBuilder().withUrl("/hubs/benchmark").withAutomaticReconnect().build();
     benchmarkConnection.on("ReceiveProgress", (percent, message) => {
         const status = document.getElementById('benchmarkStatus');
-        status.classList.remove('d-none', 'alert-danger');
-        status.classList.add('alert-secondary');
+        status.classList.remove('d-none', 'is-error');
         document.getElementById('benchmarkStatusText').textContent = message;
         document.getElementById('benchmarkPercent').textContent = percent + '%';
         document.getElementById('benchmarkProgressBar').style.width = percent + '%';
-        if (percent >= 100) { document.getElementById('runBenchmarkBtn').disabled = false; setTimeout(loadChartData, 1000); }
+        if (percent >= 100) {
+            document.getElementById('runBenchmarkBtn').disabled = false;
+            markCardsDone();
+            setStateBadge('bi-check-circle-fill', 'Hoàn tất', 'app-badge-green');
+            setTimeout(loadChartData, 1000);
+        }
     });
-    benchmarkConnection.on("ReceiveLiveResult", (index, question, answer, faithfulness, relevance) => {
-        document.getElementById('benchmarkLiveResult').textContent = `Câu ${index}: Faithfulness ${Number(faithfulness).toFixed(2)}, Relevance ${Number(relevance).toFixed(2)}`;
+    benchmarkConnection.on("ReceiveLiveResult", (model, index, question, answer, faithfulness, relevance) => {
+        const card = benchCard(model);
+        if (!card) return;
+        const stat = modelStats[model] ?? (modelStats[model] = { sumF: 0, sumR: 0, count: 0 });
+        stat.sumF += Number(faithfulness) || 0;
+        stat.sumR += Number(relevance) || 0;
+        stat.count += 1;
+        card.classList.add('is-running');
+        card.querySelector('.bench-status-dot').dataset.state = 'running';
+        card.querySelector('.bench-model-progress').textContent = `Câu ${index} · TB sau ${stat.count} câu`;
+        card.querySelector('[data-metric="faithfulness"]').textContent = (stat.sumF / stat.count).toFixed(2);
+        card.querySelector('[data-metric="relevance"]').textContent = (stat.sumR / stat.count).toFixed(2);
     });
     benchmarkConnection.start().catch(err => console.error("Benchmark SignalR Error:", err));
 
@@ -201,12 +284,12 @@
         const status = document.getElementById('benchmarkStatus');
         const runButton = document.getElementById('runBenchmarkBtn');
         runButton.disabled = true;
-        status.classList.remove('d-none', 'alert-danger');
-        status.classList.add('alert-secondary');
+        resetBenchCards();
+        setStateBadge('bi-arrow-repeat', 'Đang chạy', 'app-badge-amber');
+        status.classList.remove('d-none', 'is-error');
         document.getElementById('benchmarkStatusText').textContent = 'Đang re-index tài liệu...';
         document.getElementById('benchmarkPercent').textContent = '0%';
         document.getElementById('benchmarkProgressBar').style.width = '0%';
-        document.getElementById('benchmarkLiveResult').textContent = '';
         try {
             const response = await fetch('/Dashboard/Index?handler=RunBenchmark', { method: 'POST', body: formData, headers: { 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '' } });
             const result = await response.json();
@@ -214,8 +297,8 @@
             document.getElementById('benchmarkStatusText').textContent = result.message;
         } catch (err) {
             runButton.disabled = false;
-            status.classList.remove('alert-secondary');
-            status.classList.add('alert-danger');
+            status.classList.add('is-error');
+            setStateBadge('bi-exclamation-triangle-fill', 'Lỗi', 'app-badge-rose');
             document.getElementById('benchmarkStatusText').textContent = err.message;
         }
     });
@@ -230,18 +313,23 @@
             const labels = data.map(d => d.model);
             const faithfulness = data.map(d => d.avgFaithfulness);
             const relevance = data.map(d => d.avgRelevance);
+            const overall = data.map(d => d.overallScore);
             const latency = data.map(d => d.avgLatency);
+            const winner = data.find(d => d.isBest) ?? data[0];
+            const winnerElement = document.getElementById('benchmarkWinner');
+            winnerElement.classList.remove('d-none');
+            winnerElement.innerHTML = `<strong>🏆 Model phù hợp nhất:</strong> ${winner.model} · Điểm tổng ${Number(winner.overallScore).toFixed(3)}`;
             if (barChart) barChart.destroy();
             barChart = new Chart(document.getElementById('barChart').getContext('2d'), {
                 type: 'bar',
-                data: { labels, datasets: [{ label: 'Faithfulness', data: faithfulness, backgroundColor: 'rgba(31,111,235,0.8)', borderColor: 'rgba(31,111,235,1)', borderWidth: 1, borderRadius: 8 }, { label: 'Relevance', data: relevance, backgroundColor: 'rgba(245,158,11,0.8)', borderColor: 'rgba(245,158,11,1)', borderWidth: 1, borderRadius: 8 }] },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 1.0 } } }
+                data: { labels, datasets: [{ label: 'Độ trung thực', data: faithfulness, backgroundColor: 'rgba(31,111,235,0.8)', borderColor: 'rgba(31,111,235,1)', borderWidth: 1, borderRadius: 8 }, { label: 'Độ liên quan', data: relevance, backgroundColor: 'rgba(245,158,11,0.8)', borderColor: 'rgba(245,158,11,1)', borderWidth: 1, borderRadius: 8 }, { label: 'Điểm tổng', data: overall, backgroundColor: 'rgba(15,157,122,0.8)', borderColor: 'rgba(15,157,122,1)', borderWidth: 1, borderRadius: 8 }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 1.0, title: { display: true, text: 'Điểm (0 – 1)' } } }, plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${Number(ctx.parsed.y).toFixed(3)}` } } } }
             });
             if (lineChart) lineChart.destroy();
             lineChart = new Chart(document.getElementById('lineChart').getContext('2d'), {
                 type: 'line',
-                data: { labels, datasets: [{ label: 'Latency (ms)', data: latency, borderColor: '#0f9d7a', backgroundColor: 'rgba(15,157,122,0.12)', fill: true, tension: 0.35, pointRadius: 5 }] },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+                data: { labels, datasets: [{ label: 'Thời gian phản hồi (ms)', data: latency, borderColor: '#0f9d7a', backgroundColor: 'rgba(15,157,122,0.12)', fill: true, tension: 0.35, pointRadius: 5 }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, title: { display: true, text: 'Mili giây (ms)' } } }, plugins: { tooltip: { callbacks: { label: (ctx) => `Thời gian phản hồi: ${Number(ctx.parsed.y).toLocaleString('vi-VN')} ms` } } } }
             });
         } catch (err) { console.error('Lỗi load chart data:', err); }
     }

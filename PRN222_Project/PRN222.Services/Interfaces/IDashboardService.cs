@@ -10,7 +10,7 @@ namespace PRN222.Services.Interfaces
         Task<List<BenchmarkRun>> GetRecentRunsAsync(int count = 10);
 
         /// <summary>
-        /// Lấy dữ liệu biểu đồ: GroupBy EmbeddingModel → Avg Faithfulness, Relevance, Latency.
+        /// Lấy dữ liệu biểu đồ theo LLM, embedding model và chunking strategy.
         /// </summary>
         Task<List<ChartDataDto>> GetChartDataAsync();
 
@@ -46,6 +46,8 @@ namespace PRN222.Services.Interfaces
         public double AvgFaithfulness { get; set; }
         public double AvgRelevance { get; set; }
         public double AvgLatency { get; set; }
+        public double OverallScore { get; set; }
+        public bool IsBest { get; set; }
         public int TotalQuestions { get; set; }
     }
 

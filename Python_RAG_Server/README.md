@@ -58,6 +58,61 @@ Kiểm tra server:
 http://localhost:8000/api/health
 ```
 
+Mở Swagger để test trực tiếp các API:
+
+```text
+http://localhost:8000/docs
+```
+
+### Test Qwen LoRA API
+
+Model chỉ được load vào GPU khi có request chat đầu tiên. Request đầu có thể
+mất nhiều thời gian hơn các request tiếp theo.
+
+```powershell
+$body = @{ message = "PRN222 là môn học về gì?" } | ConvertTo-Json
+Invoke-RestMethod `
+  -Method Post `
+  -Uri "http://localhost:8000/api/qwen/chat" `
+  -ContentType "application/json" `
+  -Body $body
+```
+
+Response:
+
+```json
+{
+  "answer": "...",
+  "model": "qwen2.5-1.5b-instruct-lora"
+}
+```
+
+Endpoint cũ `POST /qwen-chat` vẫn được giữ để tương thích ngược.
+
+### AI Gateway: GPT, Gemini và Qwen
+
+`run_demo.bat` nạp GitHub Models token và Gemini API key từ .NET User
+Secrets, sau đó mở một gateway duy nhất tại port `8000`.
+
+```text
+POST http://localhost:8000/api/chat/gpt
+POST http://localhost:8000/api/chat/gemini
+POST http://localhost:8000/api/chat/qwen
+```
+
+Body dùng chung:
+
+```json
+{
+  "message": "Câu hỏi cần kiểm tra",
+  "max_new_tokens": 256,
+  "temperature": 0
+}
+```
+
+Có thể dùng endpoint thống nhất `POST /api/chat` và truyền thêm `provider`
+với một trong ba giá trị: `gpt`, `gemini`, `qwen`.
+
 Giữ nguyên cửa sổ CMD/PowerShell này trong khi demo để hội đồng thấy request từ web C# gọi sang Python theo thời gian thực.
 
 ## 2. Cài Đặt Web Application .NET

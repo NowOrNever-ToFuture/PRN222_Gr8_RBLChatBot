@@ -57,19 +57,53 @@ namespace PRN222.Services
 
         public async Task<List<ChartDataDto>> GetChartDataAsync()
         {
-            return await _dbContext.BenchmarkResults
+            var data = await _dbContext.BenchmarkResults
                 .Include(r => r.BenchmarkRun)
                 .Where(r => r.BenchmarkRun.Status == "Completed")
-                .GroupBy(r => new { r.BenchmarkRun.EmbeddingModel, r.BenchmarkRun.ChunkingStrategy })
+                .GroupBy(r => new
+                {
+                    r.BenchmarkRun.LlmModel,
+                    r.BenchmarkRun.EmbeddingModel,
+                    r.BenchmarkRun.ChunkingStrategy
+                })
                 .Select(g => new ChartDataDto
                 {
-                    Model = g.Key.EmbeddingModel + " / " + g.Key.ChunkingStrategy,
+                    Model = g.Key.LlmModel + " (" + g.Key.EmbeddingModel + " / " + g.Key.ChunkingStrategy + ")",
                     AvgFaithfulness = Math.Round(g.Average(r => (double)r.FaithfulnessScore), 3),
                     AvgRelevance = Math.Round(g.Average(r => (double)r.RelevanceScore), 3),
                     AvgLatency = Math.Round(g.Average(r => (double)r.LatencyMs), 0),
                     TotalQuestions = g.Count()
                 })
                 .ToListAsync();
+
+            if (data.Count == 0)
+                return data;
+
+            var positiveLatencies = data
+                .Where(item => item.AvgLatency > 0)
+                .Select(item => item.AvgLatency)
+                .ToList();
+            var minimumLatency = positiveLatencies.Count > 0
+                ? positiveLatencies.Min()
+                : 0;
+
+            foreach (var item in data)
+            {
+                var performanceScore = item.AvgLatency > 0 && minimumLatency > 0
+                    ? minimumLatency / item.AvgLatency
+                    : 0;
+                item.OverallScore = Math.Round(
+                    item.AvgFaithfulness * 0.45
+                    + item.AvgRelevance * 0.45
+                    + performanceScore * 0.10,
+                    3);
+            }
+
+            var orderedData = data
+                .OrderByDescending(item => item.OverallScore)
+                .ToList();
+            orderedData[0].IsBest = true;
+            return orderedData;
         }
 
         /// <summary>
@@ -92,7 +126,7 @@ namespace PRN222.Services
                 try
                 {
                     await documentService.ReindexIndexedDocumentsAsync(embeddingModel, chunkingStrategy);
-                    await benchmarkRunner.RunBenchmarkAsync(embeddingModel, chunkingStrategy);
+                    await benchmarkRunner.RunBenchmarkAsync(runId, embeddingModel, chunkingStrategy);
                 }
                 catch (Exception ex)
                 {
