@@ -9,7 +9,7 @@
         <div class="app-hero-content">
             <div class="app-eyebrow"><i class="bi bi-credit-card-2-front text-primary"></i> Đơn hàng thanh toán</div>
             <h2>Xác nhận thông tin đơn hàng</h2>
-            <p>Vui lòng kiểm tra lại thông tin chi tiết gói dịch vụ trước khi tiếp tục chuyển sang cổng thanh toán payOS.</p>
+            <p>Vui lòng kiểm tra lại thông tin chi tiết gói dịch vụ trước khi tiếp tục chuyển sang cổng thanh toán VNPay.</p>
         </div>
     </section>
 
@@ -44,16 +44,16 @@
                                 <span class="fw-bold text-dark fs-6">@Model.Package.Name</span>
                             </div>
                             <div class="d-flex justify-content-between mb-2 small">
-                                <span class="text-muted">Hạn mức Token:</span>
-                                <span class="fw-bold text-dark fs-6">@Model.Package.TokenQuota.ToString("N0") Tokens</span>
+                                <span class="text-muted">Hạn mức Lượt gọi:</span>
+                                <span class="fw-bold text-dark fs-6">@Model.Package.TokenQuota.ToString("N0") Lượt gọi AI</span>
                             </div>
                             <div class="d-flex justify-content-between mb-2 small">
                                 <span class="text-muted">Thời hạn sử dụng:</span>
-                                <span class="fw-bold text-dark fs-6">@Model.Package.DurationDays ngày</span>
+                                <span class="fw-bold text-dark fs-6">@(Model.Package.DurationDays >= 36500 ? "Vĩnh viễn" : Model.Package.DurationDays + " ngày")</span>
                             </div>
                             <div class="d-flex justify-content-between mb-2 small">
                                 <span class="text-muted">Phương thức:</span>
-                                <span class="fw-bold text-dark fs-6">Chuyển khoản QR (cổng payOS)</span>
+                                <span class="fw-bold text-dark fs-6">Cổng thanh toán VNPay Sandbox</span>
                             </div>
                             <hr class="my-2" style="border-top: 1px dashed #dee2e6;">
                             <div class="d-flex justify-content-between align-items-center">
@@ -69,7 +69,7 @@
                             </a>
                         </div>
                         <div class="text-center mt-3 text-muted" style="font-size: 0.75rem;">
-                            <i class="bi bi-shield-lock-fill text-success"></i> Giao dịch mã hóa bảo mật 100% qua payOS
+                            <i class="bi bi-shield-lock-fill text-success"></i> Giao dịch mã hóa bảo mật 100% qua VNPay
                         </div>
                     }
                 </div>

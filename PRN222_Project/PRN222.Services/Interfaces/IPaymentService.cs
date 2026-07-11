@@ -36,5 +36,25 @@ namespace PRN222.Services.Interfaces
         /// Processes and verifies a webhook notification payload from PayOS.
         /// </summary>
         Task<(bool Success, string Message)> ProcessWebhookAsync(string webhookBodyJson);
+
+        /// <summary>
+        /// Deducts a specified amount from the user's remaining request quota.
+        /// </summary>
+        Task DeductQuotaAsync(Guid userId, int amount = 1);
+
+        /// <summary>
+        /// Updates an existing pricing package's configuration.
+        /// </summary>
+        Task<bool> UpdatePricingPackageAsync(Guid packageId, string name, int tokenQuota, double price, int durationDays, string description);
+
+        /// <summary>
+        /// Creates a new pricing package.
+        /// </summary>
+        Task<PricingPackage> CreatePricingPackageAsync(string name, int tokenQuota, double price, int durationDays, string description);
+
+        /// <summary>
+        /// Deletes an existing pricing package.
+        /// </summary>
+        Task<bool> DeletePricingPackageAsync(Guid packageId);
     }
 }

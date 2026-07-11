@@ -41,9 +41,44 @@ namespace PRN222.Services
 
         public async Task<UserSubscription?> GetUserSubscriptionAsync(Guid userId)
         {
-            return await _dbContext.UserSubscriptions
+            var subscription = await _dbContext.UserSubscriptions
                 .Include(us => us.PricingPackage)
                 .FirstOrDefaultAsync(us => us.UserId == userId && us.Status == "Active");
+
+            if (subscription == null)
+            {
+                // Automatically assign Free package if none exists
+                await AssignFreePackageAsync(userId);
+                subscription = await _dbContext.UserSubscriptions
+                    .Include(us => us.PricingPackage)
+                    .FirstOrDefaultAsync(us => us.UserId == userId && us.Status == "Active");
+            }
+            else if (subscription.EndDate < DateTime.UtcNow)
+            {
+                subscription.Status = "Expired";
+                await _dbContext.SaveChangesAsync();
+
+                // Automatically fallback to Free package
+                await AssignFreePackageAsync(userId);
+
+                // Retrieve the newly assigned Free subscription
+                subscription = await _dbContext.UserSubscriptions
+                    .Include(us => us.PricingPackage)
+                    .FirstOrDefaultAsync(us => us.UserId == userId && us.Status == "Active");
+            }
+
+            // Daily reset logic for Free tier
+            if (subscription != null && subscription.PricingPackage != null && subscription.PricingPackage.Name == "Free")
+            {
+                if (DateTime.UtcNow.Date > subscription.StartDate.Date)
+                {
+                    subscription.RemainingTokens = subscription.PricingPackage.TokenQuota;
+                    subscription.StartDate = DateTime.UtcNow;
+                    await _dbContext.SaveChangesAsync();
+                }
+            }
+
+            return subscription;
         }
 
         public async Task<string> CreatePaymentLinkAsync(Guid userId, Guid packageId, string returnUrl, string cancelUrl)
@@ -198,8 +233,8 @@ namespace PRN222.Services
                     Name = "Free",
                     Description = "Default Free Tier",
                     Price = 0,
-                    TokenQuota = 10000,
-                    DurationDays = 365,
+                    TokenQuota = 100,
+                    DurationDays = 36500,
                     IsActive = true
                 };
                 _dbContext.PricingPackages.Add(freePackage);
@@ -318,6 +353,75 @@ namespace PRN222.Services
             {
                 return (false, $"Error processing VNPay callback: {ex.Message}");
             }
+        }
+
+        public async Task DeductQuotaAsync(Guid userId, int amount = 1)
+        {
+            var subscription = await GetUserSubscriptionAsync(userId);
+            if (subscription != null)
+            {
+                subscription.RemainingTokens = Math.Max(0, subscription.RemainingTokens - amount);
+                await _dbContext.SaveChangesAsync();
+
+                // Broadcast quota update real-time via SignalR
+                await _hubContext.Clients.User(userId.ToString())
+                    .SendAsync("ReceiveQuotaUpdate", subscription.RemainingTokens, subscription.PricingPackage.TokenQuota, subscription.PricingPackage.Name);
+            }
+        }
+
+        public async Task<bool> UpdatePricingPackageAsync(Guid packageId, string name, int tokenQuota, double price, int durationDays, string description)
+        {
+            var package = await _dbContext.PricingPackages.FindAsync(packageId);
+            if (package == null) return false;
+
+            package.Name = name;
+            package.TokenQuota = tokenQuota;
+            package.Price = price;
+            package.DurationDays = durationDays;
+            package.Description = description;
+
+            await _dbContext.SaveChangesAsync();
+
+            // Broadcast package updates to all clients
+            await _hubContext.Clients.All.SendAsync("ReceivePackagesUpdated");
+
+            return true;
+        }
+
+        public async Task<PricingPackage> CreatePricingPackageAsync(string name, int tokenQuota, double price, int durationDays, string description)
+        {
+            var package = new PricingPackage
+            {
+                Id = Guid.NewGuid(),
+                Name = name,
+                TokenQuota = tokenQuota,
+                Price = price,
+                DurationDays = durationDays,
+                IsActive = true,
+                Description = description
+            };
+
+            _dbContext.PricingPackages.Add(package);
+            await _dbContext.SaveChangesAsync();
+
+            // Broadcast package updates to all clients
+            await _hubContext.Clients.All.SendAsync("ReceivePackagesUpdated");
+
+            return package;
+        }
+
+        public async Task<bool> DeletePricingPackageAsync(Guid packageId)
+        {
+            var package = await _dbContext.PricingPackages.FindAsync(packageId);
+            if (package == null) return false;
+
+            _dbContext.PricingPackages.Remove(package);
+            await _dbContext.SaveChangesAsync();
+
+            // Broadcast package updates to all clients
+            await _hubContext.Clients.All.SendAsync("ReceivePackagesUpdated");
+
+            return true;
         }
     }
 }

@@ -7,17 +7,43 @@
 <div class="app-page">
     <div class="row justify-content-center my-5">
         <div class="col-lg-6 col-md-8 text-center">
-            <div class="card border-0 shadow-sm p-5" style="border-radius: 20px;">
-                <div class="mb-4 text-success">
-                    <i class="bi bi-patch-check-fill" style="font-size: 5rem;"></i>
+            @if (Model.IsSuccessPayment)
+            {
+                <div class="card border-0 shadow-sm p-5" style="border-radius: 20px;">
+                    <div class="mb-4 text-success">
+                        <i class="bi bi-patch-check-fill" style="font-size: 5rem;"></i>
+                    </div>
+                    <h2 class="fw-bold mb-3 text-dark">Thanh toán thành công!</h2>
+                    <p class="text-muted mb-4">Giao dịch của bạn đã hoàn thành. Hệ thống đang tự động kích hoạt gói cước và nạp token vào tài khoản của bạn.</p>
+                    <div class="d-grid gap-3 col-8 mx-auto">
+                        <a asp-page="/Chat/Index" class="btn btn-primary btn-lg fw-bold" style="border-radius: 12px;">Bắt đầu Trò chuyện</a>
+                        <a asp-page="/Dashboard/Index" class="btn btn-outline-secondary btn-lg fw-bold" style="border-radius: 12px;">Quay lại Dashboard</a>
+                    </div>
                 </div>
-                <h2 class="fw-bold mb-3 text-dark">Thanh toán thành công!</h2>
-                <p class="text-muted mb-4">Giao dịch của bạn đã hoàn thành. Hệ thống đang tự động kích hoạt gói cước và nạp token vào tài khoản của bạn.</p>
-                <div class="d-grid gap-3 col-8 mx-auto">
-                    <a asp-page="/Payments/Pricing" class="btn btn-primary btn-lg fw-bold" style="border-radius: 12px;">Xem số dư Token</a>
-                    <a asp-page="/Dashboard/Index" class="btn btn-outline-secondary btn-lg fw-bold" style="border-radius: 12px;">Quay lại Dashboard</a>
+            }
+            else
+            {
+                <div class="card border-0 shadow-sm p-5" style="border-radius: 20px;">
+                    <div class="mb-4 text-danger">
+                        <i class="bi bi-x-circle-fill" style="font-size: 5rem;"></i>
+                    </div>
+                    <h2 class="fw-bold mb-3 text-dark">Giao dịch không thành công</h2>
+                    <p class="text-muted mb-4">
+                        @if (Model.ErrorMsg != null && Model.ErrorMsg.Contains("ResponseCode 24"))
+                        {
+                            <span>Giao dịch của bạn đã bị hủy bởi người dùng.</span>
+                        }
+                        else
+                        {
+                            <span>Giao dịch không thành công hoặc đã bị hủy. Chi tiết lỗi: <strong class="text-danger">@Model.ErrorMsg</strong></span>
+                        }
+                    </p>
+                    <div class="d-grid gap-3 col-8 mx-auto">
+                        <a asp-page="/Payments/Pricing" class="btn btn-danger btn-lg fw-bold text-white" style="border-radius: 12px;"><i class="bi bi-arrow-left-right"></i> Chọn gói khác</a>
+                        <a asp-page="/Dashboard/Index" class="btn btn-outline-secondary btn-lg fw-bold" style="border-radius: 12px;">Quay lại Dashboard</a>
+                    </div>
                 </div>
-            </div>
+            }
         </div>
     </div>
 </div>

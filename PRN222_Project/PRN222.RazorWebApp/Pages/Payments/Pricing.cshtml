@@ -17,7 +17,7 @@
                 <div class="app-card mb-0 py-3 px-4" style="background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.25); min-width: 290px; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.25);">
                     <div class="fw-bold mb-1" style="color: #38bdf8; font-size: 0.95rem;"><i class="bi bi-shield-check"></i> Gói hiện tại: @Model.CurrentSubscription.PricingPackage.Name</div>
                     <div class="fw-extrabold text-white mb-1" id="remainingTokensDisplay" style="font-size: 2.1rem; line-height: 1.1;">
-                        @Model.CurrentSubscription.RemainingTokens.ToString("N0") <span class="fw-normal text-white-50" style="font-size: 1.05rem; margin-left: 2px;">Tokens</span>
+                        @Model.CurrentSubscription.RemainingTokens.ToString("N0") <span class="fw-normal text-white-50" style="font-size: 1.05rem; margin-left: 2px;">Lượt gọi AI</span>
                     </div>
                     <div class="small fw-semibold text-white-50" style="font-size: 0.85rem;">Hết hạn: @Model.CurrentSubscription.EndDate.AddHours(7).ToString("dd/MM/yyyy HH:mm")</div>
                 </div>
@@ -41,7 +41,7 @@
         </div>
     }
 
-    <div class="row row-cols-1 row-cols-md-3 g-4 mb-5">
+    <div class="row row-cols-1 row-cols-md-3 g-4 mb-5 justify-content-center">
         @foreach (var pkg in Model.Packages)
         {
             var isCurrent = Model.CurrentSubscription != null && Model.CurrentSubscription.PricingPackageId == pkg.Id && Model.CurrentSubscription.Status == "Active";
@@ -83,11 +83,18 @@
                         <ul class="list-unstyled mb-4 flex-grow-1">
                             <li class="mb-3 d-flex align-items-center">
                                 <i class="bi bi-check-circle-fill text-success me-2 fs-5"></i>
-                                <span>Cấp <strong>@pkg.TokenQuota.ToString("N0")</strong> Tokens</span>
+                                @if (pkg.Name == "Free")
+                                {
+                                    <span>Cấp <strong>@pkg.TokenQuota.ToString("N0")</strong> Lượt gọi AI/ngày (tự động reset)</span>
+                                }
+                                else
+                                {
+                                    <span>Nạp thêm <strong>@pkg.TokenQuota.ToString("N0")</strong> Lượt gọi AI</span>
+                                }
                             </li>
                             <li class="mb-3 d-flex align-items-center">
                                 <i class="bi bi-check-circle-fill text-success me-2 fs-5"></i>
-                                <span>Sử dụng trong @pkg.DurationDays ngày</span>
+                                <span>Thời hạn gói: @(pkg.DurationDays >= 36500 ? "Vĩnh viễn" : pkg.DurationDays + " ngày")</span>
                             </li>
                             <li class="mb-3 d-flex align-items-center">
                                 <i class="bi bi-check-circle-fill text-success me-2 fs-5"></i>
@@ -98,17 +105,6 @@
                                 <li class="mb-3 d-flex align-items-center">
                                     <i class="bi bi-check-circle-fill text-success me-2 fs-5"></i>
                                     <span>Tốc độ AI tối đa</span>
-                                </li>
-                                <li class="mb-3 d-flex align-items-center">
-                                    <i class="bi bi-check-circle-fill text-success me-2 fs-5"></i>
-                                    <span>Đăng tải tài liệu dung lượng lớn</span>
-                                </li>
-                            }
-                            else
-                            {
-                                <li class="mb-3 d-flex align-items-center text-muted">
-                                    <i class="bi bi-x-circle-fill text-secondary me-2 fs-5"></i>
-                                    <span>Giới hạn kích thước file upload</span>
                                 </li>
                             }
                         </ul>
@@ -158,19 +154,24 @@
     paymentConnection.on("ReceivePaymentConfirmed", (packageName, remainingTokens) => {
         // Show success toast
         const toast = document.getElementById("paymentSuccessToast");
-        document.getElementById("toastMessage").innerText = `Thanh toán thành công gói ${packageName}! Số dư Token mới: ${remainingTokens.toLocaleString()} tokens.`;
+        document.getElementById("toastMessage").innerText = `Thanh toán thành công gói ${packageName}! Hạn mức mới: ${remainingTokens.toLocaleString()} lượt gọi AI.`;
         toast.style.display = "block";
         
         // Dynamically update tokens counter in header hero
         const display = document.getElementById("remainingTokensDisplay");
         if (display) {
-            display.innerHTML = `${remainingTokens.toLocaleString()} <span class="small fw-normal text-muted">Tokens</span>`;
+            display.innerHTML = `${remainingTokens.toLocaleString()} <span class="fw-normal text-white-50" style="font-size: 1.05rem; margin-left: 2px;">Lượt gọi AI</span>`;
         }
 
         // Auto reload page after 4 seconds to update all UI cards
         setTimeout(() => {
             window.location.reload();
         }, 4000);
+    });
+
+    paymentConnection.on("ReceivePackagesUpdated", () => {
+        console.log("Pricing packages updated by Admin. Reloading page...");
+        window.location.reload();
     });
 
     paymentConnection.start()

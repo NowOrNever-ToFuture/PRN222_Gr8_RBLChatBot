@@ -15,6 +15,9 @@ namespace PRN222.RazorWebApp.Pages.Payments
             _paymentService = paymentService;
         }
 
+        public bool IsSuccessPayment { get; set; }
+        public string? ErrorMsg { get; set; }
+
         public async Task OnGetAsync()
         {
             var queryString = Request.QueryString.Value;
@@ -28,12 +31,20 @@ namespace PRN222.RazorWebApp.Pages.Payments
                 var result = await _paymentService.ProcessWebhookAsync(queryString);
                 if (result.Success)
                 {
+                    IsSuccessPayment = true;
                     TempData["SuccessMessage"] = "Thanh toán thành công! Gói cước của bạn đã được kích hoạt.";
                 }
                 else
                 {
+                    IsSuccessPayment = false;
+                    ErrorMsg = result.Message;
                     TempData["ErrorMessage"] = $"Lỗi xác nhận giao dịch: {result.Message}";
                 }
+            }
+            else
+            {
+                IsSuccessPayment = false;
+                ErrorMsg = "Không tìm thấy thông tin giao dịch.";
             }
         }
     }

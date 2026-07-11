@@ -154,6 +154,43 @@ using (var scope = app.Services.CreateScope())
         dbContext.SaveChanges();
     }
 
+    // Synchronize package quotas and descriptions to reflect request-based limits
+    var existingPackages = dbContext.PricingPackages.ToList();
+    bool databaseUpdated = false;
+    
+    var dbFree = existingPackages.FirstOrDefault(p => p.Name == "Free");
+    if (dbFree != null && (dbFree.TokenQuota != 100 || dbFree.Price != 0 || dbFree.DurationDays != 36500))
+    {
+        dbFree.TokenQuota = 100;
+        dbFree.Price = 0;
+        dbFree.DurationDays = 36500;
+        dbFree.Description = "Gói dùng thử miễn phí mặc định, tự động reset 100 lượt gọi mỗi ngày.";
+        databaseUpdated = true;
+    }
+    
+    // Deactivate the Standard package
+    var dbStandard = existingPackages.FirstOrDefault(p => p.Name == "Standard");
+    if (dbStandard != null && dbStandard.IsActive)
+    {
+        dbStandard.IsActive = false;
+        databaseUpdated = true;
+    }
+    
+    var dbVip = existingPackages.FirstOrDefault(p => p.Name == "VIP");
+    if (dbVip != null && (dbVip.TokenQuota != 1000 || dbVip.Price != 50000 || dbVip.DurationDays != 30))
+    {
+        dbVip.TokenQuota = 1000;
+        dbVip.Price = 50000;
+        dbVip.DurationDays = 30;
+        dbVip.Description = "Nạp thêm 1,000 lượt gọi AI chất lượng cao để học tập và ôn luyện.";
+        databaseUpdated = true;
+    }
+    
+    if (databaseUpdated)
+    {
+        dbContext.SaveChanges();
+    }
+
     if (!dbContext.PricingPackages.Any())
     {
         dbContext.PricingPackages.AddRange(
@@ -161,29 +198,19 @@ using (var scope = app.Services.CreateScope())
             {
                 Id = Guid.NewGuid(),
                 Name = "Free",
-                Description = "Gói dùng thử miễn phí cho mọi tài khoản mới.",
+                Description = "Gói dùng thử miễn phí mặc định, tự động reset 100 lượt gọi mỗi ngày.",
                 Price = 0,
-                TokenQuota = 10000,
-                DurationDays = 30,
-                IsActive = true
-            },
-            new PricingPackage
-            {
-                Id = Guid.NewGuid(),
-                Name = "Standard",
-                Description = "Phù hợp cho học sinh học tập cơ bản hàng ngày.",
-                Price = 50000,
-                TokenQuota = 100000,
-                DurationDays = 30,
+                TokenQuota = 100,
+                DurationDays = 36500,
                 IsActive = true
             },
             new PricingPackage
             {
                 Id = Guid.NewGuid(),
                 Name = "VIP",
-                Description = "Hạn mức lớn dành cho học tập chuyên sâu và tài liệu dài.",
-                Price = 100000,
-                TokenQuota = 250000,
+                Description = "Nạp thêm 1,000 lượt gọi AI chất lượng cao để học tập và ôn luyện.",
+                Price = 50000,
+                TokenQuota = 1000,
                 DurationDays = 30,
                 IsActive = true
             }
