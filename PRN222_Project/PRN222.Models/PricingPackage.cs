@@ -12,6 +12,7 @@ namespace PRN222.Models
         public int TokenQuota { get; set; }
         public int DurationDays { get; set; }
         public bool IsActive { get; set; }
+        public int MaxUploadSizeMb { get; set; }
 
         // Navigation properties
         public ICollection<UserSubscription> UserSubscriptions { get; set; } = new List<UserSubscription>();
