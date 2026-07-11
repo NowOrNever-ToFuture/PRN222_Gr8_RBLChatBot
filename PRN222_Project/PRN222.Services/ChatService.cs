@@ -262,7 +262,7 @@ Nhiệm vụ của bạn là giải thích và trả lời câu hỏi của họ
 
 Hãy phản hồi bằng tiếng Việt một cách tự nhiên, mạch lạc, dễ hiểu và tràn đầy tinh thần hỗ trợ học thuật.";
 
-            string answer = await _llmService.GenerateChatResponseAsync(ragPrompt);
+            var (answer, inputTokens, outputTokens) = await _llmService.GenerateChatResponseWithUsageAsync(ragPrompt);
 
             // Bước 6: Đính kèm trích dẫn nguồn cuối câu trả lời
             var citationText = new StringBuilder();
@@ -278,7 +278,9 @@ Hãy phản hồi bằng tiếng Việt một cách tự nhiên, mạch lạc, d
             {
                 Answer = answer + citationText.ToString(),
                 Sources = sources,
-                CourseId = courseId
+                CourseId = courseId,
+                InputTokens = inputTokens,
+                OutputTokens = outputTokens
             };
         }
 
@@ -521,6 +523,8 @@ Hãy phản hồi bằng tiếng Việt một cách tự nhiên, mạch lạc, d
         public string Answer { get; set; } = "";
         public List<SourceCitation> Sources { get; set; } = new();
         public Guid? CourseId { get; set; }
+        public int InputTokens { get; set; }
+        public int OutputTokens { get; set; }
     }
 
     public class SourceCitation

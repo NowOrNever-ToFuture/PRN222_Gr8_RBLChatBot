@@ -1,0 +1,181 @@
+@page
+@model PRN222.RazorWebApp.Pages.Payments.PricingModel
+@{
+    ViewData["Title"] = "Gói dịch vụ & Nạp Token";
+}
+
+<div class="app-page">
+    <section class="app-hero">
+        <div class="app-hero-content">
+            <div class="app-eyebrow"><i class="bi bi-wallet2 text-primary"></i> Gói dịch vụ & Token</div>
+            <h2>Nâng cấp tài khoản và nạp thêm Token</h2>
+            <p>Trải nghiệm dịch vụ AI Chatbot tốt hơn, tốc độ xử lý nhanh hơn và hạn mức token cao hơn với các gói cước linh hoạt.</p>
+        </div>
+        @if (Model.CurrentSubscription != null)
+        {
+            <div class="app-hero-actions">
+                <div class="app-card mb-0 py-3 px-4" style="background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.25); min-width: 290px; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.25);">
+                    <div class="fw-bold mb-1" style="color: #38bdf8; font-size: 0.95rem;"><i class="bi bi-shield-check"></i> Gói hiện tại: @Model.CurrentSubscription.PricingPackage.Name</div>
+                    <div class="fw-extrabold text-white mb-1" id="remainingTokensDisplay" style="font-size: 2.1rem; line-height: 1.1;">
+                        @Model.CurrentSubscription.RemainingTokens.ToString("N0") <span class="fw-normal text-white-50" style="font-size: 1.05rem; margin-left: 2px;">Lượt gọi AI</span>
+                    </div>
+                    <div class="small fw-semibold text-white-50" style="font-size: 0.85rem;">Hết hạn: @Model.CurrentSubscription.EndDate.AddHours(7).ToString("dd/MM/yyyy HH:mm")</div>
+                </div>
+            </div>
+        }
+    </section>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert" style="border-radius: 12px; margin-bottom: 24px;">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert" style="border-radius: 12px; margin-bottom: 24px;">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row row-cols-1 row-cols-md-3 g-4 mb-5 justify-content-center">
+        @foreach (var pkg in Model.Packages)
+        {
+            var isCurrent = Model.CurrentSubscription != null && Model.CurrentSubscription.PricingPackageId == pkg.Id && Model.CurrentSubscription.Status == "Active";
+            
+            <div class="col">
+                <div class="card h-100 border-0 shadow-sm position-relative @(isCurrent ? "border-2 border-primary" : "")" 
+                     style="border-radius: 20px; overflow: hidden; transition: transform 0.3s ease, box-shadow 0.3s ease; @(isCurrent ? "box-shadow: 0 10px 30px rgba(31, 111, 235, 0.15);" : "")"
+                     onmouseover="this.style.transform='translateY(-8px)'; this.style.boxShadow='0 12px 30px rgba(0,0,0,0.08)';"
+                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='@(isCurrent ? "0 10px 30px rgba(31, 111, 235, 0.15)" : "none")';">
+                    
+                    @if (isCurrent)
+                    {
+                        <span class="position-absolute top-0 end-0 bg-primary text-white px-3 py-1 fw-bold small" style="border-bottom-left-radius: 12px;">ĐANG SỬ DỤNG</span>
+                    }
+                    else if (pkg.Name == "VIP")
+                    {
+                        <span class="position-absolute top-0 end-0 bg-warning text-dark px-3 py-1 fw-bold small" style="border-bottom-left-radius: 12px;">PHỔ BIẾN NHẤT</span>
+                    }
+
+                    <div class="card-body p-4 d-flex flex-column">
+                        <h4 class="card-title fw-bold mb-2">@pkg.Name</h4>
+                        <p class="text-muted small mb-4" style="min-height: 48px;">@pkg.Description</p>
+                        
+                        <div class="mb-4">
+                            @if (pkg.Price == 0)
+                            {
+                                <span class="h1 fw-extrabold text-dark mb-0">Miễn phí</span>
+                            }
+                            else
+                            {
+                                <span class="h1 fw-extrabold text-dark mb-0">@pkg.Price.ToString("N0")</span>
+                                <span class="text-muted"> VND</span>
+                                <span class="small text-muted d-block">/ @pkg.DurationDays ngày</span>
+                            }
+                        </div>
+
+                        <hr class="my-4">
+
+                        <ul class="list-unstyled mb-4 flex-grow-1">
+                            <li class="mb-3 d-flex align-items-center">
+                                <i class="bi bi-check-circle-fill text-success me-2 fs-5"></i>
+                                @if (pkg.Name == "Free")
+                                {
+                                    <span>Cấp <strong>@pkg.TokenQuota.ToString("N0")</strong> Lượt gọi AI/ngày (tự động reset)</span>
+                                }
+                                else
+                                {
+                                    <span>Nạp thêm <strong>@pkg.TokenQuota.ToString("N0")</strong> Lượt gọi AI</span>
+                                }
+                            </li>
+                            <li class="mb-3 d-flex align-items-center">
+                                <i class="bi bi-check-circle-fill text-success me-2 fs-5"></i>
+                                <span>Thời hạn gói: @(pkg.DurationDays >= 36500 ? "Vĩnh viễn" : pkg.DurationDays + " ngày")</span>
+                            </li>
+                            <li class="mb-3 d-flex align-items-center">
+                                <i class="bi bi-check-circle-fill text-success me-2 fs-5"></i>
+                                <span>Hỗ trợ chat RAG & PDF</span>
+                            </li>
+                            @if (pkg.Name != "Free")
+                            {
+                                <li class="mb-3 d-flex align-items-center">
+                                    <i class="bi bi-check-circle-fill text-success me-2 fs-5"></i>
+                                    <span>Tốc độ AI tối đa</span>
+                                </li>
+                            }
+                        </ul>
+
+                        <div class="d-grid mt-auto">
+                            @if (isCurrent)
+                            {
+                                <button class="btn btn-secondary btn-lg fw-bold" style="border-radius: 12px;" disabled>Đang sử dụng</button>
+                            }
+                            else if (pkg.Price == 0)
+                            {
+                                <button class="btn btn-outline-secondary btn-lg w-100 fw-bold" style="border-radius: 12px;" disabled>Mặc định hệ thống</button>
+                            }
+                            else
+                            {
+                                <a asp-page="/Payments/Checkout" asp-route-packageId="@pkg.Id" class="btn btn-primary btn-lg fw-bold" style="border-radius: 12px;">Mua ngay</a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1050;">
+    <div id="paymentSuccessToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true" style="border-radius: 12px; display:none;">
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <span id="toastMessage">Thanh toán thành công! Gói cước của bạn đã được cập nhật.</span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close" onclick="this.parentElement.parentElement.style.display='none'"></button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+<script>
+    // Build real-time payment confirmation hub connection
+    const paymentConnection = new signalR.HubConnectionBuilder()
+        .withUrl("/hubs/payment")
+        .withAutomaticReconnect()
+        .build();
+
+    paymentConnection.on("ReceivePaymentConfirmed", (packageName, remainingTokens) => {
+        // Show success toast
+        const toast = document.getElementById("paymentSuccessToast");
+        document.getElementById("toastMessage").innerText = `Thanh toán thành công gói ${packageName}! Hạn mức mới: ${remainingTokens.toLocaleString()} lượt gọi AI.`;
+        toast.style.display = "block";
+        
+        // Dynamically update tokens counter in header hero
+        const display = document.getElementById("remainingTokensDisplay");
+        if (display) {
+            display.innerHTML = `${remainingTokens.toLocaleString()} <span class="fw-normal text-white-50" style="font-size: 1.05rem; margin-left: 2px;">Lượt gọi AI</span>`;
+        }
+
+        // Auto reload page after 4 seconds to update all UI cards
+        setTimeout(() => {
+            window.location.reload();
+        }, 4000);
+    });
+
+    paymentConnection.on("ReceivePackagesUpdated", () => {
+        console.log("Pricing packages updated by Admin. Reloading page...");
+        window.location.reload();
+    });
+
+    paymentConnection.start()
+        .then(() => console.log("Payment real-time hub connected."))
+        .catch(err => console.error("Payment SignalR Hub Error:", err));
+</script>
+}

@@ -31,12 +31,10 @@ namespace PRN222.Services
             services.AddScoped<IBenchmarkRunnerService, BenchmarkRunnerService>();
             services.AddScoped<IDashboardService, DashboardService>();
             services.AddScoped<IChatService, ChatService>();
+            services.AddScoped<IPaymentService, PaymentService>();
 
             // Phase 2 - Token Report (service sẽ được thành viên B implement sau)
             services.AddScoped<ITokenUsageService, TokenUsageService>();
-
-            // Phase 3 - Payments (service sẽ được thành viên C implement sau)
-            services.AddScoped<IPaymentService, PaymentService>();
 
             return services;
         }

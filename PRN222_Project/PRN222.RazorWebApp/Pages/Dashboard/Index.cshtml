@@ -224,6 +224,183 @@
             </div>
         </div>
     </section>
+
+    <!-- Alert Notification Container -->
+    <div id="dashboardAlertContainer" style="position: fixed; top: 24px; right: 24px; z-index: 1055; display: flex; flex-column: reverse; gap: 8px;"></div>
+
+    <!-- Pricing Package Management Section -->
+    <section class="app-card mt-4" id="token-package-management">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="app-card-title mb-0" style="font-size: 1.25rem; font-weight: 700; color: #212529;"><i class="bi bi-wallet2 text-primary me-2"></i> Quản lý Gói dịch vụ & Hạn mức Token</div>
+            <button type="button" class="btn btn-primary fw-bold rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#createPackageModal">
+                <i class="bi bi-plus-circle-fill me-1"></i> Thêm Gói mới
+            </button>
+        </div>
+        <p class="app-muted mb-4">Danh sách các gói cước đang hoạt động trong hệ thống. Admin có thể thêm, sửa, xóa và thay đổi cấu hình Token hoặc thời hạn sử dụng tức thời qua SignalR.</p>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle" style="background: transparent; border-collapse: separate; border-spacing: 0 8px;">
+                <thead>
+                    <tr style="font-size: 0.85rem; border: none; text-transform: uppercase; letter-spacing: 0.5px; color: #495057;">
+                        <th class="ps-4 py-3" style="border: none;">Tên Gói</th>
+                        <th style="border: none;">Hạn Mức Token</th>
+                        <th style="border: none;">Giá Cả</th>
+                        <th style="border: none;">Thời Hạn (Ngày)</th>
+                        <th style="border: none; max-width: 300px;">Mô Tả</th>
+                        <th class="text-end pe-4" style="border: none;">Thao Tác</th>
+                    </tr>
+                </thead>
+                <tbody id="packagesTableBody" style="transition: opacity 0.25s ease;">
+                    @foreach (var pkg in Model.PricingPackages)
+                    {
+                        var isFree = pkg.Name == "Free";
+                        <tr style="background: rgba(0, 0, 0, 0.02); border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 16px; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(37, 99, 235, 0.05)'" onmouseout="this.style.background='rgba(0, 0, 0, 0.02)'">
+                            <td class="fw-bold text-dark ps-4 py-3" style="border-top-left-radius: 12px; border-bottom-left-radius: 12px;">@pkg.Name</td>
+                            <td>
+                                @if (isFree)
+                                {
+                                    <span class="badge px-3 py-2 fw-bold" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 12px; box-shadow: 0 4px 12px rgba(29, 78, 216, 0.2);">@pkg.TokenQuota.ToString("N0")</span>
+                                }
+                                else
+                                {
+                                    <span class="badge px-3 py-2 fw-bold" style="background: linear-gradient(135deg, #eab308, #ca8a04); border-radius: 12px; box-shadow: 0 4px 12px rgba(202, 138, 4, 0.2);">@pkg.TokenQuota.ToString("N0")</span>
+                                }
+                            </td>
+                            <td class="text-dark fw-semibold">@(pkg.Price == 0 ? "Miễn phí" : pkg.Price.ToString("N0") + " VND")</td>
+                            <td class="text-secondary">@(pkg.DurationDays >= 36500 ? "Vĩnh viễn" : pkg.DurationDays + " ngày")</td>
+                            <td class="text-truncate text-secondary" style="max-width: 300px;" title="@pkg.Description">@pkg.Description</td>
+                            <td class="text-end pe-4" style="border-top-right-radius: 12px; border-bottom-right-radius: 12px;">
+                                <button type="button" class="btn btn-sm edit-pkg-btn fw-bold rounded-pill px-3"
+                                        style="background: rgba(0, 0, 0, 0.04); border: 1px solid rgba(0, 0, 0, 0.12); color: #333; transition: all 0.2s;"
+                                        data-id="@pkg.Id"
+                                        data-name="@pkg.Name"
+                                        data-quota="@pkg.TokenQuota"
+                                        data-price="@pkg.Price"
+                                        data-duration="@pkg.DurationDays"
+                                        data-desc="@pkg.Description">
+                                    <i class="bi bi-pencil-square"></i> Sửa
+                                </button>
+                                <button type="button" class="btn btn-sm btn-danger fw-bold text-white rounded-pill px-3 delete-pkg-btn ms-1"
+                                        data-id="@pkg.Id"
+                                        data-name="@pkg.Name">
+                                    <i class="bi bi-trash-fill"></i> Xóa
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+
+<!-- Modal Thêm Mới Gói Cước -->
+<div class="modal fade text-dark" id="createPackageModal" tabindex="-1" aria-labelledby="createPackageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 24px; background: #ffffff;">
+            <div class="modal-header border-0 bg-light p-4" style="border-top-left-radius: 24px; border-top-right-radius: 24px;">
+                <h5 class="modal-title fw-bold" id="createPackageModalLabel"><i class="bi bi-plus-circle-fill text-primary"></i> Tạo Gói Dịch Vụ Mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="createPackageForm" method="post" asp-page-handler="CreatePackage" onsubmit="handleAjaxSubmit(event, 'createPackageModal', 'CreatePackage')">
+                @Html.AntiForgeryToken()
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label for="createPkgName" class="form-label fw-bold">Tên gói cước</label>
+                        <input type="text" class="form-control form-control-lg rounded-3" id="createPkgName" name="name" required placeholder="Ví dụ: VIP, Basic, Standard" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="createPkgQuota" class="form-label fw-bold">Hạn mức Token (Lượt gọi AI)</label>
+                        <input type="number" class="form-control form-control-lg rounded-3" id="createPkgQuota" name="tokenQuota" required min="1" placeholder="Ví dụ: 1000" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="createPkgPrice" class="form-label fw-bold">Giá bán (VND)</label>
+                        <input type="number" class="form-control form-control-lg rounded-3" id="createPkgPrice" name="price" required min="0" placeholder="Ví dụ: 50000" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="createPkgDuration" class="form-label fw-bold">Thời hạn sử dụng (Ngày)</label>
+                        <input type="number" class="form-control form-control-lg rounded-3" id="createPkgDuration" name="durationDays" required min="1" placeholder="Ví dụ: 30" />
+                        <div class="form-text text-muted">Nhập 36500 cho gói Free (coi như Vĩnh viễn).</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="createPkgDesc" class="form-label fw-bold">Mô tả hiển thị</label>
+                        <textarea class="form-control rounded-3" id="createPkgDesc" name="description" rows="3" required placeholder="Mô tả các lợi ích của gói..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-4 pt-0">
+                    <button type="button" class="btn btn-light fw-semibold px-4 py-2 rounded-3" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary fw-bold px-4 py-2 rounded-3"><i class="bi bi-check-circle-fill"></i> Tạo mới</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Xác Nhận Xóa Gói Cước -->
+<div class="modal fade text-dark" id="deletePackageModal" tabindex="-1" aria-labelledby="deletePackageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 24px; background: #ffffff;">
+            <div class="modal-header border-0 bg-danger text-white p-4" style="border-top-left-radius: 24px; border-top-right-radius: 24px;">
+                <h5 class="modal-title fw-bold" id="deletePackageModalLabel"><i class="bi bi-exclamation-triangle-fill"></i> Xác nhận xóa</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="deletePackageForm" method="post" asp-page-handler="DeletePackage" onsubmit="handleAjaxSubmit(event, 'deletePackageModal', 'DeletePackage')">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="deletePkgId" name="packageId" />
+                <div class="modal-body p-4 text-center">
+                    <p class="mb-2 fs-5">Bạn có chắc chắn muốn xóa gói cước <strong id="deletePkgName" class="text-danger"></strong>?</p>
+                    <p class="text-muted small mb-0">Hành động này sẽ xóa gói cước và không thể hoàn tác.</p>
+                </div>
+                <div class="modal-footer border-0 p-4 pt-0 d-flex justify-content-center gap-2">
+                    <button type="button" class="btn btn-light fw-semibold px-4 py-2 rounded-3" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-danger fw-bold px-4 py-2 rounded-3"><i class="bi bi-trash-fill"></i> Đồng ý xóa</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Chỉnh sửa Gói Cước -->
+<div class="modal fade text-dark" id="editPackageModal" tabindex="-1" aria-labelledby="editPackageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 24px; background: #ffffff;">
+            <div class="modal-header border-0 bg-light p-4" style="border-top-left-radius: 24px; border-top-right-radius: 24px;">
+                <h5 class="modal-title fw-bold" id="editPackageModalLabel"><i class="bi bi-pencil-fill text-primary"></i> Chỉnh sửa Gói Cước <span id="modalPkgName" class="text-primary"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editPackageForm" method="post" asp-page-handler="UpdatePackage" onsubmit="handleAjaxSubmit(event, 'editPackageModal', 'UpdatePackage')">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="editPkgId" name="packageId" />
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label for="editPkgName" class="form-label fw-bold">Tên gói cước</label>
+                        <input type="text" class="form-control form-control-lg rounded-3" id="editPkgName" name="name" required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="editPkgQuota" class="form-label fw-bold">Hạn mức Token (Lượt gọi AI)</label>
+                        <input type="number" class="form-control form-control-lg rounded-3" id="editPkgQuota" name="tokenQuota" required min="1" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="editPkgPrice" class="form-label fw-bold">Giá tiền (VND)</label>
+                        <input type="number" class="form-control form-control-lg rounded-3" id="editPkgPrice" name="price" required min="0" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="editPkgDuration" class="form-label fw-bold">Thời hạn sử dụng (Ngày)</label>
+                        <input type="number" class="form-control form-control-lg rounded-3" id="editPkgDuration" name="durationDays" required min="1" />
+                        <div class="form-text text-muted">Nhập 36500 cho gói Free (coi như Vĩnh viễn).</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editPkgDesc" class="form-label fw-bold">Mô tả hiển thị</label>
+                        <textarea class="form-control rounded-3" id="editPkgDesc" name="description" rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-4 pt-0">
+                    <button type="button" class="btn btn-light fw-semibold px-4 py-2 rounded-3" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary fw-bold px-4 py-2 rounded-3"><i class="bi bi-save"></i> Lưu thay đổi</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 @section Scripts {
@@ -314,6 +491,172 @@
             document.getElementById('benchmarkStatusText').textContent = err.message;
         }
     });
+
+    $(document).on('click', '.edit-pkg-btn', function () {
+        const id = $(this).data('id');
+        const name = $(this).data('name');
+        const quota = $(this).data('quota');
+        const price = $(this).data('price');
+        const duration = $(this).data('duration');
+        const desc = $(this).data('desc');
+
+        $('#editPkgId').val(id);
+        $('#editPkgName').val(name);
+        $('#modalPkgName').text(name);
+        $('#editPkgQuota').val(quota);
+        $('#editPkgPrice').val(price);
+        $('#editPkgDuration').val(duration);
+        $('#editPkgDesc').val(desc);
+
+        const modalEl = document.getElementById('editPackageModal');
+        const myModal = new bootstrap.Modal(modalEl);
+        myModal.show();
+    });
+
+    $(document).on('click', '.delete-pkg-btn', function () {
+        const id = $(this).data('id');
+        const name = $(this).data('name');
+
+        $('#deletePkgId').val(id);
+        $('#deletePkgName').text(name);
+
+        const modalEl = document.getElementById('deletePackageModal');
+        const myModal = new bootstrap.Modal(modalEl);
+        myModal.show();
+    });
+
+    // Submits pricing package form via AJAX to prevent page refresh jump
+    async function handleAjaxSubmit(e, modalId, handlerName) {
+        e.preventDefault();
+        const form = e.currentTarget;
+        const formData = new FormData(form);
+        const submitBtn = form.querySelector('button[type="submit"]');
+        
+        if (submitBtn) submitBtn.disabled = true;
+
+        try {
+            const response = await fetch(`/Dashboard/Index?handler=${handlerName}`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? ''
+                }
+            });
+            const result = await response.json();
+            if (result.success) {
+                bootstrap.Modal.getInstance(document.getElementById(modalId))?.hide();
+                showNotification(result.message, 'success');
+                form.reset();
+                // SignalR will broadcast ReceivePackagesUpdated which calls reloadPackagesTable() for everyone.
+            } else {
+                showNotification(result.message, 'danger');
+            }
+        } catch (err) {
+            showNotification(err.message || 'Có lỗi xảy ra khi xử lý.', 'danger');
+        } finally {
+            if (submitBtn) submitBtn.disabled = false;
+        }
+    }
+
+    // Displays dynamic floating glassmorphic alerts
+    function showNotification(message, type = 'success') {
+        const id = 'toast_' + Date.now();
+        const icon = type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill';
+        const bg = type === 'success' ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #ef4444, #dc2626)';
+        
+        const html = `
+            <div id="${id}" class="toast align-items-center text-white border-0 show shadow-lg" role="alert" aria-live="assertive" aria-atomic="true" style="background: ${bg}; border-radius: 16px; min-width: 320px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); opacity: 0; transform: translateY(-15px);">
+                <div class="d-flex p-3">
+                    <div class="toast-body d-flex align-items-center gap-2">
+                        <i class="bi ${icon} fs-5"></i>
+                        <span class="fw-semibold">${message}</span>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white ms-auto me-1" data-bs-dismiss="toast" aria-label="Close" onclick="$('#${id}').fadeOut(300, function() { $(this).remove(); })"></button>
+                </div>
+            </div>
+        `;
+        $('#dashboardAlertContainer').append(html);
+        setTimeout(() => {
+            $(`#${id}`).css({ 'transform': 'translateY(0)', 'opacity': '1' });
+        }, 50);
+        setTimeout(() => {
+            $(`#${id}`).css({ 'transform': 'translateY(-15px)', 'opacity': '0' });
+            setTimeout(() => { $(`#${id}`).remove(); }, 400);
+        }, 4000);
+    }
+
+    // Escape raw HTML string
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.appendChild(document.createTextNode(text));
+        return div.innerHTML;
+    }
+
+    // Dynamic reloader with smooth opacity transitions
+    async function reloadPackagesTable() {
+        try {
+            const response = await fetch('/Dashboard/Index?handler=PackagesJson');
+            const packages = await response.json();
+            const $tbody = $('#packagesTableBody');
+            
+            // Fade out
+            $tbody.css('opacity', '0.2');
+            
+            setTimeout(() => {
+                $tbody.empty();
+                packages.forEach(pkg => {
+                    const priceText = pkg.price === 0 ? "Miễn phí" : pkg.price.toLocaleString('vi-VN') + " VND";
+                    const durationText = pkg.durationDays >= 36500 ? "Vĩnh viễn" : pkg.durationDays + " ngày";
+                    const isFree = pkg.name === "Free";
+                    const quotaBadge = isFree
+                        ? `<span class="badge px-3 py-2 fw-bold" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 12px; box-shadow: 0 4px 12px rgba(29, 78, 216, 0.2);">${pkg.tokenQuota.toLocaleString()}</span>`
+                        : `<span class="badge px-3 py-2 fw-bold" style="background: linear-gradient(135deg, #eab308, #ca8a04); border-radius: 12px; box-shadow: 0 4px 12px rgba(202, 138, 4, 0.2);">${pkg.tokenQuota.toLocaleString()}</span>`;
+
+                    const rowHtml = `
+                        <tr style="background: rgba(0, 0, 0, 0.02); border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 16px; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(37, 99, 235, 0.05)'" onmouseout="this.style.background='rgba(0, 0, 0, 0.02)'">
+                            <td class="fw-bold text-dark ps-4 py-3" style="border-top-left-radius: 12px; border-bottom-left-radius: 12px;">${escapeHtml(pkg.name)}</td>
+                            <td>${quotaBadge}</td>
+                            <td class="text-dark fw-semibold">${priceText}</td>
+                            <td class="text-secondary">${durationText}</td>
+                            <td class="text-truncate text-secondary" style="max-width: 300px;" title="${escapeHtml(pkg.description)}">${escapeHtml(pkg.description)}</td>
+                            <td class="text-end pe-4" style="border-top-right-radius: 12px; border-bottom-right-radius: 12px;">
+                                <button type="button" class="btn btn-sm edit-pkg-btn fw-bold rounded-pill px-3"
+                                        style="background: rgba(0, 0, 0, 0.04); border: 1px solid rgba(0, 0, 0, 0.12); color: #333; transition: all 0.2s;"
+                                        data-id="${pkg.id}"
+                                        data-name="${escapeHtml(pkg.name)}"
+                                        data-quota="${pkg.tokenQuota}"
+                                        data-price="${pkg.price}"
+                                        data-duration="${pkg.durationDays}"
+                                        data-desc="${escapeHtml(pkg.description)}">
+                                    <i class="bi bi-pencil-square"></i> Sửa
+                                </button>
+                                <button type="button" class="btn btn-sm btn-danger fw-bold text-white rounded-pill px-3 delete-pkg-btn ms-1"
+                                        data-id="${pkg.id}"
+                                        data-name="${escapeHtml(pkg.name)}">
+                                    <i class="bi bi-trash-fill"></i> Xóa
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                    $tbody.append(rowHtml);
+                });
+                
+                // Fade in
+                $tbody.css('opacity', '1');
+            }, 250);
+        } catch (err) {
+            console.error("Lỗi cập nhật bảng gói cước:", err);
+        }
+    }
+
+    // Connect to PaymentHub for live CRUD updates
+    const paymentConnection = new signalR.HubConnectionBuilder().withUrl("/hubs/payment").withAutomaticReconnect().build();
+    paymentConnection.on("ReceivePackagesUpdated", async () => {
+        console.log("Pricing packages updated. Refreshing table...");
+        await reloadPackagesTable();
+    });
+    paymentConnection.start().catch(err => console.error("Payment SignalR Error:", err));
 
     async function loadChartData() {
         try {
