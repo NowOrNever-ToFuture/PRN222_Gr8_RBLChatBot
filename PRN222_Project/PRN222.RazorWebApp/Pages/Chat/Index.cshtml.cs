@@ -45,7 +45,7 @@ namespace PRN222.RazorWebApp.Pages.Chat
                 var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
                 if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId)) return Unauthorized();
                 await _chatService.SaveMessageAsync(userId, "User", query);
-                var ragResponse = await _chatService.GenerateRagResponseAsync(query, courseId);
+                var ragResponse = await _chatService.GenerateRagResponseAsync(query, userId, courseId);
                 string citedIds = string.Join(",", ragResponse.Sources.Select(s => s.ChunkIndex));
                 await _chatService.SaveMessageAsync(userId, "Assistant", ragResponse.Answer, citedIds);
                 return new JsonResult(new

@@ -199,6 +199,8 @@ namespace PRN222.Repositories
             modelBuilder.Entity<TokenUsageLog>()
                 .HasOne(t => t.User).WithMany()
                 .HasForeignKey(t => t.UserId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<TokenUsageLog>().Property(t => t.ModelName).HasMaxLength(100);
+            modelBuilder.Entity<TokenUsageLog>().Property(t => t.Feature).HasMaxLength(50);
 
             // ── Phase 3: PricingPackage ─────────────────────────────────
             modelBuilder.Entity<PricingPackage>().HasKey(p => p.Id);

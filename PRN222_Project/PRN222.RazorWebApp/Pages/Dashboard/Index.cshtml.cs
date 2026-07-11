@@ -10,11 +10,13 @@ namespace PRN222.RazorWebApp.Pages.Dashboard
     {
         private readonly IDashboardService _dashboardService;
         private readonly ISystemSettingService _systemSettingService;
+        private readonly ITokenUsageService _tokenUsageService;
 
-        public IndexModel(IDashboardService dashboardService, ISystemSettingService systemSettingService)
+        public IndexModel(IDashboardService dashboardService, ISystemSettingService systemSettingService, ITokenUsageService tokenUsageService)
         {
             _dashboardService = dashboardService ?? throw new ArgumentNullException(nameof(dashboardService));
             _systemSettingService = systemSettingService ?? throw new ArgumentNullException(nameof(systemSettingService));
+            _tokenUsageService = tokenUsageService ?? throw new ArgumentNullException(nameof(tokenUsageService));
         }
 
         public List<PRN222.Models.BenchmarkRun> BenchmarkRuns { get; set; } = new();
@@ -53,6 +55,18 @@ namespace PRN222.RazorWebApp.Pages.Dashboard
             {
                 return new JsonResult(new { success = false, message = ex.Message });
             }
+        }
+
+        public async Task<IActionResult> OnGetTokenModelBreakdownAsync()
+        {
+            var data = await _tokenUsageService.GetModelBreakdownAsync();
+            return new JsonResult(data);
+        }
+
+        public async Task<IActionResult> OnGetTopTokenUsersAsync()
+        {
+            var data = await _tokenUsageService.GetTopUsersAsync(5);
+            return new JsonResult(data);
         }
     }
 }

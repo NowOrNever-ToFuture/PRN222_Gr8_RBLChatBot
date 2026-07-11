@@ -1,0 +1,68 @@
+@page
+@model PRN222.RazorWebApp.Pages.Reports.TokenUsageModel
+@{
+    ViewData["Title"] = "Thống kê Token theo tuần";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>@ViewData["Title"]</h2>
+        <div class="alert alert-info mb-0">
+            <strong>Tổng token tuần này:</strong> @Model.WeeklyUsage.Sum(x => x.TotalTokens)
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <canvas id="weeklyTokenChart" height="100"></canvas>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const ctx = document.getElementById('weeklyTokenChart').getContext('2d');
+            
+            // Dữ liệu từ server
+            const rawData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.WeeklyUsage));
+            
+            const labels = rawData.map(item => new Date(item.Date).toLocaleDateString('vi-VN'));
+            const data = rawData.map(item => item.TotalTokens);
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Số Token Sử Dụng',
+                        data: data,
+                        borderColor: '#0d6efd',
+                        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Số lượng Token'
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+}

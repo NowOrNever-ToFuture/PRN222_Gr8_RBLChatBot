@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using PRN222.Models;
 using PRN222.Repositories;
 using PRN222.Services.Interfaces;
-
+using Microsoft.AspNetCore.SignalR;
 namespace PRN222.Services
 {
     public class ChatService : IChatService
@@ -14,6 +14,8 @@ namespace PRN222.Services
         private readonly ILlmService _llmService;
         private readonly AiModelFactory _aiModelFactory;
         private readonly ISystemSettingService _systemSettingService;
+        private readonly ITokenUsageService _tokenUsageService;
+        private readonly IHubContext<TokenUsageHub> _hubContext;
 
         // Ngưỡng Cosine Similarity tối thiểu. Dưới ngưỡng này → từ chối trả lời.
         private const double SIMILARITY_THRESHOLD = 0.5;
@@ -26,12 +28,16 @@ namespace PRN222.Services
             AppDbContext dbContext,
             ILlmService llmService,
             AiModelFactory aiModelFactory,
-            ISystemSettingService systemSettingService)
+            ISystemSettingService systemSettingService,
+            ITokenUsageService tokenUsageService,
+            IHubContext<TokenUsageHub> hubContext)
         {
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
             _llmService = llmService ?? throw new ArgumentNullException(nameof(llmService));
             _aiModelFactory = aiModelFactory ?? throw new ArgumentNullException(nameof(aiModelFactory));
             _systemSettingService = systemSettingService ?? throw new ArgumentNullException(nameof(systemSettingService));
+            _tokenUsageService = tokenUsageService ?? throw new ArgumentNullException(nameof(tokenUsageService));
+            _hubContext = hubContext ?? throw new ArgumentNullException(nameof(hubContext));
         }
 
         // ========================================================================
@@ -160,7 +166,7 @@ Chỉ trả về MÃ MÔN HỌC duy nhất (ví dụ: PRN222), không giải th�
         /// <summary>
         /// Luồng RAG hoàn chỉnh: Smart Route → Vector Search → LLM Generate → Trích dẫn nguồn.
         /// </summary>
-        public async Task<RagResponse> GenerateRagResponseAsync(string query, Guid? selectedCourseId = null)
+        public async Task<RagResponse> GenerateRagResponseAsync(string query, Guid userId, Guid? selectedCourseId = null)
         {
             // Bước 0: Phát hiện câu chào hỏi / hỏi ngoài phạm vi trước — trả lời ngay không qua RAG
             bool isGreeting = IsGreetingQuery(query);
@@ -263,6 +269,21 @@ Nhiệm vụ của bạn là giải thích và trả lời câu hỏi của họ
 Hãy phản hồi bằng tiếng Việt một cách tự nhiên, mạch lạc, dễ hiểu và tràn đầy tinh thần hỗ trợ học thuật.";
 
             string answer = await _llmService.GenerateChatResponseAsync(ragPrompt);
+
+            try
+            {
+                int promptTokens = (int)Math.Ceiling(ragPrompt.Length / 4.0);
+                int completionTokens = (int)Math.Ceiling(answer.Length / 4.0);
+                
+                await _tokenUsageService.LogAsync(userId, promptTokens, completionTokens, "gpt-4o-mini", "Chat");
+                
+                int todayUsed = await _tokenUsageService.GetTodayUsageAsync(userId);
+                await _hubContext.Clients.User(userId.ToString()).SendAsync("ReceiveTokenUpdate", todayUsed);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error logging tokens: {ex.Message}");
+            }
 
             // Bước 6: Đính kèm trích dẫn nguồn cuối câu trả lời
             var citationText = new StringBuilder();
