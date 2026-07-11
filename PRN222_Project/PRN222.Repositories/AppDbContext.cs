@@ -82,6 +82,8 @@ namespace PRN222.Repositories
             modelBuilder.Entity<BenchmarkRun>()
                 .Property(br => br.Id)
                 .HasDefaultValueSql("NEWSEQUENTIALID()");
+            modelBuilder.Entity<BenchmarkRun>()
+                .HasIndex(br => br.BenchmarkBatchId);
 
             modelBuilder.Entity<BenchmarkResult>()
                 .HasKey(br => br.Id);
