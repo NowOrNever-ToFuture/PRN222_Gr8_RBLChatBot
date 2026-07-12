@@ -339,6 +339,144 @@ a {
   font-size: 2rem;
 }
 
+/* ===== Benchmark control ===== */
+.bench-progress {
+  margin-top: 22px;
+  padding: 16px 18px;
+  border-radius: var(--app-radius-sm);
+  background: rgba(31, 111, 235, 0.06);
+  border: 1px solid rgba(31, 111, 235, 0.14);
+}
+
+.bench-progress.is-error {
+  background: rgba(209, 77, 114, 0.08);
+  border-color: rgba(209, 77, 114, 0.24);
+}
+
+.bench-progress-track {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(120, 138, 170, 0.18);
+  overflow: hidden;
+}
+
+.bench-progress-bar {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #2f7df6 0%, #14a0a4 100%);
+  transition: width 0.4s ease;
+}
+
+.bench-progress.is-error .bench-progress-bar {
+  background: linear-gradient(90deg, #d14d72 0%, #b53a61 100%);
+}
+
+.bench-models {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.bench-model-card {
+  padding: 16px 18px;
+  border-radius: var(--app-radius-sm);
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--app-border);
+  border-top: 3px solid var(--accent, var(--app-primary));
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.bench-model-card.is-running {
+  box-shadow: var(--app-shadow-soft);
+  transform: translateY(-2px);
+}
+
+.bench-model-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.bench-model-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+
+.bench-model-icon {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.82rem;
+  background: var(--accent, var(--app-primary));
+}
+
+.bench-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #c3ccdd;
+  flex: none;
+}
+
+.bench-status-dot[data-state="running"] {
+  background: var(--app-accent);
+  animation: benchPulse 1.2s infinite;
+}
+
+.bench-status-dot[data-state="done"] {
+  background: var(--app-secondary);
+}
+
+.bench-status-dot[data-state="error"] {
+  background: var(--app-danger);
+}
+
+@keyframes benchPulse {
+  0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.5); }
+  70% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+}
+
+.bench-model-progress {
+  margin-bottom: 12px;
+  min-height: 1.2em;
+}
+
+.bench-metrics {
+  display: flex;
+  gap: 10px;
+}
+
+.bench-metric {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(244, 248, 255, 0.9);
+  border: 1px solid rgba(120, 138, 170, 0.12);
+  text-align: center;
+}
+
+.bench-metric span {
+  display: block;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 800;
+  color: var(--app-text-soft);
+}
+
+.bench-metric strong {
+  font-size: 1.15rem;
+  color: var(--app-text);
+}
+
 .footer {
   position: relative;
   width: 100%;
@@ -352,7 +490,8 @@ a {
 @media (max-width: 991.98px) {
   .app-grid-4,
   .app-grid-3,
-  .app-grid-2 {
+  .app-grid-2,
+  .bench-models {
     grid-template-columns: 1fr;
   }
 

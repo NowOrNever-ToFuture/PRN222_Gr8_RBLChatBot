@@ -1,4 +1,4 @@
-﻿@page
+@page
 @model PRN222.RazorWebApp.Pages.Chat.IndexModel
 @{
     ViewData["Title"] = "AI Workspace";
@@ -29,28 +29,59 @@
             <div class="d-flex align-items-center gap-3">
                 <div class="chat-topbar-icon"><i class="bi bi-robot"></i></div>
                 <div>
-                    <div class="fw-bold fs-5 text-white">Trợ lý AI học thuật</div>
+                    <span class="fw-bold fs-5 text-white">Trợ lý AI học thuật</span>
                     <div class="small text-white-50">RAG · Trích dẫn nguồn · Theo ngữ cảnh môn học</div>
                 </div>
             </div>
-            @if (User.IsInRole("Admin"))
-            {
-                <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
-                    <label class="text-white-50 small mb-0">Model</label>
-                    <select id="modelSelect" class="form-select form-select-sm chat-model-select">
-                        <option value="bge-m3">BGE-M3</option>
-                        <option value="e5">Multilingual E5</option>
-                        <option value="phobert">PhoBERT</option>
-                        <option value="OpenAI">OpenAI</option>
-                    </select>
-                    <button id="switchModelBtn" class="btn btn-light btn-sm fw-bold rounded-pill px-3">Đổi</button>
-                </div>
-            }
-        </div>
+            
+            <div class="d-flex align-items-center gap-3 justify-content-end flex-wrap">
+                @if (User.IsInRole("Admin"))
+                {
+                    <div class="d-flex align-items-center gap-2">
+                        <label class="text-white-50 small mb-0">Model</label>
+                        <select id="modelSelect" class="form-select form-select-sm chat-model-select">
+                            <option value="bge-m3">BGE-M3</option>
+                            <option value="e5">Multilingual E5</option>
+                            <option value="phobert">PhoBERT</option>
+                            <option value="OpenAI">OpenAI</option>
+                        </select>
+                        <button id="switchModelBtn" class="btn btn-light btn-sm fw-bold rounded-pill px-3">Đổi</button>
+                    </div>
+                }
 
+                @if (Model.Subscription != null)
+                {
+                    var totalQuota = Math.Max(1, Model.Subscription.PricingPackage.TokenQuota);
+                    var remaining = Model.Subscription.RemainingTokens;
+                    var percent = Math.Min(100, Math.Max(0, (int)Math.Round((double)remaining / totalQuota * 100)));
+                    var progressColorClass = percent > 50 ? "bg-success" : (percent > 20 ? "bg-warning" : "bg-danger");
+
+                    <div class="d-flex align-items-center gap-3 px-3 py-2 rounded-4" id="tokenProgressContainer" 
+                         data-bs-toggle="modal" data-bs-target="#tokenQuotaDetailModal"
+                         style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); min-width: 280px; cursor: pointer; transition: transform 0.2s, background 0.2s; padding: 12px 16px;" 
+                         onmouseover="this.style.transform='scale(1.02)'; this.style.background='rgba(255,255,255,0.12)'" 
+                         onmouseout="this.style.transform='scale(1)'; this.style.background='rgba(255,255,255,0.08)'"
+                         title="Xem chi tiết Hạn mức Token">
+                        <div class="w-100">
+                            <div class="d-flex justify-content-between text-white mb-1" style="font-size: 0.8rem; font-weight: 500;">
+                                <span>Token còn lại: <strong class="text-white" id="chatRemainingQuotaVal">@remaining.ToString("N0")</strong> / <span id="chatTotalQuotaVal">@totalQuota.ToString("N0")</span></span>
+                                <span id="tokenPercentVal" class="fw-bold text-white">@percent%</span>
+                            </div>
+                            <div class="progress" style="height: 8px; background-color: rgba(255, 255, 255, 0.15); border-radius: 4px; overflow: hidden;">
+                                <div id="tokenProgressBar" class="progress-bar progress-bar-striped progress-bar-animated @progressColorClass" role="progressbar" 
+                                     style="width: @percent%; border-radius: 4px; transition: width 0.5s ease;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+        
         <div class="chat-layout">
-            <aside class="chat-sidebar">
-                <div class="app-card h-100">
+            <aside class="chat-sidebar d-flex flex-column gap-3">
+
+                <div class="app-card flex-grow-1">
                     <div class="app-card-title"><i class="bi bi-lightbulb text-warning"></i> Gợi ý nhanh</div>
                     <div id="quickSuggestions" class="d-grid gap-2">
                         <button type="button" class="quick-prompt-tag" data-prompt="Ý nghĩa phương pháp luận của quy luật chuyển hóa từ những sự thay đổi về lượng thành những sự thay đổi về chất và ngược lại?">Quy luật Lượng - Chất</button>
@@ -96,6 +127,53 @@
             </div>
         </div>
     </section>
+</div>
+
+<!-- Token Quota Detail Modal -->
+<div class="modal fade text-dark" id="tokenQuotaDetailModal" tabindex="-1" aria-labelledby="tokenQuotaDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 450px;">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 24px; background: #ffffff;">
+            <div class="modal-header border-0 bg-light p-4" style="border-top-left-radius: 24px; border-top-right-radius: 24px;">
+                <h5 class="modal-title fw-bold" id="tokenQuotaDetailModalLabel"><i class="bi bi-cpu-fill text-primary"></i> Chi tiết Hạn mức Token</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="text-center mb-4">
+                    <div class="d-inline-flex align-items-center justify-content-center position-relative mb-3" style="width: 100px; height: 100px;">
+                        <svg width="100" height="100" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(0,0,0,0.06)" stroke-width="8" />
+                            <circle cx="50" cy="50" r="42" fill="none" id="modalTokenProgressRing" stroke="#198754" stroke-width="8" 
+                                    stroke-dasharray="263.89" stroke-dashoffset="0"
+                                    stroke-linecap="round" style="transition: stroke-dashoffset 0.6s ease; transform: rotate(-90deg); transform-origin: 50% 50%;" />
+                        </svg>
+                        <div class="position-absolute fw-extrabold text-dark" id="modalTokenPercentText" style="font-size: 1.4rem; letter-spacing: -0.5px;">100%</div>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-1" id="modalTokenPackageName">Gói Free</h5>
+                    <p class="text-muted small mb-0">Hạn mức sẽ tự động reset mỗi 24 giờ</p>
+                </div>
+                
+                <div class="card border-0 bg-light p-3 mb-3" style="border-radius: 16px;">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-secondary">Token khả dụng:</span>
+                        <strong class="text-dark"><span id="modalRemainingTokens">100</span> / <span id="modalTotalTokens">100</span> Tokens</strong>
+                    </div>
+                    <div class="progress mb-2" style="height: 8px; border-radius: 4px;">
+                        <div class="progress-bar bg-success" id="modalTokenProgressBar" role="progressbar" style="width: 100%; transition: width 0.4s ease;" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <small class="text-muted d-block text-end" id="modalTokenPercentage">Còn lại 100%</small>
+                </div>
+
+                <div class="d-flex align-items-center gap-2 text-secondary mb-3" style="font-size: 0.88rem;">
+                    <i class="bi bi-clock-history"></i>
+                    <span>Tự động làm mới trong: <strong class="text-primary" id="modalResetTimeDisplay">...</strong></span>
+                </div>
+            </div>
+            <div class="modal-footer border-0 p-4 pt-0 d-flex justify-content-center">
+                <button type="button" class="btn btn-light fw-semibold px-4 py-2 rounded-3" data-bs-dismiss="modal">Đóng</button>
+                <a href="/Payments/Pricing" class="btn btn-primary fw-bold px-4 py-2 rounded-3" id="modalUpgradeBtn"><i class="bi bi-lightning-fill"></i> Nâng cấp lên VIP</a>
+            </div>
+        </div>
+    </div>
 </div>
 
 <style>
@@ -301,7 +379,12 @@
                 timeout: 30000,
                 success: function (result) {
                     $(`#${typingId}`).remove();
-                    if (result.success) appendBotMessage(result.response, result.sources);
+                    if (result.success) {
+                        appendBotMessage(result.response, result.sources);
+                        if (result.remainingQuota !== undefined && result.totalQuota !== undefined) {
+                            updateTokenUI(result.remainingQuota, result.totalQuota, result.packageName);
+                        }
+                    }
                     else appendBotMessage('Cảnh báo: ' + (result.message || 'Không thể xử lý câu hỏi này.'), []);
                 },
                 error: function (xhr, status) {
@@ -373,6 +456,131 @@
 
         function scrollToBottom() { const el = document.getElementById('chatMessages'); el.scrollTop = el.scrollHeight; }
         function escapeHtml(text) { const div = document.createElement('div'); div.appendChild(document.createTextNode(text)); return div.innerHTML; }
+
+        function updateTokenUI(remaining, total, packageName) {
+            total = Math.max(1, total);
+            const percent = Math.min(100, Math.max(0, Math.round((remaining / total) * 100)));
+            $('#chatRemainingQuotaVal').text(remaining.toLocaleString('vi-VN'));
+            $('#chatTotalQuotaVal').text(total.toLocaleString('vi-VN'));
+            $('#tokenPercentVal').text(percent + '%');
+            
+            const $bar = $('#tokenProgressBar');
+            if ($bar.length) {
+                $bar.css('width', percent + '%');
+                $bar.removeClass('bg-success bg-warning bg-danger');
+                if (percent > 50) $bar.addClass('bg-success');
+                else if (percent > 20) $bar.addClass('bg-warning');
+                else $bar.addClass('bg-danger');
+            }
+
+            // Update circular progress ring
+            const ring = document.getElementById('tokenProgressRing');
+            if (ring) {
+                const circumference = 175.9;
+                const offset = circumference - (circumference * percent / 100);
+                ring.setAttribute('stroke-dashoffset', offset);
+                
+                // Color coding
+                if (percent > 50) ring.setAttribute('stroke', '#198754');
+                else if (percent > 20) ring.setAttribute('stroke', '#ffc107');
+                else ring.setAttribute('stroke', '#dc3545');
+            }
+            $('#tokenRingPercentText').text(percent + '%');
+
+            // Update title and desc dynamically if package name is available
+            if (packageName) {
+                const isFree = packageName === "Free";
+                $('#tokenCardTitle').text(isFree ? 'Hạn mức hôm nay' : 'Hạn mức gói VIP');
+                const descHtml = isFree 
+                    ? `Bạn đã sử dụng một lượng hạn mức hàng ngày. Hạn mức sẽ tự động refresh đầy lại sau <strong id="resetTimeDisplay" class="text-info">...</strong>.` 
+                    : `Số dư Token của bạn tích lũy từ gói VIP để sử dụng hỏi đáp học thuật.`;
+                $('#tokenCardDesc').html(descHtml);
+                if (isFree) {
+                    updateResetCountdown();
+                }
+            }
+
+            // --- Update Modal Details ---
+            $('#modalRemainingTokens').text(remaining.toLocaleString('vi-VN'));
+            $('#modalTotalTokens').text(total.toLocaleString('vi-VN'));
+            $('#modalTokenPercentText').text(percent + '%');
+            $('#modalTokenPercentage').text('Còn lại ' + percent + '%');
+            
+            const modalRing = document.getElementById('modalTokenProgressRing');
+            if (modalRing) {
+                const circumference = 263.89;
+                const offset = circumference - (circumference * percent / 100);
+                modalRing.setAttribute('stroke-dashoffset', offset);
+                if (percent > 50) modalRing.setAttribute('stroke', '#198754');
+                else if (percent > 20) modalRing.setAttribute('stroke', '#ffc107');
+                else modalRing.setAttribute('stroke', '#dc3545');
+            }
+
+            const $modalBar = $('#modalTokenProgressBar');
+            if ($modalBar.length) {
+                $modalBar.css('width', percent + '%');
+                $modalBar.removeClass('bg-success bg-warning bg-danger');
+                if (percent > 50) $modalBar.addClass('bg-success');
+                else if (percent > 20) $modalBar.addClass('bg-warning');
+                else $modalBar.addClass('bg-danger');
+            }
+
+            if (packageName) {
+                $('#modalTokenPackageName').text('Gói ' + packageName);
+                if (packageName === "Free") {
+                    $('#modalUpgradeBtn').removeClass('d-none');
+                } else {
+                    $('#modalUpgradeBtn').addClass('d-none');
+                }
+            }
+        }
+
+        function updateResetCountdown() {
+            const countdownEl = document.getElementById('resetTimeDisplay');
+            const modalCountdownEl = document.getElementById('modalResetTimeDisplay');
+            
+            const now = new Date();
+            const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+            const vnTime = new Date(utc + (3600000 * 7));
+            
+            const nextDay = new Date(vnTime);
+            nextDay.setHours(24, 0, 0, 0); // next midnight
+            
+            const diffMs = nextDay - vnTime;
+            const diffMins = Math.floor(diffMs / 60000);
+            const hours = Math.floor(diffMins / 60);
+            const minutes = diffMins % 60;
+            
+            const text = `${hours} giờ ${minutes} phút`;
+            if (countdownEl) countdownEl.textContent = text;
+            if (modalCountdownEl) modalCountdownEl.textContent = text;
+        }
+
+        // Start countdown reset
+        updateResetCountdown();
+        setInterval(updateResetCountdown, 60000);
+
+        // Initial UI trigger on page load using backend values
+        @if (Model.Subscription != null)
+        {
+            <text>
+            updateTokenUI(@Model.Subscription.RemainingTokens, @Model.Subscription.PricingPackage.TokenQuota, "@Model.Subscription.PricingPackage.Name");
+            </text>
+        }
+
+        // Build real-time payment/quota updates via SignalR
+        const paymentConnection = new signalR.HubConnectionBuilder()
+            .withUrl("/hubs/payment")
+            .withAutomaticReconnect()
+            .build();
+
+        paymentConnection.on("ReceiveQuotaUpdate", (remainingTokens, totalQuota, packageName) => {
+            updateTokenUI(remainingTokens, totalQuota, packageName);
+        });
+
+        paymentConnection.start()
+            .then(() => console.log("Chat PaymentHub connected."))
+            .catch(err => console.error("Chat PaymentHub connection error:", err));
     });
 </script>
 @Html.AntiForgeryToken()

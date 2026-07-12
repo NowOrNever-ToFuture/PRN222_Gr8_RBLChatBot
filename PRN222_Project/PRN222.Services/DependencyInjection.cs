@@ -24,16 +24,17 @@ namespace PRN222.Services
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<ITestQuestionService, TestQuestionService>();
             services.AddScoped<IImportService, ImportService>();
+            services.AddScoped<ILlmProviderFactory, LlmProviderFactory>();
+            // Judge dùng GPT (qua ILlmService => provider "gpt"): tránh Gemini tự chấm
+            // chính nó và không đốt quota Gemini free-tier (chỉ ~20 request/ngày).
             services.AddScoped<ILlmJudgeService, LlmJudgeService>();
             services.AddScoped<IBenchmarkRunnerService, BenchmarkRunnerService>();
             services.AddScoped<IDashboardService, DashboardService>();
             services.AddScoped<IChatService, ChatService>();
+            services.AddScoped<IPaymentService, PaymentService>();
 
             // Phase 2 - Token Report (service sẽ được thành viên B implement sau)
             services.AddScoped<ITokenUsageService, TokenUsageService>();
-
-            // Phase 3 - Payments (service sẽ được thành viên C implement sau)
-            services.AddScoped<IPaymentService, PaymentService>();
 
             return services;
         }

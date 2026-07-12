@@ -21,7 +21,6 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     });
 
 builder.Services.AddApplicationServices();
-builder.Services.AddScoped<ILlmService, OpenAiService>();
 builder.Services.AddScoped<IEmbeddingService, OpenAiService>();
 
 var pythonBaseUrl = builder.Configuration["AIProviders:PythonMicroservice:BaseUrl"];
@@ -30,6 +29,9 @@ builder.Services.AddHttpClient("PythonApi").ConfigureHttpClient(c =>
     c.BaseAddress = new Uri(pythonBaseUrl ?? "http://localhost:8000");
     c.Timeout = TimeSpan.FromMinutes(30);
 });
+
+builder.Services.AddScoped<ILlmService>(sp =>
+    sp.GetRequiredService<ILlmProviderFactory>().GetService("gpt"));
 
 builder.Services.AddScoped<IEmbeddingService>(sp =>
     new LocalPythonEmbeddingService(sp.GetRequiredService<IHttpClientFactory>().CreateClient("PythonApi"), "bge-m3"));
@@ -153,6 +155,70 @@ using (var scope = app.Services.CreateScope())
         );
         dbContext.SaveChanges();
     }
+
+    // Synchronize package quotas and descriptions to reflect request-based limits
+    var existingPackages = dbContext.PricingPackages.ToList();
+    bool databaseUpdated = false;
+    
+    var dbFree = existingPackages.FirstOrDefault(p => p.Name == "Free");
+    if (dbFree != null && (dbFree.TokenQuota != 100 || dbFree.Price != 0 || dbFree.DurationDays != 36500))
+    {
+        dbFree.TokenQuota = 100;
+        dbFree.Price = 0;
+        dbFree.DurationDays = 36500;
+        dbFree.Description = "Gói dùng thử miễn phí mặc định, tự động reset 100 lượt gọi mỗi ngày.";
+        databaseUpdated = true;
+    }
+    
+    // Deactivate the Standard package
+    var dbStandard = existingPackages.FirstOrDefault(p => p.Name == "Standard");
+    if (dbStandard != null && dbStandard.IsActive)
+    {
+        dbStandard.IsActive = false;
+        databaseUpdated = true;
+    }
+    
+    var dbVip = existingPackages.FirstOrDefault(p => p.Name == "VIP");
+    if (dbVip != null && (dbVip.TokenQuota != 1000 || dbVip.Price != 50000 || dbVip.DurationDays != 30))
+    {
+        dbVip.TokenQuota = 1000;
+        dbVip.Price = 50000;
+        dbVip.DurationDays = 30;
+        dbVip.Description = "Nạp thêm 1,000 lượt gọi AI chất lượng cao để học tập và ôn luyện.";
+        databaseUpdated = true;
+    }
+    
+    if (databaseUpdated)
+    {
+        dbContext.SaveChanges();
+    }
+
+    if (!dbContext.PricingPackages.Any())
+    {
+        dbContext.PricingPackages.AddRange(
+            new PricingPackage
+            {
+                Id = Guid.NewGuid(),
+                Name = "Free",
+                Description = "Gói dùng thử miễn phí mặc định, tự động reset 100 lượt gọi mỗi ngày.",
+                Price = 0,
+                TokenQuota = 100,
+                DurationDays = 36500,
+                IsActive = true
+            },
+            new PricingPackage
+            {
+                Id = Guid.NewGuid(),
+                Name = "VIP",
+                Description = "Nạp thêm 1,000 lượt gọi AI chất lượng cao để học tập và ôn luyện.",
+                Price = 50000,
+                TokenQuota = 1000,
+                DurationDays = 30,
+                IsActive = true
+            }
+        );
+        dbContext.SaveChanges();
+    }
 }
 
 if (!app.Environment.IsDevelopment())
@@ -180,5 +246,44 @@ app.MapHub<UserHub>("/hubs/user");
 app.MapHub<SystemSettingsHub>("/hubs/systemsettings");
 app.MapHub<TokenUsageHub>("/hubs/tokenusage");  // Phase 2
 app.MapHub<PaymentHub>("/hubs/payment");         // Phase 3
+
+app.MapHub<PaymentHub>("/hubs/payment");
+
+app.MapMethods("/api/payment/webhook", new[] { "GET", "POST" }, async (HttpContext ctx, IPaymentService paymentService) =>
+{
+    try
+    {
+        string data = "";
+        if (ctx.Request.Method == "POST")
+        {
+            using var reader = new System.IO.StreamReader(ctx.Request.Body);
+            data = await reader.ReadToEndAsync();
+        }
+        else
+        {
+            data = ctx.Request.QueryString.Value ?? "";
+            if (data.StartsWith("?"))
+            {
+                data = data.Substring(1);
+            }
+        }
+
+        var result = await paymentService.ProcessWebhookAsync(data);
+        if (result.Success)
+        {
+            return Results.Json(new { RspCode = "00", Message = "Confirm Success" });
+        }
+        else
+        {
+            Console.Error.WriteLine($"Webhook processing error: {result.Message}");
+            return Results.Json(new { RspCode = "99", Message = result.Message });
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine($"Webhook endpoint error: {ex.Message}");
+        return Results.Json(new { RspCode = "99", Message = ex.Message });
+    }
+});
 
 app.Run();

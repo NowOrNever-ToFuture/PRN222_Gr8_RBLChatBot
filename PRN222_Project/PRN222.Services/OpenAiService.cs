@@ -1,3 +1,4 @@
+using System;
 using OpenAI;
 using OpenAI.Chat;
 using OpenAI.Embeddings;
@@ -47,9 +48,48 @@ namespace PRN222.Services
 
         public async Task<string> GenerateChatResponseAsync(string prompt, bool isFineTuned = false)
         {
+            var result = await GenerateChatResponseWithUsageAsync(prompt, isFineTuned);
+            return result.Response;
+        }
+
+        public async Task<(string Response, int InputTokens, int OutputTokens)> GenerateChatResponseWithUsageAsync(string prompt, bool isFineTuned = false)
+        {
             var client = (isFineTuned && _fineTunedChatClient != null) ? _fineTunedChatClient : _chatClient;
             var response = await client.CompleteChatAsync(prompt);
-            return response.Value.Content[0].Text;
+            
+            string content = response.Value.Content[0].Text ?? "";
+            int inputTokens = 0;
+            int outputTokens = 0;
+
+            var usage = response.Value.Usage;
+            if (usage != null)
+            {
+                try
+                {
+                    var propInput = usage.GetType().GetProperty("InputTokenCount") 
+                                 ?? usage.GetType().GetProperty("InputTokens")
+                                 ?? usage.GetType().GetProperty("PromptTokens");
+                    var propOutput = usage.GetType().GetProperty("OutputTokenCount") 
+                                  ?? usage.GetType().GetProperty("OutputTokens")
+                                  ?? usage.GetType().GetProperty("CompletionTokens");
+                    
+                    if (propInput != null) inputTokens = Convert.ToInt32(propInput.GetValue(usage));
+                    if (propOutput != null) outputTokens = Convert.ToInt32(propOutput.GetValue(usage));
+                }
+                catch { }
+            }
+
+            // Fallback estimation
+            if (inputTokens <= 0)
+            {
+                inputTokens = (int)Math.Ceiling(prompt.Split((char[])null, StringSplitOptions.RemoveEmptyEntries).Length * 1.35);
+            }
+            if (outputTokens <= 0)
+            {
+                outputTokens = (int)Math.Ceiling(content.Split((char[])null, StringSplitOptions.RemoveEmptyEntries).Length * 1.35);
+            }
+
+            return (content, inputTokens, outputTokens);
         }
     }
 }

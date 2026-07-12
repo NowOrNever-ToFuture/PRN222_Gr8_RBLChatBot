@@ -6,18 +6,11 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace PRN222.Repositories.Migrations
 {
     /// <inheritdoc />
-    public partial class AddAllNewFeatures : Migration
+    public partial class AddPackagesAndPayments : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string>(
-                name: "LlmModel",
-                table: "BenchmarkRuns",
-                type: "nvarchar(max)",
-                nullable: false,
-                defaultValue: "");
-
             migrationBuilder.CreateTable(
                 name: "PricingPackages",
                 columns: table => new
@@ -33,30 +26,6 @@ namespace PRN222.Repositories.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_PricingPackages", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "TokenUsageLogs",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false, defaultValueSql: "NEWSEQUENTIALID()"),
-                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    PromptTokens = table.Column<int>(type: "int", nullable: false),
-                    CompletionTokens = table.Column<int>(type: "int", nullable: false),
-                    TotalTokens = table.Column<int>(type: "int", nullable: false),
-                    ModelName = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Feature = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_TokenUsageLogs", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_TokenUsageLogs_Users_UserId",
-                        column: x => x.UserId,
-                        principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -80,7 +49,7 @@ namespace PRN222.Repositories.Migrations
                         column: x => x.PricingPackageId,
                         principalTable: "PricingPackages",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_PaymentTransactions_Users_UserId",
                         column: x => x.UserId,
@@ -129,11 +98,6 @@ namespace PRN222.Repositories.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_TokenUsageLogs_UserId",
-                table: "TokenUsageLogs",
-                column: "UserId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_UserSubscriptions_PricingPackageId",
                 table: "UserSubscriptions",
                 column: "PricingPackageId");
@@ -151,17 +115,10 @@ namespace PRN222.Repositories.Migrations
                 name: "PaymentTransactions");
 
             migrationBuilder.DropTable(
-                name: "TokenUsageLogs");
-
-            migrationBuilder.DropTable(
                 name: "UserSubscriptions");
 
             migrationBuilder.DropTable(
                 name: "PricingPackages");
-
-            migrationBuilder.DropColumn(
-                name: "LlmModel",
-                table: "BenchmarkRuns");
         }
     }
 }

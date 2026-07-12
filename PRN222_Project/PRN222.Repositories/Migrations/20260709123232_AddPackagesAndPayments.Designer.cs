@@ -12,8 +12,8 @@ using PRN222.Repositories;
 namespace PRN222.Repositories.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260708182500_AddAllNewFeatures")]
-    partial class AddAllNewFeatures
+    [Migration("20260709123232_AddPackagesAndPayments")]
+    partial class AddPackagesAndPayments
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -75,10 +75,6 @@ namespace PRN222.Repositories.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("EmbeddingModel")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("LlmModel")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -440,43 +436,6 @@ namespace PRN222.Repositories.Migrations
                     b.ToTable("TestQuestions");
                 });
 
-            modelBuilder.Entity("PRN222.Models.TokenUsageLog", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
-
-                    b.Property<int>("CompletionTokens")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Feature")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ModelName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("PromptTokens")
-                        .HasColumnType("int");
-
-                    b.Property<int>("TotalTokens")
-                        .HasColumnType("int");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("TokenUsageLogs");
-                });
-
             modelBuilder.Entity("PRN222.Models.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -644,11 +603,11 @@ namespace PRN222.Repositories.Migrations
                     b.HasOne("PRN222.Models.PricingPackage", "PricingPackage")
                         .WithMany()
                         .HasForeignKey("PricingPackageId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("PRN222.Models.User", "User")
-                        .WithMany()
+                        .WithMany("PaymentTransactions")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -669,27 +628,16 @@ namespace PRN222.Repositories.Migrations
                     b.Navigation("Course");
                 });
 
-            modelBuilder.Entity("PRN222.Models.TokenUsageLog", b =>
-                {
-                    b.HasOne("PRN222.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("PRN222.Models.UserSubscription", b =>
                 {
                     b.HasOne("PRN222.Models.PricingPackage", "PricingPackage")
-                        .WithMany()
+                        .WithMany("UserSubscriptions")
                         .HasForeignKey("PricingPackageId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("PRN222.Models.User", "User")
-                        .WithMany()
+                        .WithMany("UserSubscriptions")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -723,6 +671,11 @@ namespace PRN222.Repositories.Migrations
                     b.Navigation("DocumentChunks");
                 });
 
+            modelBuilder.Entity("PRN222.Models.PricingPackage", b =>
+                {
+                    b.Navigation("UserSubscriptions");
+                });
+
             modelBuilder.Entity("PRN222.Models.TestQuestion", b =>
                 {
                     b.Navigation("BenchmarkResults");
@@ -732,9 +685,13 @@ namespace PRN222.Repositories.Migrations
                 {
                     b.Navigation("Conversations");
 
+                    b.Navigation("PaymentTransactions");
+
                     b.Navigation("TeachingAssignments");
 
                     b.Navigation("UploadedDocuments");
+
+                    b.Navigation("UserSubscriptions");
                 });
 #pragma warning restore 612, 618
         }

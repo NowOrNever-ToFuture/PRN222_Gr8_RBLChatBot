@@ -3,7 +3,7 @@ namespace PRN222.Services.Interfaces
     public interface ILlmJudgeService
     {
         /// <summary>
-        /// Sử dụng LLM (GPT-4o-mini) đóng vai giám khảo để chấm điểm câu trả lời của Bot.
+        /// Sử dụng một LLM Judge độc lập để chấm điểm câu trả lời của Bot.
         /// </summary>
         /// <param name="question">Câu hỏi gốc</param>
         /// <param name="context">Ngữ cảnh (các chunks tài liệu liên quan)</param>

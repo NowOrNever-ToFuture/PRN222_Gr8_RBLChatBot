@@ -7,198 +7,216 @@ using PRN222.Services.Interfaces;
 
 namespace PRN222.Services
 {
-    // Hub rỗng — logic bắn event nằm trong BenchmarkRunnerService qua IHubContext
     public class BenchmarkHub : Hub { }
 
     public class BenchmarkRunnerService : IBenchmarkRunnerService
     {
+        private static readonly (string Provider, string DisplayName)[] BenchmarkModels =
+        {
+            ("gpt", "GPT-4o-mini"),
+            ("gemini", "Gemini-2.5-Flash"),
+            ("qwen", "Qwen-2.5-1.5B-LoRA")
+        };
+
         private readonly AppDbContext _dbContext;
         private readonly IChatService _chatService;
-        private readonly ILlmService _llmService;
+        private readonly ILlmProviderFactory _llmProviderFactory;
         private readonly ILlmJudgeService _llmJudgeService;
         private readonly IHubContext<BenchmarkHub> _hubContext;
 
         public BenchmarkRunnerService(
             AppDbContext dbContext,
             IChatService chatService,
-            ILlmService llmService,
+            ILlmProviderFactory llmProviderFactory,
             ILlmJudgeService llmJudgeService,
             IHubContext<BenchmarkHub> hubContext)
         {
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
             _chatService = chatService ?? throw new ArgumentNullException(nameof(chatService));
-            _llmService = llmService ?? throw new ArgumentNullException(nameof(llmService));
+            _llmProviderFactory = llmProviderFactory ?? throw new ArgumentNullException(nameof(llmProviderFactory));
             _llmJudgeService = llmJudgeService ?? throw new ArgumentNullException(nameof(llmJudgeService));
             _hubContext = hubContext ?? throw new ArgumentNullException(nameof(hubContext));
         }
 
-        public async Task<BenchmarkRun> RunBenchmarkAsync(string embeddingModel, string chunkingStrategy)
+        public async Task<List<BenchmarkRun>> RunBenchmarkAsync(
+            Guid benchmarkBatchId,
+            string embeddingModel,
+            string chunkingStrategy)
         {
-            var overallStopwatch = Stopwatch.StartNew();
+            if (benchmarkBatchId == Guid.Empty)
+                throw new ArgumentException("Benchmark batch ID must not be empty.", nameof(benchmarkBatchId));
 
-            // Bước 1: Tạo BenchmarkRun mới
-            var benchmarkRun = new BenchmarkRun
+            var runDate = DateTime.UtcNow;
+            var runs = BenchmarkModels.Select(model => new BenchmarkRun
             {
                 Id = Guid.NewGuid(),
-                RunDate = DateTime.UtcNow,
+                BenchmarkBatchId = benchmarkBatchId,
+                RunDate = runDate,
+                LlmModel = model.DisplayName,
                 EmbeddingModel = embeddingModel,
                 ChunkingStrategy = chunkingStrategy,
                 Status = "Running",
-                ResultSummary = ""
-            };
+                ResultSummary = string.Empty
+            }).ToList();
 
-            _dbContext.BenchmarkRuns.Add(benchmarkRun);
+            _dbContext.BenchmarkRuns.AddRange(runs);
             await _dbContext.SaveChangesAsync();
+            await _hubContext.Clients.All.SendAsync(
+                "ReceiveProgress",
+                0,
+                "Đang chuẩn bị benchmark GPT, Gemini và Qwen...");
 
-            // Bắn trạng thái bắt đầu
-            await _hubContext.Clients.All.SendAsync("ReceiveProgress", 0, "Đang bắt đầu benchmark...");
+            var testQuestions = await _dbContext.TestQuestions
+                .Include(question => question.Course)
+                .ToListAsync();
 
-            try
+            if (testQuestions.Count == 0)
             {
-                // Bước 2: Lấy danh sách TestQuestions
-                var testQuestions = await _dbContext.TestQuestions
-                    .Include(tq => tq.Course)
-                    .ToListAsync();
-
-                if (testQuestions.Count == 0)
+                foreach (var run in runs)
                 {
-                    benchmarkRun.Status = "Failed";
-                    benchmarkRun.ResultSummary = "Không có câu hỏi nào trong bảng TestQuestions.";
-                    await _dbContext.SaveChangesAsync();
-                    await _hubContext.Clients.All.SendAsync("ReceiveProgress", 100, "Lỗi: Không có câu hỏi.");
-                    return benchmarkRun;
+                    run.Status = "Failed";
+                    run.ResultSummary = "Không có câu hỏi nào trong bảng TestQuestions.";
                 }
 
-                int totalQuestions = testQuestions.Count;
-                double totalFaithfulness = 0;
-                double totalRelevance = 0;
-                long totalLatency = 0;
+                await _dbContext.SaveChangesAsync();
+                await _hubContext.Clients.All.SendAsync(
+                    "ReceiveProgress",
+                    100,
+                    "Lỗi: Không có câu hỏi benchmark.");
+                return runs;
+            }
 
-                // Bước 3: Loop qua từng câu hỏi
-                for (int i = 0; i < totalQuestions; i++)
+            var statistics = runs.ToDictionary(run => run.Id, _ => new RunStatistics());
+            var totalOperations = testQuestions.Count * BenchmarkModels.Length;
+            var completedOperations = 0;
+
+            for (var questionIndex = 0; questionIndex < testQuestions.Count; questionIndex++)
+            {
+                var question = testQuestions[questionIndex];
+
+                // Retrieval chỉ chạy một lần; cả ba LLM nhận chính xác cùng context.
+                var relevantChunks = await _chatService.SearchChunksAsync(question.QuestionText);
+                var context = relevantChunks.Count > 0
+                    ? string.Join("\n\n", relevantChunks.Select(chunk => chunk.Content))
+                    : "Không tìm thấy ngữ cảnh liên quan.";
+
+                var ragPrompt = BuildRagPrompt(question.QuestionText, context);
+
+                for (var modelIndex = 0; modelIndex < BenchmarkModels.Length; modelIndex++)
                 {
-                    var question = testQuestions[i];
-                    var questionStopwatch = Stopwatch.StartNew();
-
-                    string botAnswer = "";
+                    var model = BenchmarkModels[modelIndex];
+                    var run = runs[modelIndex];
+                    var runStatistics = statistics[run.Id];
+                    var stopwatch = Stopwatch.StartNew();
+                    string botAnswer;
                     double faithfulness = 0;
                     double relevance = 0;
 
                     try
                     {
-                        // 3a. Tìm chunks liên quan (RAG retrieval) bằng keyword search
-                        var relevantChunks = await _chatService.SearchChunksAsync(question.QuestionText);
-                        string context = relevantChunks.Count > 0
-                            ? string.Join("\n\n", relevantChunks.Select(c => c.Content))
-                            : "Không tìm thấy ngữ cảnh liên quan.";
+                        var llmService = _llmProviderFactory.GetService(model.Provider);
+                        botAnswer = await llmService.GenerateChatResponseAsync(ragPrompt);
+                        stopwatch.Stop();
 
-                        // 3b. Gọi LLM để lấy câu trả lời
-                        string ragPrompt = $@"Dựa trên ngữ cảnh sau đây, hãy trả lời câu hỏi.
-
-=== NGỮ CẢNH ===
-{context}
-
-=== CÂU HỎI ===
-{question.QuestionText}
-
-Hãy trả lời chính xác và chi tiết.";
-
-                        botAnswer = await _llmService.GenerateChatResponseAsync(ragPrompt);
-
-                        questionStopwatch.Stop();
-                        long latencyMs = questionStopwatch.ElapsedMilliseconds;
-
-                        // 3c. Gọi LLM Judge để chấm điểm
                         var judgeResult = await _llmJudgeService.JudgeAsync(
-                            question.QuestionText, context, botAnswer);
-                        
+                            question.QuestionText,
+                            context,
+                            botAnswer);
                         faithfulness = judgeResult.Faithfulness;
                         relevance = judgeResult.Relevance;
 
-                        // 3d. Lưu BenchmarkResult
-                        var result = new BenchmarkResult
-                        {
-                            Id = Guid.NewGuid(),
-                            BenchmarkRunId = benchmarkRun.Id,
-                            TestQuestionId = question.Id,
-                            BotAnswer = botAnswer,
-                            FaithfulnessScore = (float)faithfulness,
-                            RelevanceScore = (float)relevance,
-                            LatencyMs = latencyMs,
-                            AnsweredDate = DateTime.UtcNow
-                        };
-
-                        _dbContext.BenchmarkResults.Add(result);
-                        await _dbContext.SaveChangesAsync();
-
-                        totalFaithfulness += faithfulness;
-                        totalRelevance += relevance;
-                        totalLatency += latencyMs;
+                        runStatistics.TotalFaithfulness += faithfulness;
+                        runStatistics.TotalRelevance += relevance;
+                        runStatistics.SuccessCount++;
                     }
-                    catch (Exception ex)
+                    catch (Exception exception)
                     {
-                        botAnswer = $"[ERROR] {ex.Message}";
-                        
-                        // Nếu 1 câu lỗi, vẫn tiếp tục chạy các câu còn lại
-                        var errorResult = new BenchmarkResult
-                        {
-                            Id = Guid.NewGuid(),
-                            BenchmarkRunId = benchmarkRun.Id,
-                            TestQuestionId = question.Id,
-                            BotAnswer = botAnswer,
-                            FaithfulnessScore = 0,
-                            RelevanceScore = 0,
-                            LatencyMs = questionStopwatch.ElapsedMilliseconds,
-                            AnsweredDate = DateTime.UtcNow
-                        };
-
-                        _dbContext.BenchmarkResults.Add(errorResult);
-                        await _dbContext.SaveChangesAsync();
+                        stopwatch.Stop();
+                        botAnswer = $"[ERROR] {exception.Message}";
+                        runStatistics.ErrorCount++;
+                        Console.Error.WriteLine(
+                            $"[Benchmark {model.DisplayName}] {exception.Message}");
                     }
 
-                    // 3e. Bắn tiến độ % qua SignalR
-                    int percentComplete = (int)((i + 1) * 100.0 / totalQuestions);
-                    string progressMsg = $"Đã xử lý {i + 1}/{totalQuestions} câu hỏi...";
-                    await _hubContext.Clients.All.SendAsync("ReceiveProgress", percentComplete, progressMsg);
+                    runStatistics.TotalLatencyMs += stopwatch.ElapsedMilliseconds;
+                    _dbContext.BenchmarkResults.Add(new BenchmarkResult
+                    {
+                        Id = Guid.NewGuid(),
+                        BenchmarkRunId = run.Id,
+                        TestQuestionId = question.Id,
+                        BotAnswer = botAnswer,
+                        FaithfulnessScore = (float)faithfulness,
+                        RelevanceScore = (float)relevance,
+                        LatencyMs = stopwatch.ElapsedMilliseconds,
+                        AnsweredDate = DateTime.UtcNow
+                    });
 
-                    // 3f. Bắn kết quả Live qua SignalR
-                    await _hubContext.Clients.All.SendAsync("ReceiveLiveResult", 
-                        i + 1, 
-                        question.QuestionText, 
-                        botAnswer, 
-                        faithfulness, 
+                    completedOperations++;
+                    var percentComplete = (int)(completedOperations * 100.0 / totalOperations);
+                    await _hubContext.Clients.All.SendAsync(
+                        "ReceiveProgress",
+                        percentComplete,
+                        $"{model.DisplayName}: câu {questionIndex + 1}/{testQuestions.Count}");
+                    await _hubContext.Clients.All.SendAsync(
+                        "ReceiveLiveResult",
+                        model.DisplayName,
+                        questionIndex + 1,
+                        question.QuestionText,
+                        botAnswer,
+                        faithfulness,
                         relevance);
                 }
 
-                // Bước 4: Cập nhật BenchmarkRun kết thúc
-                overallStopwatch.Stop();
-                double avgFaithfulness = totalQuestions > 0 ? totalFaithfulness / totalQuestions : 0;
-                double avgRelevance = totalQuestions > 0 ? totalRelevance / totalQuestions : 0;
-                double avgLatency = totalQuestions > 0 ? (double)totalLatency / totalQuestions : 0;
-
-                benchmarkRun.Status = "Completed";
-                benchmarkRun.TotalTimeMs = overallStopwatch.ElapsedMilliseconds;
-                benchmarkRun.ResultSummary = $"Avg Faithfulness: {avgFaithfulness:F2}, Avg Relevance: {avgRelevance:F2}, Avg Latency: {avgLatency:F0}ms";
-
                 await _dbContext.SaveChangesAsync();
-
-                await _hubContext.Clients.All.SendAsync("ReceiveProgress", 100,
-                    $"✅ Hoàn tất! Faithfulness: {avgFaithfulness:F2}, Relevance: {avgRelevance:F2}, Latency: {avgLatency:F0}ms");
-
-                return benchmarkRun;
             }
-            catch (Exception ex)
+
+            foreach (var run in runs)
             {
-                overallStopwatch.Stop();
-                benchmarkRun.Status = "Failed";
-                benchmarkRun.TotalTimeMs = overallStopwatch.ElapsedMilliseconds;
-                benchmarkRun.ResultSummary = $"Lỗi: {ex.Message}";
-                await _dbContext.SaveChangesAsync();
+                var runStatistics = statistics[run.Id];
+                var divisor = Math.Max(runStatistics.SuccessCount, 1);
+                var averageFaithfulness = runStatistics.TotalFaithfulness / divisor;
+                var averageRelevance = runStatistics.TotalRelevance / divisor;
+                var averageLatency = (double)runStatistics.TotalLatencyMs / testQuestions.Count;
 
-                await _hubContext.Clients.All.SendAsync("ReceiveProgress", 100, $"❌ Lỗi: {ex.Message}");
-
-                return benchmarkRun;
+                run.Status = runStatistics.SuccessCount == 0 ? "Failed" : "Completed";
+                run.TotalTimeMs = runStatistics.TotalLatencyMs;
+                run.ResultSummary =
+                    $"Avg Faithfulness: {averageFaithfulness:F2}, " +
+                    $"Avg Relevance: {averageRelevance:F2}, " +
+                    $"Avg Latency: {averageLatency:F0}ms, " +
+                    $"Errors: {runStatistics.ErrorCount}";
             }
+
+            await _dbContext.SaveChangesAsync();
+            await _hubContext.Clients.All.SendAsync(
+                "ReceiveProgress",
+                100,
+                "✅ Hoàn tất benchmark GPT, Gemini và Qwen.");
+            return runs;
+        }
+
+        private static string BuildRagPrompt(string question, string context)
+        {
+            return $$"""
+                Dựa duy nhất trên ngữ cảnh sau đây, hãy trả lời câu hỏi bằng tiếng Việt.
+
+                === NGỮ CẢNH ===
+                {{context}}
+
+                === CÂU HỎI ===
+                {{question}}
+
+                Hãy trả lời chính xác, rõ ràng và không bịa thông tin ngoài ngữ cảnh.
+                """;
+        }
+
+        private sealed class RunStatistics
+        {
+            public double TotalFaithfulness { get; set; }
+            public double TotalRelevance { get; set; }
+            public long TotalLatencyMs { get; set; }
+            public int SuccessCount { get; set; }
+            public int ErrorCount { get; set; }
         }
     }
 }

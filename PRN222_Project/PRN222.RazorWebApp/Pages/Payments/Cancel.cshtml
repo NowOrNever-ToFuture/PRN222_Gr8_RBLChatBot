@@ -1,0 +1,23 @@
+@page
+@model PRN222.RazorWebApp.Pages.Payments.CancelModel
+@{
+    ViewData["Title"] = "Giao dịch đã hủy";
+}
+
+<div class="app-page">
+    <div class="row justify-content-center my-5">
+        <div class="col-lg-6 col-md-8 text-center">
+            <div class="card border-0 shadow-sm p-5" style="border-radius: 20px;">
+                <div class="mb-4 text-danger">
+                    <i class="bi bi-x-circle-fill" style="font-size: 5rem;"></i>
+                </div>
+                <h2 class="fw-bold mb-3 text-dark">Giao dịch đã bị hủy</h2>
+                <p class="text-muted mb-4">Bạn đã hủy giao dịch thanh toán. Số dư tài khoản và gói dịch vụ của bạn sẽ không có thay đổi nào.</p>
+                <div class="d-grid gap-3 col-8 mx-auto">
+                    <a asp-page="/Payments/Pricing" class="btn btn-primary btn-lg fw-bold" style="border-radius: 12px;">Xem lại bảng giá</a>
+                    <a asp-page="/Dashboard/Index" class="btn btn-outline-secondary btn-lg fw-bold" style="border-radius: 12px;">Quay lại Dashboard</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

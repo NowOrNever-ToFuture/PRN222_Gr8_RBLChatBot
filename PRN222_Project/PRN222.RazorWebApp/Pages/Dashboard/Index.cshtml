@@ -45,9 +45,15 @@
     }
 
     <section class="app-card">
-        <div class="app-card-title"><i class="bi bi-sliders2-vertical text-primary"></i> Chạy benchmark theo chiến lược chunking</div>
-        <p class="app-muted mb-4">Thao tác benchmark được gom lại để admin dễ chuyển model, re-index dữ liệu và theo dõi tiến độ theo thời gian thực.</p>
-        <form id="benchmarkForm" class="row g-3 align-items-end">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+            <div>
+                <div class="app-card-title mb-1"><i class="bi bi-speedometer2 text-primary"></i> Đo benchmark 3 model AI</div>
+                <p class="app-muted mb-0">Re-index tri thức một lần rồi chạy tuần tự GPT-4o-mini · Gemini-2.5-Flash · Qwen-LoRA trên cùng bộ câu hỏi test để so sánh chất lượng &amp; hiệu năng.</p>
+            </div>
+            <span id="benchmarkStateBadge" class="app-badge-soft app-badge-blue"><i class="bi bi-circle-fill" style="font-size:.5rem"></i> Sẵn sàng</span>
+        </div>
+
+        <form id="benchmarkForm" class="row g-3 align-items-end mt-2">
             <div class="col-lg-4 col-md-6">
                 <label class="form-label fw-bold">Embedding model</label>
                 <select id="embeddingModel" name="embeddingModel" class="form-select">
@@ -67,20 +73,56 @@
                 </select>
             </div>
             <div class="col-lg-4">
-                <button type="submit" id="runBenchmarkBtn" class="btn btn-warning btn-lg w-100 fw-bold">
-                    <i class="bi bi-play-fill"></i> Re-index & Benchmark
+                <button type="submit" id="runBenchmarkBtn" class="app-btn-primary w-100" style="padding:12px 18px;">
+                    <i class="bi bi-play-fill"></i> Re-index &amp; Benchmark
                 </button>
             </div>
         </form>
-        <div id="benchmarkStatus" class="alert alert-secondary mt-4 mb-0 d-none" style="border-radius: 16px;">
+
+        <div id="benchmarkStatus" class="bench-progress d-none">
             <div class="d-flex justify-content-between align-items-center mb-2">
-                <span id="benchmarkStatusText">Đang chuẩn bị benchmark...</span>
-                <span id="benchmarkPercent" class="fw-bold">0%</span>
+                <span id="benchmarkStatusText" class="fw-semibold">Đang chuẩn bị benchmark...</span>
+                <span id="benchmarkPercent" class="fw-bold text-primary">0%</span>
             </div>
-            <div class="progress" style="height: 8px; border-radius: 999px; overflow: hidden;">
-                <div id="benchmarkProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+            <div class="bench-progress-track">
+                <div id="benchmarkProgressBar" class="bench-progress-bar" style="width: 0%"></div>
             </div>
-            <div id="benchmarkLiveResult" class="small text-muted mt-2"></div>
+        </div>
+
+        <div class="bench-models mt-4">
+            <div class="bench-model-card" data-model="GPT-4o-mini" style="--accent:#0f9d7a;">
+                <div class="bench-model-head">
+                    <div class="bench-model-name"><span class="bench-model-icon"><i class="bi bi-stars"></i></span> GPT-4o-mini</div>
+                    <span class="bench-status-dot" data-state="idle"></span>
+                </div>
+                <div class="bench-model-progress small app-muted">Chờ chạy…</div>
+                <div class="bench-metrics">
+                    <div class="bench-metric"><span>Faithfulness</span><strong data-metric="faithfulness">–</strong></div>
+                    <div class="bench-metric"><span>Relevance</span><strong data-metric="relevance">–</strong></div>
+                </div>
+            </div>
+            <div class="bench-model-card" data-model="Gemini-2.5-Flash" style="--accent:#2f7df6;">
+                <div class="bench-model-head">
+                    <div class="bench-model-name"><span class="bench-model-icon"><i class="bi bi-gem"></i></span> Gemini-2.5-Flash</div>
+                    <span class="bench-status-dot" data-state="idle"></span>
+                </div>
+                <div class="bench-model-progress small app-muted">Chờ chạy…</div>
+                <div class="bench-metrics">
+                    <div class="bench-metric"><span>Faithfulness</span><strong data-metric="faithfulness">–</strong></div>
+                    <div class="bench-metric"><span>Relevance</span><strong data-metric="relevance">–</strong></div>
+                </div>
+            </div>
+            <div class="bench-model-card" data-model="Qwen-2.5-1.5B-LoRA" style="--accent:#f59e0b;">
+                <div class="bench-model-head">
+                    <div class="bench-model-name"><span class="bench-model-icon"><i class="bi bi-cpu"></i></span> Qwen-2.5-1.5B-LoRA</div>
+                    <span class="bench-status-dot" data-state="idle"></span>
+                </div>
+                <div class="bench-model-progress small app-muted">Chờ chạy…</div>
+                <div class="bench-metrics">
+                    <div class="bench-metric"><span>Faithfulness</span><strong data-metric="faithfulness">–</strong></div>
+                    <div class="bench-metric"><span>Relevance</span><strong data-metric="relevance">–</strong></div>
+                </div>
+            </div>
         </div>
     </section>
 
@@ -138,6 +180,20 @@
         </div>
     </section>
 
+    <section class="app-card mt-4">
+        <div class="app-card-title"><i class="bi bi-bar-chart-steps text-warning"></i> Chất lượng theo độ khó câu hỏi</div>
+        <p class="app-muted mb-3">So sánh điểm chất lượng trung bình (trung thực + liên quan) của từng model trên nhóm câu hỏi Dễ · Trung bình · Khó — model càng giữ được điểm cao ở câu khó càng đáng tin.</p>
+        <div class="chart-area" style="position: relative; height:300px; width:100%">
+            <canvas id="difficultyChart"></canvas>
+            <div id="noDifficultyData" class="position-absolute top-50 start-50 translate-middle text-center w-100" style="display: none;">
+                <i class="bi bi-inbox fs-1 text-muted mb-2 d-block"></i>
+                <p class="text-muted mb-0">Chưa có dữ liệu benchmark.</p>
+            </div>
+        </div>
+    </section>
+
+    <div id="benchmarkWinner" class="alert alert-success d-none mt-4" style="border-radius: 16px;"></div>
+
     <section class="app-grid-3 mt-4">
         <div class="app-card">
             <div class="app-card-title"><i class="bi bi-clock-history text-primary"></i> Lịch sử test gần đây</div>
@@ -155,7 +211,7 @@
                     {
                         <div class="app-list-item">
                             <div>
-                                <div class="fw-bold">@run.EmbeddingModel</div>
+                                <div class="fw-bold">@run.LlmModel</div>
                                 <div class="small app-muted">@run.ChunkingStrategy · @run.RunDate.AddHours(7).ToString("dd/MM HH:mm")</div>
                             </div>
                             <span class="app-badge-soft app-badge-blue">@(run.TotalTimeMs / 1000.0)s</span>
@@ -199,6 +255,183 @@
             </div>
         </div>
     </section>
+
+    <!-- Alert Notification Container -->
+    <div id="dashboardAlertContainer" style="position: fixed; top: 24px; right: 24px; z-index: 1055; display: flex; flex-column: reverse; gap: 8px;"></div>
+
+    <!-- Pricing Package Management Section -->
+    <section class="app-card mt-4" id="token-package-management">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="app-card-title mb-0" style="font-size: 1.25rem; font-weight: 700; color: #212529;"><i class="bi bi-wallet2 text-primary me-2"></i> Quản lý Gói dịch vụ & Hạn mức Token</div>
+            <button type="button" class="btn btn-primary fw-bold rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#createPackageModal">
+                <i class="bi bi-plus-circle-fill me-1"></i> Thêm Gói mới
+            </button>
+        </div>
+        <p class="app-muted mb-4">Danh sách các gói cước đang hoạt động trong hệ thống. Admin có thể thêm, sửa, xóa và thay đổi cấu hình Token hoặc thời hạn sử dụng tức thời qua SignalR.</p>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle" style="background: transparent; border-collapse: separate; border-spacing: 0 8px;">
+                <thead>
+                    <tr style="font-size: 0.85rem; border: none; text-transform: uppercase; letter-spacing: 0.5px; color: #495057;">
+                        <th class="ps-4 py-3" style="border: none;">Tên Gói</th>
+                        <th style="border: none;">Hạn Mức Token</th>
+                        <th style="border: none;">Giá Cả</th>
+                        <th style="border: none;">Thời Hạn (Ngày)</th>
+                        <th style="border: none; max-width: 300px;">Mô Tả</th>
+                        <th class="text-end pe-4" style="border: none;">Thao Tác</th>
+                    </tr>
+                </thead>
+                <tbody id="packagesTableBody" style="transition: opacity 0.25s ease;">
+                    @foreach (var pkg in Model.PricingPackages)
+                    {
+                        var isFree = pkg.Name == "Free";
+                        <tr style="background: rgba(0, 0, 0, 0.02); border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 16px; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(37, 99, 235, 0.05)'" onmouseout="this.style.background='rgba(0, 0, 0, 0.02)'">
+                            <td class="fw-bold text-dark ps-4 py-3" style="border-top-left-radius: 12px; border-bottom-left-radius: 12px;">@pkg.Name</td>
+                            <td>
+                                @if (isFree)
+                                {
+                                    <span class="badge px-3 py-2 fw-bold" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 12px; box-shadow: 0 4px 12px rgba(29, 78, 216, 0.2);">@pkg.TokenQuota.ToString("N0")</span>
+                                }
+                                else
+                                {
+                                    <span class="badge px-3 py-2 fw-bold" style="background: linear-gradient(135deg, #eab308, #ca8a04); border-radius: 12px; box-shadow: 0 4px 12px rgba(202, 138, 4, 0.2);">@pkg.TokenQuota.ToString("N0")</span>
+                                }
+                            </td>
+                            <td class="text-dark fw-semibold">@(pkg.Price == 0 ? "Miễn phí" : pkg.Price.ToString("N0") + " VND")</td>
+                            <td class="text-secondary">@(pkg.DurationDays >= 36500 ? "Vĩnh viễn" : pkg.DurationDays + " ngày")</td>
+                            <td class="text-truncate text-secondary" style="max-width: 300px;" title="@pkg.Description">@pkg.Description</td>
+                            <td class="text-end pe-4" style="border-top-right-radius: 12px; border-bottom-right-radius: 12px;">
+                                <button type="button" class="btn btn-sm edit-pkg-btn fw-bold rounded-pill px-3"
+                                        style="background: rgba(0, 0, 0, 0.04); border: 1px solid rgba(0, 0, 0, 0.12); color: #333; transition: all 0.2s;"
+                                        data-id="@pkg.Id"
+                                        data-name="@pkg.Name"
+                                        data-quota="@pkg.TokenQuota"
+                                        data-price="@pkg.Price"
+                                        data-duration="@pkg.DurationDays"
+                                        data-desc="@pkg.Description">
+                                    <i class="bi bi-pencil-square"></i> Sửa
+                                </button>
+                                <button type="button" class="btn btn-sm btn-danger fw-bold text-white rounded-pill px-3 delete-pkg-btn ms-1"
+                                        data-id="@pkg.Id"
+                                        data-name="@pkg.Name">
+                                    <i class="bi bi-trash-fill"></i> Xóa
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+
+<!-- Modal Thêm Mới Gói Cước -->
+<div class="modal fade text-dark" id="createPackageModal" tabindex="-1" aria-labelledby="createPackageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 24px; background: #ffffff;">
+            <div class="modal-header border-0 bg-light p-4" style="border-top-left-radius: 24px; border-top-right-radius: 24px;">
+                <h5 class="modal-title fw-bold" id="createPackageModalLabel"><i class="bi bi-plus-circle-fill text-primary"></i> Tạo Gói Dịch Vụ Mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="createPackageForm" method="post" asp-page-handler="CreatePackage" onsubmit="handleAjaxSubmit(event, 'createPackageModal', 'CreatePackage')">
+                @Html.AntiForgeryToken()
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label for="createPkgName" class="form-label fw-bold">Tên gói cước</label>
+                        <input type="text" class="form-control form-control-lg rounded-3" id="createPkgName" name="name" required placeholder="Ví dụ: VIP, Basic, Standard" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="createPkgQuota" class="form-label fw-bold">Hạn mức Token (Lượt gọi AI)</label>
+                        <input type="number" class="form-control form-control-lg rounded-3" id="createPkgQuota" name="tokenQuota" required min="1" placeholder="Ví dụ: 1000" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="createPkgPrice" class="form-label fw-bold">Giá bán (VND)</label>
+                        <input type="number" class="form-control form-control-lg rounded-3" id="createPkgPrice" name="price" required min="0" placeholder="Ví dụ: 50000" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="createPkgDuration" class="form-label fw-bold">Thời hạn sử dụng (Ngày)</label>
+                        <input type="number" class="form-control form-control-lg rounded-3" id="createPkgDuration" name="durationDays" required min="1" placeholder="Ví dụ: 30" />
+                        <div class="form-text text-muted">Nhập 36500 cho gói Free (coi như Vĩnh viễn).</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="createPkgDesc" class="form-label fw-bold">Mô tả hiển thị</label>
+                        <textarea class="form-control rounded-3" id="createPkgDesc" name="description" rows="3" required placeholder="Mô tả các lợi ích của gói..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-4 pt-0">
+                    <button type="button" class="btn btn-light fw-semibold px-4 py-2 rounded-3" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary fw-bold px-4 py-2 rounded-3"><i class="bi bi-check-circle-fill"></i> Tạo mới</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Xác Nhận Xóa Gói Cước -->
+<div class="modal fade text-dark" id="deletePackageModal" tabindex="-1" aria-labelledby="deletePackageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 24px; background: #ffffff;">
+            <div class="modal-header border-0 bg-danger text-white p-4" style="border-top-left-radius: 24px; border-top-right-radius: 24px;">
+                <h5 class="modal-title fw-bold" id="deletePackageModalLabel"><i class="bi bi-exclamation-triangle-fill"></i> Xác nhận xóa</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="deletePackageForm" method="post" asp-page-handler="DeletePackage" onsubmit="handleAjaxSubmit(event, 'deletePackageModal', 'DeletePackage')">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="deletePkgId" name="packageId" />
+                <div class="modal-body p-4 text-center">
+                    <p class="mb-2 fs-5">Bạn có chắc chắn muốn xóa gói cước <strong id="deletePkgName" class="text-danger"></strong>?</p>
+                    <p class="text-muted small mb-0">Hành động này sẽ xóa gói cước và không thể hoàn tác.</p>
+                </div>
+                <div class="modal-footer border-0 p-4 pt-0 d-flex justify-content-center gap-2">
+                    <button type="button" class="btn btn-light fw-semibold px-4 py-2 rounded-3" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-danger fw-bold px-4 py-2 rounded-3"><i class="bi bi-trash-fill"></i> Đồng ý xóa</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Chỉnh sửa Gói Cước -->
+<div class="modal fade text-dark" id="editPackageModal" tabindex="-1" aria-labelledby="editPackageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 24px; background: #ffffff;">
+            <div class="modal-header border-0 bg-light p-4" style="border-top-left-radius: 24px; border-top-right-radius: 24px;">
+                <h5 class="modal-title fw-bold" id="editPackageModalLabel"><i class="bi bi-pencil-fill text-primary"></i> Chỉnh sửa Gói Cước <span id="modalPkgName" class="text-primary"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editPackageForm" method="post" asp-page-handler="UpdatePackage" onsubmit="handleAjaxSubmit(event, 'editPackageModal', 'UpdatePackage')">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="editPkgId" name="packageId" />
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label for="editPkgName" class="form-label fw-bold">Tên gói cước</label>
+                        <input type="text" class="form-control form-control-lg rounded-3" id="editPkgName" name="name" required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="editPkgQuota" class="form-label fw-bold">Hạn mức Token (Lượt gọi AI)</label>
+                        <input type="number" class="form-control form-control-lg rounded-3" id="editPkgQuota" name="tokenQuota" required min="1" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="editPkgPrice" class="form-label fw-bold">Giá tiền (VND)</label>
+                        <input type="number" class="form-control form-control-lg rounded-3" id="editPkgPrice" name="price" required min="0" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="editPkgDuration" class="form-label fw-bold">Thời hạn sử dụng (Ngày)</label>
+                        <input type="number" class="form-control form-control-lg rounded-3" id="editPkgDuration" name="durationDays" required min="1" />
+                        <div class="form-text text-muted">Nhập 36500 cho gói Free (coi như Vĩnh viễn).</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editPkgDesc" class="form-label fw-bold">Mô tả hiển thị</label>
+                        <textarea class="form-control rounded-3" id="editPkgDesc" name="description" rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-4 pt-0">
+                    <button type="button" class="btn btn-light fw-semibold px-4 py-2 rounded-3" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary fw-bold px-4 py-2 rounded-3"><i class="bi bi-save"></i> Lưu thay đổi</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 @section Scripts {
@@ -211,18 +444,57 @@
     document.getElementById('embeddingModel').value = activeModel || 'bge-m3';
     document.getElementById('chunkingStrategy').value = activeChunkingStrategy || 'markdown_header';
 
+    // ----- Trạng thái live cho 3 thẻ model -----
+    const modelStats = {};
+    function benchCard(model) { return document.querySelector(`.bench-model-card[data-model="${model}"]`); }
+    function setStateBadge(icon, text, badgeClass) {
+        const badge = document.getElementById('benchmarkStateBadge');
+        badge.className = 'app-badge-soft ' + badgeClass;
+        badge.innerHTML = `<i class="bi ${icon}" style="font-size:.55rem"></i> ${text}`;
+    }
+    function resetBenchCards() {
+        for (const key of Object.keys(modelStats)) delete modelStats[key];
+        document.querySelectorAll('.bench-model-card').forEach(card => {
+            card.classList.remove('is-running');
+            card.querySelector('.bench-status-dot').dataset.state = 'idle';
+            card.querySelector('.bench-model-progress').textContent = 'Chờ chạy…';
+            card.querySelectorAll('.bench-metric strong').forEach(el => el.textContent = '–');
+        });
+    }
+    function markCardsDone() {
+        document.querySelectorAll('.bench-model-card').forEach(card => {
+            card.classList.remove('is-running');
+            const dot = card.querySelector('.bench-status-dot');
+            if (dot.dataset.state === 'running') dot.dataset.state = 'done';
+        });
+    }
+
     const benchmarkConnection = new signalR.HubConnectionBuilder().withUrl("/hubs/benchmark").withAutomaticReconnect().build();
     benchmarkConnection.on("ReceiveProgress", (percent, message) => {
         const status = document.getElementById('benchmarkStatus');
-        status.classList.remove('d-none', 'alert-danger');
-        status.classList.add('alert-secondary');
+        status.classList.remove('d-none', 'is-error');
         document.getElementById('benchmarkStatusText').textContent = message;
         document.getElementById('benchmarkPercent').textContent = percent + '%';
         document.getElementById('benchmarkProgressBar').style.width = percent + '%';
-        if (percent >= 100) { document.getElementById('runBenchmarkBtn').disabled = false; setTimeout(loadChartData, 1000); }
+        if (percent >= 100) {
+            document.getElementById('runBenchmarkBtn').disabled = false;
+            markCardsDone();
+            setStateBadge('bi-check-circle-fill', 'Hoàn tất', 'app-badge-green');
+            setTimeout(loadChartData, 1000);
+        }
     });
-    benchmarkConnection.on("ReceiveLiveResult", (index, question, answer, faithfulness, relevance) => {
-        document.getElementById('benchmarkLiveResult').textContent = `Câu ${index}: Faithfulness ${Number(faithfulness).toFixed(2)}, Relevance ${Number(relevance).toFixed(2)}`;
+    benchmarkConnection.on("ReceiveLiveResult", (model, index, question, answer, faithfulness, relevance) => {
+        const card = benchCard(model);
+        if (!card) return;
+        const stat = modelStats[model] ?? (modelStats[model] = { sumF: 0, sumR: 0, count: 0 });
+        stat.sumF += Number(faithfulness) || 0;
+        stat.sumR += Number(relevance) || 0;
+        stat.count += 1;
+        card.classList.add('is-running');
+        card.querySelector('.bench-status-dot').dataset.state = 'running';
+        card.querySelector('.bench-model-progress').textContent = `Câu ${index} · TB sau ${stat.count} câu`;
+        card.querySelector('[data-metric="faithfulness"]').textContent = (stat.sumF / stat.count).toFixed(2);
+        card.querySelector('[data-metric="relevance"]').textContent = (stat.sumR / stat.count).toFixed(2);
     });
     benchmarkConnection.start().catch(err => console.error("Benchmark SignalR Error:", err));
 
@@ -232,12 +504,12 @@
         const status = document.getElementById('benchmarkStatus');
         const runButton = document.getElementById('runBenchmarkBtn');
         runButton.disabled = true;
-        status.classList.remove('d-none', 'alert-danger');
-        status.classList.add('alert-secondary');
+        resetBenchCards();
+        setStateBadge('bi-arrow-repeat', 'Đang chạy', 'app-badge-amber');
+        status.classList.remove('d-none', 'is-error');
         document.getElementById('benchmarkStatusText').textContent = 'Đang re-index tài liệu...';
         document.getElementById('benchmarkPercent').textContent = '0%';
         document.getElementById('benchmarkProgressBar').style.width = '0%';
-        document.getElementById('benchmarkLiveResult').textContent = '';
         try {
             const response = await fetch('/Dashboard/Index?handler=RunBenchmark', { method: 'POST', body: formData, headers: { 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '' } });
             const result = await response.json();
@@ -245,11 +517,177 @@
             document.getElementById('benchmarkStatusText').textContent = result.message;
         } catch (err) {
             runButton.disabled = false;
-            status.classList.remove('alert-secondary');
-            status.classList.add('alert-danger');
+            status.classList.add('is-error');
+            setStateBadge('bi-exclamation-triangle-fill', 'Lỗi', 'app-badge-rose');
             document.getElementById('benchmarkStatusText').textContent = err.message;
         }
     });
+
+    $(document).on('click', '.edit-pkg-btn', function () {
+        const id = $(this).data('id');
+        const name = $(this).data('name');
+        const quota = $(this).data('quota');
+        const price = $(this).data('price');
+        const duration = $(this).data('duration');
+        const desc = $(this).data('desc');
+
+        $('#editPkgId').val(id);
+        $('#editPkgName').val(name);
+        $('#modalPkgName').text(name);
+        $('#editPkgQuota').val(quota);
+        $('#editPkgPrice').val(price);
+        $('#editPkgDuration').val(duration);
+        $('#editPkgDesc').val(desc);
+
+        const modalEl = document.getElementById('editPackageModal');
+        const myModal = new bootstrap.Modal(modalEl);
+        myModal.show();
+    });
+
+    $(document).on('click', '.delete-pkg-btn', function () {
+        const id = $(this).data('id');
+        const name = $(this).data('name');
+
+        $('#deletePkgId').val(id);
+        $('#deletePkgName').text(name);
+
+        const modalEl = document.getElementById('deletePackageModal');
+        const myModal = new bootstrap.Modal(modalEl);
+        myModal.show();
+    });
+
+    // Submits pricing package form via AJAX to prevent page refresh jump
+    async function handleAjaxSubmit(e, modalId, handlerName) {
+        e.preventDefault();
+        const form = e.currentTarget;
+        const formData = new FormData(form);
+        const submitBtn = form.querySelector('button[type="submit"]');
+        
+        if (submitBtn) submitBtn.disabled = true;
+
+        try {
+            const response = await fetch(`/Dashboard/Index?handler=${handlerName}`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? ''
+                }
+            });
+            const result = await response.json();
+            if (result.success) {
+                bootstrap.Modal.getInstance(document.getElementById(modalId))?.hide();
+                showNotification(result.message, 'success');
+                form.reset();
+                // SignalR will broadcast ReceivePackagesUpdated which calls reloadPackagesTable() for everyone.
+            } else {
+                showNotification(result.message, 'danger');
+            }
+        } catch (err) {
+            showNotification(err.message || 'Có lỗi xảy ra khi xử lý.', 'danger');
+        } finally {
+            if (submitBtn) submitBtn.disabled = false;
+        }
+    }
+
+    // Displays dynamic floating glassmorphic alerts
+    function showNotification(message, type = 'success') {
+        const id = 'toast_' + Date.now();
+        const icon = type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill';
+        const bg = type === 'success' ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #ef4444, #dc2626)';
+        
+        const html = `
+            <div id="${id}" class="toast align-items-center text-white border-0 show shadow-lg" role="alert" aria-live="assertive" aria-atomic="true" style="background: ${bg}; border-radius: 16px; min-width: 320px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); opacity: 0; transform: translateY(-15px);">
+                <div class="d-flex p-3">
+                    <div class="toast-body d-flex align-items-center gap-2">
+                        <i class="bi ${icon} fs-5"></i>
+                        <span class="fw-semibold">${message}</span>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white ms-auto me-1" data-bs-dismiss="toast" aria-label="Close" onclick="$('#${id}').fadeOut(300, function() { $(this).remove(); })"></button>
+                </div>
+            </div>
+        `;
+        $('#dashboardAlertContainer').append(html);
+        setTimeout(() => {
+            $(`#${id}`).css({ 'transform': 'translateY(0)', 'opacity': '1' });
+        }, 50);
+        setTimeout(() => {
+            $(`#${id}`).css({ 'transform': 'translateY(-15px)', 'opacity': '0' });
+            setTimeout(() => { $(`#${id}`).remove(); }, 400);
+        }, 4000);
+    }
+
+    // Escape raw HTML string
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.appendChild(document.createTextNode(text));
+        return div.innerHTML;
+    }
+
+    // Dynamic reloader with smooth opacity transitions
+    async function reloadPackagesTable() {
+        try {
+            const response = await fetch('/Dashboard/Index?handler=PackagesJson');
+            const packages = await response.json();
+            const $tbody = $('#packagesTableBody');
+            
+            // Fade out
+            $tbody.css('opacity', '0.2');
+            
+            setTimeout(() => {
+                $tbody.empty();
+                packages.forEach(pkg => {
+                    const priceText = pkg.price === 0 ? "Miễn phí" : pkg.price.toLocaleString('vi-VN') + " VND";
+                    const durationText = pkg.durationDays >= 36500 ? "Vĩnh viễn" : pkg.durationDays + " ngày";
+                    const isFree = pkg.name === "Free";
+                    const quotaBadge = isFree
+                        ? `<span class="badge px-3 py-2 fw-bold" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 12px; box-shadow: 0 4px 12px rgba(29, 78, 216, 0.2);">${pkg.tokenQuota.toLocaleString()}</span>`
+                        : `<span class="badge px-3 py-2 fw-bold" style="background: linear-gradient(135deg, #eab308, #ca8a04); border-radius: 12px; box-shadow: 0 4px 12px rgba(202, 138, 4, 0.2);">${pkg.tokenQuota.toLocaleString()}</span>`;
+
+                    const rowHtml = `
+                        <tr style="background: rgba(0, 0, 0, 0.02); border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 16px; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(37, 99, 235, 0.05)'" onmouseout="this.style.background='rgba(0, 0, 0, 0.02)'">
+                            <td class="fw-bold text-dark ps-4 py-3" style="border-top-left-radius: 12px; border-bottom-left-radius: 12px;">${escapeHtml(pkg.name)}</td>
+                            <td>${quotaBadge}</td>
+                            <td class="text-dark fw-semibold">${priceText}</td>
+                            <td class="text-secondary">${durationText}</td>
+                            <td class="text-truncate text-secondary" style="max-width: 300px;" title="${escapeHtml(pkg.description)}">${escapeHtml(pkg.description)}</td>
+                            <td class="text-end pe-4" style="border-top-right-radius: 12px; border-bottom-right-radius: 12px;">
+                                <button type="button" class="btn btn-sm edit-pkg-btn fw-bold rounded-pill px-3"
+                                        style="background: rgba(0, 0, 0, 0.04); border: 1px solid rgba(0, 0, 0, 0.12); color: #333; transition: all 0.2s;"
+                                        data-id="${pkg.id}"
+                                        data-name="${escapeHtml(pkg.name)}"
+                                        data-quota="${pkg.tokenQuota}"
+                                        data-price="${pkg.price}"
+                                        data-duration="${pkg.durationDays}"
+                                        data-desc="${escapeHtml(pkg.description)}">
+                                    <i class="bi bi-pencil-square"></i> Sửa
+                                </button>
+                                <button type="button" class="btn btn-sm btn-danger fw-bold text-white rounded-pill px-3 delete-pkg-btn ms-1"
+                                        data-id="${pkg.id}"
+                                        data-name="${escapeHtml(pkg.name)}">
+                                    <i class="bi bi-trash-fill"></i> Xóa
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                    $tbody.append(rowHtml);
+                });
+                
+                // Fade in
+                $tbody.css('opacity', '1');
+            }, 250);
+        } catch (err) {
+            console.error("Lỗi cập nhật bảng gói cước:", err);
+        }
+    }
+
+    // Connect to PaymentHub for live CRUD updates
+    const paymentConnection = new signalR.HubConnectionBuilder().withUrl("/hubs/payment").withAutomaticReconnect().build();
+    paymentConnection.on("ReceivePackagesUpdated", async () => {
+        console.log("Pricing packages updated. Refreshing table...");
+        await reloadPackagesTable();
+    });
+    paymentConnection.start().catch(err => console.error("Payment SignalR Error:", err));
 
     async function loadChartData() {
         try {
@@ -261,20 +699,80 @@
             const labels = data.map(d => d.model);
             const faithfulness = data.map(d => d.avgFaithfulness);
             const relevance = data.map(d => d.avgRelevance);
+            const overall = data.map(d => d.overallScore);
             const latency = data.map(d => d.avgLatency);
+            const winner = data.find(d => d.isBest) ?? data[0];
+            const winnerElement = document.getElementById('benchmarkWinner');
+            winnerElement.classList.remove('d-none');
+            winnerElement.innerHTML = `<strong>🏆 Model phù hợp nhất:</strong> ${winner.model} · Điểm tổng ${Number(winner.overallScore).toFixed(3)}`;
             if (barChart) barChart.destroy();
             barChart = new Chart(document.getElementById('barChart').getContext('2d'), {
                 type: 'bar',
-                data: { labels, datasets: [{ label: 'Faithfulness', data: faithfulness, backgroundColor: 'rgba(31,111,235,0.8)', borderColor: 'rgba(31,111,235,1)', borderWidth: 1, borderRadius: 8 }, { label: 'Relevance', data: relevance, backgroundColor: 'rgba(245,158,11,0.8)', borderColor: 'rgba(245,158,11,1)', borderWidth: 1, borderRadius: 8 }] },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 1.0 } } }
+                data: { labels, datasets: [{ label: 'Độ trung thực', data: faithfulness, backgroundColor: 'rgba(31,111,235,0.8)', borderColor: 'rgba(31,111,235,1)', borderWidth: 1, borderRadius: 8 }, { label: 'Độ liên quan', data: relevance, backgroundColor: 'rgba(245,158,11,0.8)', borderColor: 'rgba(245,158,11,1)', borderWidth: 1, borderRadius: 8 }, { label: 'Điểm tổng', data: overall, backgroundColor: 'rgba(15,157,122,0.8)', borderColor: 'rgba(15,157,122,1)', borderWidth: 1, borderRadius: 8 }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 1.0, title: { display: true, text: 'Điểm (0 – 1)' } } }, plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${Number(ctx.parsed.y).toFixed(3)}` } } } }
             });
             if (lineChart) lineChart.destroy();
             lineChart = new Chart(document.getElementById('lineChart').getContext('2d'), {
                 type: 'line',
-                data: { labels, datasets: [{ label: 'Latency (ms)', data: latency, borderColor: '#0f9d7a', backgroundColor: 'rgba(15,157,122,0.12)', fill: true, tension: 0.35, pointRadius: 5 }] },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+                data: { labels, datasets: [{ label: 'Thời gian phản hồi (ms)', data: latency, borderColor: '#0f9d7a', backgroundColor: 'rgba(15,157,122,0.12)', fill: true, tension: 0.35, pointRadius: 5 }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, title: { display: true, text: 'Mili giây (ms)' } } }, plugins: { tooltip: { callbacks: { label: (ctx) => `Thời gian phản hồi: ${Number(ctx.parsed.y).toLocaleString('vi-VN')} ms` } } } }
             });
         } catch (err) { console.error('Lỗi load chart data:', err); }
+        loadDifficultyChart();
+    }
+
+    let difficultyChart = null;
+    const difficultyNames = { 1: 'Dễ', 2: 'Trung bình', 3: 'Khó' };
+    const difficultyPalette = ['rgba(15,157,122,0.85)', 'rgba(47,125,246,0.85)', 'rgba(245,158,11,0.85)', 'rgba(209,77,114,0.85)'];
+    async function loadDifficultyChart() {
+        try {
+            const res = await fetch('/Dashboard/Index?handler=DifficultyChartData');
+            const data = await res.json();
+            const empty = document.getElementById('noDifficultyData');
+            if (data.length === 0) { empty.style.display = 'block'; return; }
+            empty.style.display = 'none';
+
+            // Trục X: các mức độ khó thực sự có trong dữ liệu (1 → 3)
+            const difficulties = [...new Set(data.map(d => d.difficulty))].sort();
+            const labels = difficulties.map(d => difficultyNames[d] ?? `Mức ${d}`);
+
+            // Mỗi model là một dataset (một màu cột)
+            const models = [...new Set(data.map(d => d.model))];
+            const datasets = models.map((model, i) => ({
+                label: model,
+                data: difficulties.map(diff => {
+                    const row = data.find(d => d.model === model && d.difficulty === diff);
+                    return row ? row.qualityScore : null;
+                }),
+                backgroundColor: difficultyPalette[i % difficultyPalette.length],
+                borderRadius: 8,
+                meta: difficulties.map(diff => data.find(d => d.model === model && d.difficulty === diff) ?? null)
+            }));
+
+            if (difficultyChart) difficultyChart.destroy();
+            difficultyChart = new Chart(document.getElementById('difficultyChart').getContext('2d'), {
+                type: 'bar',
+                data: { labels, datasets },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, max: 1.0, title: { display: true, text: 'Điểm chất lượng (0 – 1)' } },
+                        x: { title: { display: true, text: 'Độ khó câu hỏi' } }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => {
+                                    const row = ctx.dataset.meta?.[ctx.dataIndex];
+                                    if (!row) return `${ctx.dataset.label}: không có dữ liệu`;
+                                    return `${ctx.dataset.label}: ${Number(row.qualityScore).toFixed(3)} (Trung thực ${Number(row.avgFaithfulness).toFixed(2)} · Liên quan ${Number(row.avgRelevance).toFixed(2)} · ${row.totalQuestions} câu)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        } catch (err) { console.error('Lỗi load difficulty chart:', err); }
     }
     async function loadTokenPieChart() {
         try {

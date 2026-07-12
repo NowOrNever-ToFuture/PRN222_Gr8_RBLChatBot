@@ -1,0 +1,79 @@
+@page
+@model PRN222.RazorWebApp.Pages.Payments.CheckoutModel
+@{
+    ViewData["Title"] = "Thủ tục thanh toán";
+}
+
+<div class="app-page">
+    <section class="app-hero">
+        <div class="app-hero-content">
+            <div class="app-eyebrow"><i class="bi bi-credit-card-2-front text-primary"></i> Đơn hàng thanh toán</div>
+            <h2>Xác nhận thông tin đơn hàng</h2>
+            <p>Vui lòng kiểm tra lại thông tin chi tiết gói dịch vụ trước khi tiếp tục chuyển sang cổng thanh toán VNPay.</p>
+        </div>
+    </section>
+
+    <div class="row justify-content-center mb-5">
+        <div class="col-lg-5 col-md-7">
+            <div class="card border-0 shadow-lg" style="border-radius: 24px; background: #ffffff;">
+                <div class="card-body p-4">
+                    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                    {
+                        <div class="alert alert-danger text-center" role="alert" style="border-radius: 12px; font-size: 0.95rem;">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i> @Model.ErrorMessage
+                        </div>
+                        <div class="d-grid mt-4">
+                            <a asp-page="/Payments/Pricing" class="btn btn-secondary btn-lg fw-bold" style="border-radius: 12px;">
+                                <i class="bi bi-arrow-left"></i> Quay lại bảng giá
+                            </a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center mb-3">
+                            <div class="d-inline-flex align-items-center justify-content-center bg-primary-subtle text-primary rounded-circle p-3 mb-2" style="width: 56px; height: 56px;">
+                                <i class="bi bi-receipt fs-2"></i>
+                            </div>
+                            <h3 class="fw-bold text-dark mb-0 fs-4">Hóa đơn thanh toán</h3>
+                            <p class="text-muted small mb-0">Vui lòng kiểm tra lại thông tin đơn hàng</p>
+                        </div>
+
+                        <div class="p-3 bg-light rounded-4 mb-4" style="border: 1px dashed #dee2e6;">
+                            <div class="d-flex justify-content-between mb-2 small">
+                                <span class="text-muted">Gói dịch vụ:</span>
+                                <span class="fw-bold text-dark fs-6">@Model.Package.Name</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2 small">
+                                <span class="text-muted">Hạn mức Lượt gọi:</span>
+                                <span class="fw-bold text-dark fs-6">@Model.Package.TokenQuota.ToString("N0") Lượt gọi AI</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2 small">
+                                <span class="text-muted">Thời hạn sử dụng:</span>
+                                <span class="fw-bold text-dark fs-6">@(Model.Package.DurationDays >= 36500 ? "Vĩnh viễn" : Model.Package.DurationDays + " ngày")</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2 small">
+                                <span class="text-muted">Phương thức:</span>
+                                <span class="fw-bold text-dark fs-6">Cổng thanh toán VNPay Sandbox</span>
+                            </div>
+                            <hr class="my-2" style="border-top: 1px dashed #dee2e6;">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="fw-bold text-dark small">Tổng cộng:</span>
+                                <span class="h4 fw-extrabold text-primary mb-0">@Model.Package.Price.ToString("N0") <span class="fs-6 fw-normal text-muted">VND</span></span>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <a asp-page="/Payments/Pricing" class="btn btn-light btn-lg fw-bold flex-grow-1 py-3" style="border-radius: 14px; font-size: 0.95rem;">Hủy</a>
+                            <a href="@Model.PaymentUrl" class="btn btn-primary btn-lg fw-bold flex-grow-2 py-3 px-4" style="border-radius: 14px; font-size: 0.95rem;">
+                                <i class="bi bi-qr-code-scan me-1"></i> Tiến hành thanh toán
+                            </a>
+                        </div>
+                        <div class="text-center mt-3 text-muted" style="font-size: 0.75rem;">
+                            <i class="bi bi-shield-lock-fill text-success"></i> Giao dịch mã hóa bảo mật 100% qua VNPay
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
