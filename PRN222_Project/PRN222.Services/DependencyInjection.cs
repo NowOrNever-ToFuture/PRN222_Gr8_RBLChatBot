@@ -33,11 +33,8 @@ namespace PRN222.Services
             services.AddScoped<IChatService, ChatService>();
             services.AddScoped<IPaymentService, PaymentService>();
 
-            // Phase 2 - Token Report (service sẽ được thành viên B implement sau)
+            // Phase 2 - Token Report
             services.AddScoped<ITokenUsageService, TokenUsageService>();
-
-            // Phase 3 - Payments (service sẽ được thành viên C implement sau)
-            services.AddScoped<IPaymentService, PaymentService>();
 
             return services;
         }
