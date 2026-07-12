@@ -16,6 +16,9 @@ namespace PRN222.Repositories
         public DbSet<BenchmarkRun> BenchmarkRuns { get; set; }
         public DbSet<BenchmarkResult> BenchmarkResults { get; set; }
         public DbSet<SystemSetting> SystemSettings { get; set; }
+        public DbSet<PricingPackage> PricingPackages { get; set; }
+        public DbSet<UserSubscription> UserSubscriptions { get; set; }
+        public DbSet<PaymentTransaction> PaymentTransactions { get; set; }
 
         // Phase 2 - Token Report
         public DbSet<TokenUsageLog> TokenUsageLogs { get; set; }
@@ -194,42 +197,53 @@ namespace PRN222.Repositories
             modelBuilder.Entity<BenchmarkResult>()
                 .Property(br => br.BotAnswer)
                 .HasColumnType("nvarchar(max)");
-            // ── Phase 2: TokenUsageLog ──────────────────────────────────
-            modelBuilder.Entity<TokenUsageLog>().HasKey(t => t.Id);
-            modelBuilder.Entity<TokenUsageLog>()
-                .Property(t => t.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
-            modelBuilder.Entity<TokenUsageLog>()
-                .HasOne(t => t.User).WithMany()
-                .HasForeignKey(t => t.UserId).OnDelete(DeleteBehavior.Cascade);
 
-            // ── Phase 3: PricingPackage ─────────────────────────────────
-            modelBuilder.Entity<PricingPackage>().HasKey(p => p.Id);
+            // PricingPackage
             modelBuilder.Entity<PricingPackage>()
-                .Property(p => p.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
+                .HasKey(p => p.Id);
+            modelBuilder.Entity<PricingPackage>()
+                .Property(p => p.Id)
+                .HasDefaultValueSql("NEWSEQUENTIALID()");
+            modelBuilder.Entity<PricingPackage>()
+                .Property(p => p.Description)
+                .HasColumnType("nvarchar(max)");
 
-            // ── Phase 3: UserSubscription ───────────────────────────────
-            modelBuilder.Entity<UserSubscription>().HasKey(s => s.Id);
+            // UserSubscription
             modelBuilder.Entity<UserSubscription>()
-                .Property(s => s.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
+                .HasKey(us => us.Id);
             modelBuilder.Entity<UserSubscription>()
-                .HasOne(s => s.User).WithMany()
-                .HasForeignKey(s => s.UserId).OnDelete(DeleteBehavior.Cascade);
+                .Property(us => us.Id)
+                .HasDefaultValueSql("NEWSEQUENTIALID()");
             modelBuilder.Entity<UserSubscription>()
-                .HasOne(s => s.PricingPackage).WithMany()
-                .HasForeignKey(s => s.PricingPackageId).OnDelete(DeleteBehavior.Restrict);
+                .HasOne(us => us.User)
+                .WithMany(u => u.UserSubscriptions)
+                .HasForeignKey(us => us.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<UserSubscription>()
+                .HasOne(us => us.PricingPackage)
+                .WithMany(p => p.UserSubscriptions)
+                .HasForeignKey(us => us.PricingPackageId)
+                .OnDelete(DeleteBehavior.Restrict);
 
-            // ── Phase 3: PaymentTransaction ─────────────────────────────
-            modelBuilder.Entity<PaymentTransaction>().HasKey(t => t.Id);
+            // PaymentTransaction
             modelBuilder.Entity<PaymentTransaction>()
-                .Property(t => t.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
+                .HasKey(pt => pt.Id);
             modelBuilder.Entity<PaymentTransaction>()
-                .HasOne(t => t.User).WithMany()
-                .HasForeignKey(t => t.UserId).OnDelete(DeleteBehavior.Cascade);
+                .Property(pt => pt.Id)
+                .HasDefaultValueSql("NEWSEQUENTIALID()");
             modelBuilder.Entity<PaymentTransaction>()
-                .HasOne(t => t.PricingPackage).WithMany()
-                .HasForeignKey(t => t.PricingPackageId).OnDelete(DeleteBehavior.Restrict);
+                .Property(pt => pt.TransactionCode)
+                .HasColumnType("nvarchar(max)");
             modelBuilder.Entity<PaymentTransaction>()
-                .Property(t => t.TransactionCode).HasColumnType("nvarchar(max)");
+                .HasOne(pt => pt.User)
+                .WithMany(u => u.PaymentTransactions)
+                .HasForeignKey(pt => pt.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<PaymentTransaction>()
+                .HasOne(pt => pt.PricingPackage)
+                .WithMany()
+                .HasForeignKey(pt => pt.PricingPackageId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

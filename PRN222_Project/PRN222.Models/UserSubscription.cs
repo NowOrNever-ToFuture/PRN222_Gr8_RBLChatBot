@@ -1,3 +1,5 @@
+using System;
+
 namespace PRN222.Models
 {
     public class UserSubscription
@@ -8,7 +10,7 @@ namespace PRN222.Models
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
         public int RemainingTokens { get; set; }
-        public string Status { get; set; } // "Active", "Expired", "Suspended"
+        public string Status { get; set; }
 
         // Navigation properties
         public User User { get; set; }

@@ -1,3 +1,5 @@
+using System;
+
 namespace PRN222.Models
 {
     public class PaymentTransaction
@@ -7,8 +9,8 @@ namespace PRN222.Models
         public Guid PricingPackageId { get; set; }
         public string TransactionCode { get; set; }
         public double Amount { get; set; }
-        public string PaymentMethod { get; set; } // "PayOS", "SystemFree"
-        public string Status { get; set; } // "Pending", "Success", "Failed"
+        public string PaymentMethod { get; set; }
+        public string Status { get; set; }
         public DateTime CreatedDate { get; set; }
 
         // Navigation properties

@@ -12,5 +12,7 @@ namespace PRN222.Models
         public ICollection<CourseLecturer> TeachingAssignments { get; set; } = new List<CourseLecturer>();
         public ICollection<Conversation> Conversations { get; set; } = new List<Conversation>();
         public ICollection<Document> UploadedDocuments { get; set; } = new List<Document>();
+        public ICollection<UserSubscription> UserSubscriptions { get; set; } = new List<UserSubscription>();
+        public ICollection<PaymentTransaction> PaymentTransactions { get; set; } = new List<PaymentTransaction>();
     }
 }
