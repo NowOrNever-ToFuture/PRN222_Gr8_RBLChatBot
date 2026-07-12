@@ -12,8 +12,8 @@ using PRN222.Repositories;
 namespace PRN222.Repositories.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260709123232_AddPackagesAndPayments")]
-    partial class AddPackagesAndPayments
+    [Migration("20260712173308_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -70,11 +70,18 @@ namespace PRN222.Repositories.Migrations
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("NEWSEQUENTIALID()");
 
+                    b.Property<Guid>("BenchmarkBatchId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("ChunkingStrategy")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("EmbeddingModel")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LlmModel")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -93,6 +100,8 @@ namespace PRN222.Repositories.Migrations
                         .HasColumnType("bigint");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("BenchmarkBatchId");
 
                     b.ToTable("BenchmarkRuns");
                 });
@@ -436,6 +445,42 @@ namespace PRN222.Repositories.Migrations
                     b.ToTable("TestQuestions");
                 });
 
+            modelBuilder.Entity("PRN222.Models.TokenUsageLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("CompletionTokens")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Feature")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ModelName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("PromptTokens")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TotalTokens")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("TokenUsageLogs");
+                });
+
             modelBuilder.Entity("PRN222.Models.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -626,6 +671,17 @@ namespace PRN222.Repositories.Migrations
                         .IsRequired();
 
                     b.Navigation("Course");
+                });
+
+            modelBuilder.Entity("PRN222.Models.TokenUsageLog", b =>
+                {
+                    b.HasOne("PRN222.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("PRN222.Models.UserSubscription", b =>

@@ -351,9 +351,6 @@ namespace PRN222.Repositories.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
-                    b.Property<int>("MaxUploadSizeMb")
-                        .HasColumnType("int");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -449,8 +446,7 @@ namespace PRN222.Repositories.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier")
-                        .HasDefaultValueSql("NEWSEQUENTIALID()");
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("CompletionTokens")
                         .HasColumnType("int");
@@ -672,6 +668,17 @@ namespace PRN222.Repositories.Migrations
                         .IsRequired();
 
                     b.Navigation("Course");
+                });
+
+            modelBuilder.Entity("PRN222.Models.TokenUsageLog", b =>
+                {
+                    b.HasOne("PRN222.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("PRN222.Models.UserSubscription", b =>
