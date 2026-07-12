@@ -9,39 +9,46 @@ namespace PRN222.Services
 {
     public class OpenAiService : IEmbeddingService, ILlmService
     {
-        private readonly ChatClient _chatClient;
+        private readonly ChatClient? _chatClient;
         private readonly ChatClient? _fineTunedChatClient;
-        private readonly EmbeddingClient _embeddingClient;
+        private readonly EmbeddingClient? _embeddingClient;
 
         public string ProviderName => "OpenAI";
 
         public OpenAiService(IConfiguration config)
         {
-            string apiKey = config["AIProviders:OpenAI:ApiKey"] ?? throw new ArgumentNullException("ApiKey is missing in configuration.");
+            string? apiKey = config["AIProviders:OpenAI:ApiKey"];
             string chatModel = config["AIProviders:OpenAI:ChatModel"] ?? "gpt-4o-mini";
             string? ftModel = config["AIProviders:OpenAI:FineTunedModel"];
             string embedModel = config["AIProviders:OpenAI:EmbeddingModel"] ?? "text-embedding-3-small";
             string? baseUrl = config["AIProviders:OpenAI:BaseUrl"];
 
-            var options = new OpenAIClientOptions();
-            if (!string.IsNullOrEmpty(baseUrl))
+            if (!string.IsNullOrWhiteSpace(apiKey))
             {
-                options.Endpoint = new Uri(baseUrl);
-            }
+                var options = new OpenAIClientOptions();
+                if (!string.IsNullOrEmpty(baseUrl))
+                {
+                    options.Endpoint = new Uri(baseUrl);
+                }
 
-            var credential = new System.ClientModel.ApiKeyCredential(apiKey);
+                var credential = new System.ClientModel.ApiKeyCredential(apiKey);
 
-            _chatClient = new ChatClient(chatModel, credential, options);
-            _embeddingClient = new EmbeddingClient(embedModel, credential, options);
-            
-            if (!string.IsNullOrEmpty(ftModel))
-            {
-                _fineTunedChatClient = new ChatClient(ftModel, credential, options);
+                _chatClient = new ChatClient(chatModel, credential, options);
+                _embeddingClient = new EmbeddingClient(embedModel, credential, options);
+                
+                if (!string.IsNullOrEmpty(ftModel))
+                {
+                    _fineTunedChatClient = new ChatClient(ftModel, credential, options);
+                }
             }
         }
 
         public async Task<float[]> GenerateEmbeddingAsync(string text)
         {
+            if (_embeddingClient == null)
+            {
+                throw new InvalidOperationException("OpenAI EmbeddingClient is not initialized. Please verify that a valid 'ApiKey' is provided under 'AIProviders:OpenAI' in your configuration (appsettings.json or user secrets).");
+            }
             var response = await _embeddingClient.GenerateEmbeddingAsync(text);
             return response.Value.Vector.ToArray();
         }
@@ -55,6 +62,10 @@ namespace PRN222.Services
         public async Task<(string Response, int InputTokens, int OutputTokens)> GenerateChatResponseWithUsageAsync(string prompt, bool isFineTuned = false)
         {
             var client = (isFineTuned && _fineTunedChatClient != null) ? _fineTunedChatClient : _chatClient;
+            if (client == null)
+            {
+                throw new InvalidOperationException("OpenAI ChatClient is not initialized. Please verify that a valid 'ApiKey' is provided under 'AIProviders:OpenAI' in your configuration (appsettings.json or user secrets).");
+            }
             var response = await client.CompleteChatAsync(prompt);
             
             string content = response.Value.Content[0].Text ?? "";
