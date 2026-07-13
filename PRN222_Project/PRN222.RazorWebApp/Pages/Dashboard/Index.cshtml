@@ -149,7 +149,38 @@
         </div>
     </section>
 
-    <section class="app-card">
+    <!-- Phase 2: Token Usage Reports -->
+    <section class="app-grid-2 mt-4">
+        <div class="app-card">
+            <div class="app-card-title"><i class="bi bi-pie-chart-fill text-info"></i> Tỉ lệ token theo model (7 ngày)</div>
+            <div class="chart-area" style="position: relative; height:300px; width:100%">
+                <canvas id="tokenPieChart"></canvas>
+                <div id="noPieData" class="position-absolute top-50 start-50 translate-middle text-center w-100" style="display: none;">
+                    <i class="bi bi-inbox fs-1 text-muted mb-2 d-block"></i>
+                    <p class="text-muted mb-0">Chưa có dữ liệu token.</p>
+                </div>
+            </div>
+        </div>
+        <div class="app-card">
+            <div class="app-card-title"><i class="bi bi-trophy-fill text-warning"></i> Top 5 User dùng nhiều Token (7 ngày)</div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Họ Tên</th>
+                            <th class="text-end">Tổng Token</th>
+                        </tr>
+                    </thead>
+                    <tbody id="topTokenUsersTable">
+                        <tr><td colspan="3" class="text-center text-muted">Đang tải dữ liệu...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <section class="app-card mt-4">
         <div class="app-card-title"><i class="bi bi-bar-chart-steps text-warning"></i> Chất lượng theo độ khó câu hỏi</div>
         <p class="app-muted mb-3">So sánh điểm chất lượng trung bình (trung thực + liên quan) của từng model trên nhóm câu hỏi Dễ · Trung bình · Khó — model càng giữ được điểm cao ở câu khó càng đáng tin.</p>
         <div class="chart-area" style="position: relative; height:300px; width:100%">
@@ -161,9 +192,9 @@
         </div>
     </section>
 
-    <div id="benchmarkWinner" class="alert alert-success d-none" style="border-radius: 16px;"></div>
+    <div id="benchmarkWinner" class="alert alert-success d-none mt-4" style="border-radius: 16px;"></div>
 
-    <section class="app-grid-3">
+    <section class="app-grid-3 mt-4">
         <div class="app-card">
             <div class="app-card-title"><i class="bi bi-clock-history text-primary"></i> Lịch sử test gần đây</div>
             @if (!Model.BenchmarkRuns.Any())
@@ -743,7 +774,60 @@
             });
         } catch (err) { console.error('Lỗi load difficulty chart:', err); }
     }
-    document.addEventListener('DOMContentLoaded', loadChartData);
+    async function loadTokenPieChart() {
+        try {
+            const res = await fetch('/Dashboard/Index?handler=TokenModelBreakdown');
+            const data = await res.json();
+            if (!data || data.length === 0) { 
+                document.getElementById('noPieData').style.display = 'block'; 
+                return; 
+            }
+            document.getElementById('noPieData').style.display = 'none';
+            const labels = data.map(d => d.modelName || 'Unknown');
+            const values = data.map(d => d.totalTokens);
+            
+            new Chart(document.getElementById('tokenPieChart').getContext('2d'), {
+                type: 'pie',
+                data: { 
+                    labels: labels, 
+                    datasets: [{ 
+                        data: values, 
+                        backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#dc3545', '#0dcaf0'],
+                        borderWidth: 1 
+                    }] 
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        } catch (err) { console.error('Lỗi load pie chart data:', err); }
+    }
+
+    async function loadTopTokenUsers() {
+        try {
+            const res = await fetch('/Dashboard/Index?handler=TopTokenUsers');
+            const data = await res.json();
+            const tbody = document.getElementById('topTokenUsersTable');
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Chưa có người dùng nào tiêu thụ token.</td></tr>';
+                return;
+            }
+            let html = '';
+            data.forEach((user, index) => {
+                let badgeClass = index === 0 ? 'bg-warning text-dark' : (index === 1 ? 'bg-secondary' : (index === 2 ? 'bg-danger' : 'bg-light text-dark'));
+                html += `<tr>
+                            <td><span class="badge ${badgeClass}">${index + 1}</span></td>
+                            <td class="fw-bold">${user.fullName}</td>
+                            <td class="text-end text-primary fw-bold">${user.totalTokens.toLocaleString()}</td>
+                         </tr>`;
+            });
+            tbody.innerHTML = html;
+        } catch (err) { console.error('Lỗi load top users:', err); }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadChartData();
+        loadTokenPieChart();
+        loadTopTokenUsers();
+    });
 </script>
 @Html.AntiForgeryToken()
 }

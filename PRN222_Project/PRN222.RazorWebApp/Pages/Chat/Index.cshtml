@@ -81,6 +81,26 @@
         <div class="chat-layout">
             <aside class="chat-sidebar d-flex flex-column gap-3">
 
+                <div id="token-widget" class="app-card p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="small fw-bold">🔋 Token hôm nay</span>
+                        <span class="small">
+                            <span id="token-used">@Model.TodayTokenUsed</span>
+                            / @Model.DailyTokenLimit
+                        </span>
+                    </div>
+                    <div class="progress" style="height: 8px; border-radius: 999px;">
+                        <div id="token-progress-bar"
+                             class="progress-bar @((Model.TodayTokenUsed * 100.0 / Model.DailyTokenLimit) >= 90 ? "bg-danger" : (Model.TodayTokenUsed * 100.0 / Model.DailyTokenLimit) >= 70 ? "bg-warning" : "bg-success")"
+                             role="progressbar"
+                             style="width: @(Math.Min(100, (int)((double)Model.TodayTokenUsed / Model.DailyTokenLimit * 100)))%">
+                        </div>
+                    </div>
+                    <div id="token-warning" class="small text-warning mt-1 @((Model.TodayTokenUsed * 100.0 / Model.DailyTokenLimit) >= 80 ? "" : "d-none")">
+                        ⚠️ Bạn đã dùng hơn 80% quota hôm nay!
+                    </div>
+                </div>
+
                 <div class="app-card flex-grow-1">
                     <div class="app-card-title"><i class="bi bi-lightbulb text-warning"></i> Gợi ý nhanh</div>
                     <div id="quickSuggestions" class="d-grid gap-2">
@@ -581,6 +601,24 @@
         paymentConnection.start()
             .then(() => console.log("Chat PaymentHub connected."))
             .catch(err => console.error("Chat PaymentHub connection error:", err));
+
+        // TokenUsageHub Connection
+        const tokenConnection = new signalR.HubConnectionBuilder()
+            .withUrl("/hubs/tokenusage")
+            .withAutomaticReconnect()
+            .build();
+
+        tokenConnection.on("ReceiveTokenUpdate", (todayUsed) => {
+            const limit = @Model.DailyTokenLimit;
+            document.getElementById('token-used').textContent = todayUsed;
+            const pct = Math.min(100, Math.round(todayUsed / limit * 100));
+            const bar = document.getElementById('token-progress-bar');
+            bar.style.width = pct + '%';
+            bar.className = 'progress-bar ' + (pct >= 90 ? 'bg-danger' : pct >= 70 ? 'bg-warning' : 'bg-success');
+            document.getElementById('token-warning').classList.toggle('d-none', pct < 80);
+        });
+
+        tokenConnection.start().catch(err => console.error('TokenUsageHub error:', err));
     });
 </script>
 @Html.AntiForgeryToken()

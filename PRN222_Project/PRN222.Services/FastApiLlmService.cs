@@ -20,31 +20,8 @@ namespace PRN222.Services
 
         public async Task<string> GenerateChatResponseAsync(string prompt, bool isFineTuned = false)
         {
-            if (string.IsNullOrWhiteSpace(prompt))
-                throw new ArgumentException("Prompt must not be empty.", nameof(prompt));
-
-            using var response = await _httpClient.PostAsJsonAsync(
-                $"api/chat/{Uri.EscapeDataString(_provider)}",
-                new
-                {
-                    message = prompt,
-                    provider = _provider,
-                    max_new_tokens = 256,
-                    temperature = 0.0
-                });
-
-            if (!response.IsSuccessStatusCode)
-            {
-                var errorBody = await response.Content.ReadAsStringAsync();
-                throw new InvalidOperationException(
-                    $"FastAPI {_provider} returned {(int)response.StatusCode}: {ExtractError(errorBody)}");
-            }
-
-            var result = await response.Content.ReadFromJsonAsync<GatewayChatResponse>();
-            if (string.IsNullOrWhiteSpace(result?.Answer))
-                throw new InvalidOperationException($"FastAPI {_provider} returned an empty answer.");
-
-            return result.Answer;
+            var (response, _, _) = await GenerateChatResponseWithUsageAsync(prompt, isFineTuned);
+            return response;
         }
 
         public async Task<(string Response, int InputTokens, int OutputTokens)> GenerateChatResponseWithUsageAsync(string prompt, bool isFineTuned = false)
@@ -75,6 +52,8 @@ namespace PRN222.Services
 
             return (result.Answer, result.InputTokens, result.OutputTokens);
         }
+
+
 
         private static string ExtractError(string responseBody)
         {

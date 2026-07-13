@@ -190,6 +190,15 @@ namespace PRN222.Repositories
             modelBuilder.Entity<BenchmarkResult>()
                 .Property(br => br.BotAnswer)
                 .HasColumnType("nvarchar(max)");
+            // ── Phase 2: TokenUsageLog ──────────────────────────────────
+            modelBuilder.Entity<TokenUsageLog>().HasKey(t => t.Id);
+            modelBuilder.Entity<TokenUsageLog>()
+                .Property(t => t.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
+            modelBuilder.Entity<TokenUsageLog>()
+                .HasOne(t => t.User).WithMany()
+                .HasForeignKey(t => t.UserId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<TokenUsageLog>().Property(t => t.ModelName).HasMaxLength(100);
+            modelBuilder.Entity<TokenUsageLog>().Property(t => t.Feature).HasMaxLength(50);
 
             // PricingPackage
             modelBuilder.Entity<PricingPackage>()
