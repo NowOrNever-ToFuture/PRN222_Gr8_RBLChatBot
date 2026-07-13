@@ -21,7 +21,6 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     });
 
 builder.Services.AddApplicationServices();
-builder.Services.AddScoped<ILlmService, OpenAiService>();
 builder.Services.AddScoped<IEmbeddingService, OpenAiService>();
 
 var pythonBaseUrl = builder.Configuration["AIProviders:PythonMicroservice:BaseUrl"];
@@ -30,6 +29,9 @@ builder.Services.AddHttpClient("PythonApi").ConfigureHttpClient(c =>
     c.BaseAddress = new Uri(pythonBaseUrl ?? "http://localhost:8000");
     c.Timeout = TimeSpan.FromMinutes(30);
 });
+
+builder.Services.AddScoped<ILlmService>(sp =>
+    sp.GetRequiredService<ILlmProviderFactory>().GetService("gpt"));
 
 builder.Services.AddScoped<IEmbeddingService>(sp =>
     new LocalPythonEmbeddingService(sp.GetRequiredService<IHttpClientFactory>().CreateClient("PythonApi"), "bge-m3"));
@@ -242,8 +244,8 @@ app.MapHub<DocumentUploadHub>("/hubs/documentupload");
 app.MapHub<CourseHub>("/hubs/course");
 app.MapHub<UserHub>("/hubs/user");
 app.MapHub<SystemSettingsHub>("/hubs/systemsettings");
-
-app.MapHub<PaymentHub>("/hubs/payment");
+app.MapHub<TokenUsageHub>("/hubs/tokenusage");  // Phase 2
+app.MapHub<PaymentHub>("/hubs/payment");         // Phase 3
 
 app.MapMethods("/api/payment/webhook", new[] { "GET", "POST" }, async (HttpContext ctx, IPaymentService paymentService) =>
 {

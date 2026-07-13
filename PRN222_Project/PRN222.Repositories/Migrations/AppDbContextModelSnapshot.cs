@@ -67,11 +67,18 @@ namespace PRN222.Repositories.Migrations
                         .HasColumnType("uniqueidentifier")
                         .HasDefaultValueSql("NEWSEQUENTIALID()");
 
+                    b.Property<Guid>("BenchmarkBatchId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("ChunkingStrategy")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("EmbeddingModel")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LlmModel")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -90,6 +97,8 @@ namespace PRN222.Repositories.Migrations
                         .HasColumnType("bigint");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("BenchmarkBatchId");
 
                     b.ToTable("BenchmarkRuns");
                 });
@@ -342,9 +351,6 @@ namespace PRN222.Repositories.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
-                    b.Property<int>("MaxUploadSizeMb")
-                        .HasColumnType("int");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -434,6 +440,42 @@ namespace PRN222.Repositories.Migrations
                     b.HasIndex("CourseId");
 
                     b.ToTable("TestQuestions");
+                });
+
+            modelBuilder.Entity("PRN222.Models.TokenUsageLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("CompletionTokens")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Feature")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ModelName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("PromptTokens")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TotalTokens")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("TokenUsageLogs");
                 });
 
             modelBuilder.Entity("PRN222.Models.User", b =>
@@ -626,6 +668,17 @@ namespace PRN222.Repositories.Migrations
                         .IsRequired();
 
                     b.Navigation("Course");
+                });
+
+            modelBuilder.Entity("PRN222.Models.TokenUsageLog", b =>
+                {
+                    b.HasOne("PRN222.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("PRN222.Models.UserSubscription", b =>

@@ -19,6 +19,7 @@ namespace PRN222.Repositories
         public DbSet<PricingPackage> PricingPackages { get; set; }
         public DbSet<UserSubscription> UserSubscriptions { get; set; }
         public DbSet<PaymentTransaction> PaymentTransactions { get; set; }
+        public DbSet<TokenUsageLog> TokenUsageLogs { get; set; }
 
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
@@ -85,6 +86,8 @@ namespace PRN222.Repositories
             modelBuilder.Entity<BenchmarkRun>()
                 .Property(br => br.Id)
                 .HasDefaultValueSql("NEWSEQUENTIALID()");
+            modelBuilder.Entity<BenchmarkRun>()
+                .HasIndex(br => br.BenchmarkBatchId);
 
             modelBuilder.Entity<BenchmarkResult>()
                 .HasKey(br => br.Id);

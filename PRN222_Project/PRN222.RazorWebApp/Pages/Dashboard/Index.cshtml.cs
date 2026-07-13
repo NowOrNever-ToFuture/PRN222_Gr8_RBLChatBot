@@ -47,6 +47,12 @@ namespace PRN222.RazorWebApp.Pages.Dashboard
             return new JsonResult(data);
         }
 
+        public async Task<IActionResult> OnGetDifficultyChartDataAsync()
+        {
+            var data = await _dashboardService.GetDifficultyChartDataAsync();
+            return new JsonResult(data);
+        }
+
         public async Task<IActionResult> OnPostRunBenchmarkAsync(string embeddingModel, string chunkingStrategy)
         {
             try
