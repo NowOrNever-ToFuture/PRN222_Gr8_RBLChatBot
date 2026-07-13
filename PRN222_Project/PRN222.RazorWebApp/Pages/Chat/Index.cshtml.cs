@@ -13,17 +13,21 @@ namespace PRN222.RazorWebApp.Pages.Chat
         private readonly IChatService _chatService;
         private readonly ICourseService _courseService;
         private readonly IPaymentService _paymentService;
+        private readonly ITokenUsageService _tokenUsageService;
 
-        public IndexModel(IChatService chatService, ICourseService courseService, IPaymentService paymentService)
+        public IndexModel(IChatService chatService, ICourseService courseService, IPaymentService paymentService, ITokenUsageService tokenUsageService)
         {
             _chatService = chatService ?? throw new ArgumentNullException(nameof(chatService));
             _courseService = courseService ?? throw new ArgumentNullException(nameof(courseService));
             _paymentService = paymentService ?? throw new ArgumentNullException(nameof(paymentService));
+            _tokenUsageService = tokenUsageService ?? throw new ArgumentNullException(nameof(tokenUsageService));
         }
 
         public Guid? CourseId { get; set; }
         public string? CourseName { get; set; }
         public UserSubscription? Subscription { get; set; }
+        public int TodayTokenUsed { get; set; }
+        public int DailyTokenLimit { get; set; } = 50000;
 
         public async Task<IActionResult> OnGetAsync(Guid? courseId)
         {
@@ -42,6 +46,12 @@ namespace PRN222.RazorWebApp.Pages.Chat
             if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out var userId))
             {
                 Subscription = await _paymentService.GetUserSubscriptionAsync(userId);
+                TodayTokenUsed = await _tokenUsageService.GetTodayUsageAsync(userId);
+                
+                if (Subscription?.PricingPackage != null)
+                {
+                    DailyTokenLimit = Subscription.PricingPackage.TokenQuota > 0 ? Subscription.PricingPackage.TokenQuota : 50000;
+                }
             }
 
             return Page();

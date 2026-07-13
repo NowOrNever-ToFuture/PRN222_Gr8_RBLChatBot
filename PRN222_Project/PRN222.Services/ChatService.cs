@@ -15,7 +15,6 @@ namespace PRN222.Services
         private readonly AiModelFactory _aiModelFactory;
         private readonly ISystemSettingService _systemSettingService;
         private readonly ITokenUsageService _tokenUsageService;
-        private readonly IHubContext<TokenUsageHub> _hubContext;
 
         // Ngưỡng Cosine Similarity tối thiểu. Dưới ngưỡng này → từ chối trả lời.
         private const double SIMILARITY_THRESHOLD = 0.5;
@@ -29,15 +28,13 @@ namespace PRN222.Services
             ILlmService llmService,
             AiModelFactory aiModelFactory,
             ISystemSettingService systemSettingService,
-            ITokenUsageService tokenUsageService,
-            IHubContext<TokenUsageHub> hubContext)
+            ITokenUsageService tokenUsageService)
         {
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
             _llmService = llmService ?? throw new ArgumentNullException(nameof(llmService));
             _aiModelFactory = aiModelFactory ?? throw new ArgumentNullException(nameof(aiModelFactory));
             _systemSettingService = systemSettingService ?? throw new ArgumentNullException(nameof(systemSettingService));
             _tokenUsageService = tokenUsageService ?? throw new ArgumentNullException(nameof(tokenUsageService));
-            _hubContext = hubContext ?? throw new ArgumentNullException(nameof(hubContext));
         }
 
         // ========================================================================
@@ -272,13 +269,7 @@ Hãy phản hồi bằng tiếng Việt một cách tự nhiên, mạch lạc, d
 
             try
             {
-                int promptTokens = (int)Math.Ceiling(ragPrompt.Length / 4.0);
-                int completionTokens = (int)Math.Ceiling(answer.Length / 4.0);
-                
-                await _tokenUsageService.LogAsync(userId, promptTokens, completionTokens, "gpt-4o-mini", "Chat");
-                
-                int todayUsed = await _tokenUsageService.GetTodayUsageAsync(userId);
-                await _hubContext.Clients.User(userId.ToString()).SendAsync("ReceiveTokenUpdate", todayUsed);
+                await _tokenUsageService.LogAsync(userId, inputTokens, outputTokens, "gpt-4o-mini", "Chat");
             }
             catch (Exception ex)
             {

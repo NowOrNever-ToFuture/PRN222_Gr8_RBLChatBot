@@ -13,10 +13,12 @@ namespace PRN222.Services
     public class TokenUsageService : ITokenUsageService
     {
         private readonly AppDbContext _dbContext;
+        private readonly IHubContext<TokenUsageHub> _hubContext;
 
-        public TokenUsageService(AppDbContext dbContext)
+        public TokenUsageService(AppDbContext dbContext, IHubContext<TokenUsageHub> hubContext)
         {
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+            _hubContext = hubContext ?? throw new ArgumentNullException(nameof(hubContext));
         }
 
         public async Task LogAsync(Guid userId, int promptTokens, int completionTokens, string modelName, string feature)
@@ -34,6 +36,10 @@ namespace PRN222.Services
 
             _dbContext.TokenUsageLogs.Add(log);
             await _dbContext.SaveChangesAsync();
+
+            var todayUsed = await GetTodayUsageAsync(log.UserId);
+            await _hubContext.Clients.User(log.UserId.ToString())
+                .SendAsync("ReceiveTokenUpdate", todayUsed);
         }
 
         public async Task<List<DailyTokenUsageDto>> GetWeeklyUsageAsync(Guid userId)
