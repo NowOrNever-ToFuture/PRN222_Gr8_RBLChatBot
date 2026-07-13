@@ -10,15 +10,18 @@ namespace PRN222.RazorWebApp.Pages.Dashboard
     {
         private readonly IDashboardService _dashboardService;
         private readonly ISystemSettingService _systemSettingService;
+        private readonly ITokenUsageService _tokenUsageService;
         private readonly IPaymentService _paymentService;
 
         public IndexModel(
             IDashboardService dashboardService, 
             ISystemSettingService systemSettingService,
+            ITokenUsageService tokenUsageService,
             IPaymentService paymentService)
         {
             _dashboardService = dashboardService ?? throw new ArgumentNullException(nameof(dashboardService));
             _systemSettingService = systemSettingService ?? throw new ArgumentNullException(nameof(systemSettingService));
+            _tokenUsageService = tokenUsageService ?? throw new ArgumentNullException(nameof(tokenUsageService));
             _paymentService = paymentService ?? throw new ArgumentNullException(nameof(paymentService));
         }
 
@@ -66,6 +69,18 @@ namespace PRN222.RazorWebApp.Pages.Dashboard
             {
                 return new JsonResult(new { success = false, message = ex.Message });
             }
+        }
+
+        public async Task<IActionResult> OnGetTokenModelBreakdownAsync()
+        {
+            var data = await _tokenUsageService.GetModelBreakdownAsync();
+            return new JsonResult(data);
+        }
+
+        public async Task<IActionResult> OnGetTopTokenUsersAsync()
+        {
+            var data = await _tokenUsageService.GetTopUsersAsync(5);
+            return new JsonResult(data);
         }
 
         public async Task<IActionResult> OnPostUpdatePackageAsync(Guid packageId, string name, int tokenQuota, double price, int durationDays, string description)
