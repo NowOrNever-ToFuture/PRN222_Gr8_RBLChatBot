@@ -11,6 +11,7 @@ namespace PRN222.Models
         public DateTime EndDate { get; set; }
         public int RemainingTokens { get; set; }
         public string Status { get; set; }
+        public DateTime? SessionStartDate { get; set; }
 
         // Navigation properties
         public User User { get; set; }

@@ -91,6 +91,8 @@ namespace PRN222.RazorWebApp.Pages.Chat
                 var updatedQuota = updatedSub?.RemainingTokens ?? 0;
                 var totalQuota = updatedSub?.PricingPackage?.TokenQuota ?? 100;
                 var packageName = updatedSub?.PricingPackage?.Name ?? "Free";
+                var todayTokenUsed = await _tokenUsageService.GetTodayUsageAsync(userId);
+                var sessionStartDate = updatedSub?.SessionStartDate?.ToString("o");
 
                 return new JsonResult(new
                 {
@@ -100,7 +102,9 @@ namespace PRN222.RazorWebApp.Pages.Chat
                     courseId = ragResponse.CourseId,
                     remainingQuota = updatedQuota,
                     totalQuota = totalQuota,
-                    packageName = packageName
+                    packageName = packageName,
+                    todayTokenUsed = todayTokenUsed,
+                    sessionStartDate = sessionStartDate
                 });
             }
             catch (Exception ex) { return new JsonResult(new { success = false, message = $"Lỗi: {ex.Message}" }); }

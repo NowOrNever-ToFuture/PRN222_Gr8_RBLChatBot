@@ -67,18 +67,32 @@ namespace PRN222.Services
                     .FirstOrDefaultAsync(us => us.UserId == userId && us.Status == "Active");
             }
 
-            // Daily reset logic for Free tier
-            if (subscription != null && subscription.PricingPackage != null && subscription.PricingPackage.Name == "Free")
+            // Apply session reset logic if session has expired
+            if (subscription != null && subscription.PricingPackage != null)
             {
-                if (DateTime.UtcNow.Date > subscription.StartDate.Date)
-                {
-                    subscription.RemainingTokens = subscription.PricingPackage.TokenQuota;
-                    subscription.StartDate = DateTime.UtcNow;
-                    await _dbContext.SaveChangesAsync();
-                }
+                await CheckAndResetSessionQuotaAsync(subscription);
             }
-
+ 
             return subscription;
+        }
+
+        private async Task CheckAndResetSessionQuotaAsync(UserSubscription subscription)
+        {
+            if (subscription.SessionStartDate.HasValue && DateTime.UtcNow >= subscription.SessionStartDate.Value.AddHours(5))
+            {
+                int quotaLimit = subscription.PricingPackage.TokenQuota;
+                
+                // If user remaining tokens are below standard quota, reset to quota.
+                // If they are still above due to accumulation (e.g. napping VIP), we preserve it.
+                if (subscription.RemainingTokens < quotaLimit)
+                {
+                    subscription.RemainingTokens = quotaLimit;
+                }
+                
+                // Reset session start date so the next message begins a new 5-hour session
+                subscription.SessionStartDate = null;
+                await _dbContext.SaveChangesAsync();
+            }
         }
 
         public async Task<string> CreatePaymentLinkAsync(Guid userId, Guid packageId, string returnUrl, string cancelUrl)
@@ -233,7 +247,7 @@ namespace PRN222.Services
                     Name = "Free",
                     Description = "Default Free Tier",
                     Price = 0,
-                    TokenQuota = 100,
+                    TokenQuota = 5000,
                     DurationDays = 36500,
                     IsActive = true
                 };
@@ -360,6 +374,16 @@ namespace PRN222.Services
             var subscription = await GetUserSubscriptionAsync(userId);
             if (subscription != null)
             {
+                // 1. Perform session reset checks if session has expired
+                await CheckAndResetSessionQuotaAsync(subscription);
+
+                // 2. Initialize session start time if this is the first message in the session
+                if (!subscription.SessionStartDate.HasValue)
+                {
+                    subscription.SessionStartDate = DateTime.UtcNow;
+                }
+
+                // 3. Deduct the tokens
                 subscription.RemainingTokens = Math.Max(0, subscription.RemainingTokens - amount);
                 await _dbContext.SaveChangesAsync();
 

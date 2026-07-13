@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using PRN222.Models;
 using PRN222.Repositories;
@@ -42,6 +43,7 @@ builder.Services.AddScoped<IEmbeddingService>(sp =>
 
 builder.Services.AddScoped<AiModelFactory>();
 builder.Services.AddSignalR();
+builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
 
 var app = builder.Build();
 
@@ -110,40 +112,58 @@ using (var scope = app.Services.CreateScope())
         dbContext.SaveChanges();
     }
 
-    if (!dbContext.Users.Any(u => u.Username == "lecturer"))
+    // Helper function to create password hash
+    string GenerateHash(string password)
     {
         byte[] salt = new byte[16] { 80, 82, 78, 50, 50, 50, 95, 83, 65, 76, 84, 95, 75, 69, 89, 33 };
-        using var pbkdf2 = new System.Security.Cryptography.Rfc2898DeriveBytes("lecturer123", salt, 10000, System.Security.Cryptography.HashAlgorithmName.SHA256);
+        using var pbkdf2 = new System.Security.Cryptography.Rfc2898DeriveBytes(password, salt, 10000, System.Security.Cryptography.HashAlgorithmName.SHA256);
         byte[] hash = pbkdf2.GetBytes(32);
         byte[] hashWithSalt = new byte[48];
         System.Buffer.BlockCopy(salt, 0, hashWithSalt, 0, 16);
         System.Buffer.BlockCopy(hash, 0, hashWithSalt, 16, 32);
-        string passwordHash = Convert.ToBase64String(hashWithSalt);
+        return Convert.ToBase64String(hashWithSalt);
+    }
 
-        var lecturer = new User
+    // Seed "VRN Lecturer" (Password: 123456)
+    if (!dbContext.Users.Any(u => u.Username == "VRN Lecturer"))
+    {
+        dbContext.Users.Add(new User
         {
             Id = Guid.NewGuid(),
-            Username = "lecturer01",
-            FullName = "Nguyễn Văn A",
-            PasswordHash = passwordHash,
+            Username = "VRN Lecturer",
+            FullName = "VRN Lecturer",
+            PasswordHash = GenerateHash("123456"),
             Role = "Lecturer"
-        };
-
-        dbContext.Users.Add(lecturer);
-        dbContext.SaveChanges();
-
-        var firstCourse = dbContext.Courses.FirstOrDefault();
-        if (firstCourse != null && !dbContext.CourseLecturers.Any(cl => cl.CourseId == firstCourse.Id && cl.LecturerId == lecturer.Id))
-        {
-            dbContext.CourseLecturers.Add(new CourseLecturer
-            {
-                Id = Guid.NewGuid(),
-                CourseId = firstCourse.Id,
-                LecturerId = lecturer.Id
-            });
-            dbContext.SaveChanges();
-        }
+        });
     }
+
+    // Seed "MLN Lecturer" (Password: 123456)
+    if (!dbContext.Users.Any(u => u.Username == "MLN Lecturer"))
+    {
+        dbContext.Users.Add(new User
+        {
+            Id = Guid.NewGuid(),
+            Username = "MLN Lecturer",
+            FullName = "MLN Lecturer",
+            PasswordHash = GenerateHash("123456"),
+            Role = "Lecturer"
+        });
+    }
+
+    // Seed "SWD391" (Password: SWD391)
+    if (!dbContext.Users.Any(u => u.Username == "SWD391"))
+    {
+        dbContext.Users.Add(new User
+        {
+            Id = Guid.NewGuid(),
+            Username = "SWD391",
+            FullName = "SWD391 Lecturer",
+            PasswordHash = GenerateHash("SWD391"),
+            Role = "Lecturer"
+        });
+    }
+
+    dbContext.SaveChanges();
 
     if (!dbContext.SystemSettings.Any())
     {
@@ -161,12 +181,12 @@ using (var scope = app.Services.CreateScope())
     bool databaseUpdated = false;
     
     var dbFree = existingPackages.FirstOrDefault(p => p.Name == "Free");
-    if (dbFree != null && (dbFree.TokenQuota != 100 || dbFree.Price != 0 || dbFree.DurationDays != 36500))
+    if (dbFree != null && (dbFree.TokenQuota != 5000 || dbFree.Price != 0 || dbFree.DurationDays != 36500))
     {
-        dbFree.TokenQuota = 100;
+        dbFree.TokenQuota = 5000;
         dbFree.Price = 0;
         dbFree.DurationDays = 36500;
-        dbFree.Description = "Gói dùng thử miễn phí mặc định, tự động reset 100 lượt gọi mỗi ngày.";
+        dbFree.Description = "Gói dùng thử miễn phí mặc định, tự động reset 5,000 Tokens sau mỗi 5 tiếng.";
         databaseUpdated = true;
     }
     
@@ -179,15 +199,31 @@ using (var scope = app.Services.CreateScope())
     }
     
     var dbVip = existingPackages.FirstOrDefault(p => p.Name == "VIP");
-    if (dbVip != null && (dbVip.TokenQuota != 1000 || dbVip.Price != 50000 || dbVip.DurationDays != 30))
+    if (dbVip != null && (dbVip.TokenQuota != 50000 || dbVip.Price != 50000 || dbVip.DurationDays != 30))
     {
-        dbVip.TokenQuota = 1000;
+        dbVip.TokenQuota = 50000;
         dbVip.Price = 50000;
         dbVip.DurationDays = 30;
-        dbVip.Description = "Nạp thêm 1,000 lượt gọi AI chất lượng cao để học tập và ôn luyện.";
+        dbVip.Description = "Nạp thêm 50,000 Tokens chất lượng cao để học tập và ôn luyện.";
         databaseUpdated = true;
     }
     
+    // Reset existing active Free subscriptions that are outdated to the new 5,000 quota
+    if (dbFree != null)
+    {
+        var outdatedFreeSubs = dbContext.UserSubscriptions
+            .Where(us => us.PricingPackageId == dbFree.Id && us.Status == "Active" && us.RemainingTokens < 5000)
+            .ToList();
+        if (outdatedFreeSubs.Any())
+        {
+            foreach (var sub in outdatedFreeSubs)
+            {
+                sub.RemainingTokens = 5000;
+            }
+            databaseUpdated = true;
+        }
+    }
+
     if (databaseUpdated)
     {
         dbContext.SaveChanges();
@@ -200,9 +236,9 @@ using (var scope = app.Services.CreateScope())
             {
                 Id = Guid.NewGuid(),
                 Name = "Free",
-                Description = "Gói dùng thử miễn phí mặc định, tự động reset 100 lượt gọi mỗi ngày.",
+                Description = "Gói dùng thử miễn phí mặc định, tự động reset 5,000 Tokens sau mỗi 5 tiếng.",
                 Price = 0,
-                TokenQuota = 100,
+                TokenQuota = 5000,
                 DurationDays = 36500,
                 IsActive = true
             },
@@ -210,9 +246,9 @@ using (var scope = app.Services.CreateScope())
             {
                 Id = Guid.NewGuid(),
                 Name = "VIP",
-                Description = "Nạp thêm 1,000 lượt gọi AI chất lượng cao để học tập và ôn luyện.",
+                Description = "Nạp thêm 50,000 Tokens chất lượng cao để học tập và ôn luyện.",
                 Price = 50000,
-                TokenQuota = 1000,
+                TokenQuota = 50000,
                 DurationDays = 30,
                 IsActive = true
             }
@@ -285,3 +321,11 @@ app.MapMethods("/api/payment/webhook", new[] { "GET", "POST" }, async (HttpConte
 });
 
 app.Run();
+
+public class CustomUserIdProvider : IUserIdProvider
+{
+    public string? GetUserId(HubConnectionContext connection)
+    {
+        return connection.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+    }
+}
