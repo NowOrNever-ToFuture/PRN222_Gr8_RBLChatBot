@@ -81,23 +81,23 @@
         <div class="chat-layout">
             <aside class="chat-sidebar d-flex flex-column gap-3">
 
-                <div id="token-widget" class="app-card p-3">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="small fw-bold">🔋 Token hôm nay</span>
-                        <span class="small">
-                            <span id="token-used">@Model.TodayTokenUsed</span>
-                            / @Model.DailyTokenLimit
+                <div id="token-widget" class="app-card p-3" data-bs-toggle="modal" data-bs-target="#tokenQuotaDetailModal">
+                    <div class="d-flex justify-content-between align-items-center mb-2 gap-3 flex-wrap">
+                        <span class="small fw-bold text-secondary text-nowrap">🔋 Token còn lại</span>
+                        <span class="small fw-semibold text-primary">
+                            <span id="token-used">@(Model.Subscription?.RemainingTokens ?? 0)</span>
+                            / <span id="token-limit">@(Model.Subscription?.PricingPackage?.TokenQuota ?? 5000)</span>
                         </span>
                     </div>
                     <div class="progress" style="height: 8px; border-radius: 999px;">
                         <div id="token-progress-bar"
-                             class="progress-bar @((Model.TodayTokenUsed * 100.0 / Model.DailyTokenLimit) >= 90 ? "bg-danger" : (Model.TodayTokenUsed * 100.0 / Model.DailyTokenLimit) >= 70 ? "bg-warning" : "bg-success")"
+                             class="progress-bar @((Model.Subscription != null && Model.Subscription.PricingPackage != null && (Model.Subscription.RemainingTokens * 100.0 / Model.Subscription.PricingPackage.TokenQuota) <= 20) ? "bg-danger" : (Model.Subscription != null && Model.Subscription.PricingPackage != null && (Model.Subscription.RemainingTokens * 100.0 / Model.Subscription.PricingPackage.TokenQuota) <= 50) ? "bg-warning" : "bg-success")"
                              role="progressbar"
-                             style="width: @(Math.Min(100, (int)((double)Model.TodayTokenUsed / Model.DailyTokenLimit * 100)))%">
+                             style="width: @(Model.Subscription != null && Model.Subscription.PricingPackage != null ? Math.Min(100, (int)((double)Model.Subscription.RemainingTokens / Model.Subscription.PricingPackage.TokenQuota * 100)) : 0)%">
                         </div>
                     </div>
-                    <div id="token-warning" class="small text-warning mt-1 @((Model.TodayTokenUsed * 100.0 / Model.DailyTokenLimit) >= 80 ? "" : "d-none")">
-                        ⚠️ Bạn đã dùng hơn 80% quota hôm nay!
+                    <div id="token-warning" class="small text-danger mt-2 @((Model.Subscription != null && Model.Subscription.PricingPackage != null && (Model.Subscription.RemainingTokens * 100.0 / Model.Subscription.PricingPackage.TokenQuota) <= 20) ? "" : "d-none")">
+                        ⚠️ Bạn đã dùng hơn 80% hạn mức của session!
                     </div>
                 </div>
 
@@ -169,7 +169,7 @@
                         <div class="position-absolute fw-extrabold text-dark" id="modalTokenPercentText" style="font-size: 1.4rem; letter-spacing: -0.5px;">100%</div>
                     </div>
                     <h5 class="fw-bold text-dark mb-1" id="modalTokenPackageName">Gói Free</h5>
-                    <p class="text-muted small mb-0">Hạn mức sẽ tự động reset mỗi 24 giờ</p>
+                    <p class="text-muted small mb-0">Hạn mức tự động reset sau mỗi 5 tiếng kể từ câu chat đầu tiên.</p>
                 </div>
                 
                 <div class="card border-0 bg-light p-3 mb-3" style="border-radius: 16px;">
@@ -315,6 +315,17 @@
     #chatMessages::-webkit-scrollbar { width: 7px; }
     #chatMessages::-webkit-scrollbar-thumb { background: rgba(95, 107, 133, 0.3); border-radius: 999px; }
     .message-time { font-size: 11px; color: #8a94a8; margin-top: 4px; }
+    #token-widget {
+        cursor: pointer;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid rgba(120, 138, 170, 0.12);
+    }
+    #token-widget:hover {
+        background-color: rgba(31, 111, 235, 0.04);
+        border-color: rgba(31, 111, 235, 0.25);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(31, 111, 235, 0.06);
+    }
     @@media (max-width: 991.98px) {
         .chat-layout { grid-template-columns: 1fr; }
         .chat-sidebar { border-right: 0; border-bottom: 1px solid rgba(120, 138, 170, 0.14); }
@@ -325,6 +336,7 @@
 <script>
     $(document).ready(function () {
         const currentCourseId = "@(Model.CourseId?.ToString() ?? "")" || null;
+        let currentSessionStartDate = "@(Model.Subscription?.SessionStartDate?.ToString("o") ?? "")";
         loadChatHistory();
 
         function loadChatHistory() {
@@ -403,6 +415,13 @@
                         appendBotMessage(result.response, result.sources);
                         if (result.remainingQuota !== undefined && result.totalQuota !== undefined) {
                             updateTokenUI(result.remainingQuota, result.totalQuota, result.packageName);
+                        }
+                        if (result.todayTokenUsed !== undefined) {
+                            updateTodayTokenUI(result.todayTokenUsed);
+                        }
+                        if (result.sessionStartDate) {
+                            currentSessionStartDate = result.sessionStartDate;
+                            updateResetCountdown();
                         }
                     }
                     else appendBotMessage('Cảnh báo: ' + (result.message || 'Không thể xử lý câu hỏi này.'), []);
@@ -484,6 +503,24 @@
             $('#chatTotalQuotaVal').text(total.toLocaleString('vi-VN'));
             $('#tokenPercentVal').text(percent + '%');
             
+            // Sync to left sidebar
+            $('#token-used').text(remaining.toLocaleString('vi-VN'));
+            $('#token-limit').text(total.toLocaleString('vi-VN'));
+            
+            const $sidebarBar = $('#token-progress-bar');
+            if ($sidebarBar.length) {
+                $sidebarBar.css('width', percent + '%');
+                $sidebarBar.removeClass('bg-success bg-warning bg-danger');
+                if (percent > 50) $sidebarBar.addClass('bg-success');
+                else if (percent > 20) $sidebarBar.addClass('bg-warning');
+                else $sidebarBar.addClass('bg-danger');
+            }
+            const $sidebarWarning = $('#token-warning');
+            if ($sidebarWarning.length) {
+                if (percent <= 20) $sidebarWarning.removeClass('d-none');
+                else $sidebarWarning.addClass('d-none');
+            }
+            
             const $bar = $('#tokenProgressBar');
             if ($bar.length) {
                 $bar.css('width', percent + '%');
@@ -559,14 +596,25 @@
             const countdownEl = document.getElementById('resetTimeDisplay');
             const modalCountdownEl = document.getElementById('modalResetTimeDisplay');
             
+            const defaultText = "5 giờ (sau câu chat đầu)";
+            
+            if (!currentSessionStartDate) {
+                if (countdownEl) countdownEl.textContent = defaultText;
+                if (modalCountdownEl) modalCountdownEl.textContent = defaultText;
+                return;
+            }
+
             const now = new Date();
-            const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-            const vnTime = new Date(utc + (3600000 * 7));
+            const sessionStart = new Date(currentSessionStartDate);
+            const resetTime = new Date(sessionStart.getTime() + (5 * 60 * 60 * 1000));
             
-            const nextDay = new Date(vnTime);
-            nextDay.setHours(24, 0, 0, 0); // next midnight
-            
-            const diffMs = nextDay - vnTime;
+            const diffMs = resetTime - now;
+            if (diffMs <= 0) {
+                if (countdownEl) countdownEl.textContent = defaultText;
+                if (modalCountdownEl) modalCountdownEl.textContent = defaultText;
+                return;
+            }
+
             const diffMins = Math.floor(diffMs / 60000);
             const hours = Math.floor(diffMins / 60);
             const minutes = diffMins % 60;
@@ -581,7 +629,7 @@
         setInterval(updateResetCountdown, 60000);
 
         // Initial UI trigger on page load using backend values
-        @if (Model.Subscription != null)
+        @if (Model.Subscription != null && Model.Subscription.PricingPackage != null)
         {
             <text>
             updateTokenUI(@Model.Subscription.RemainingTokens, @Model.Subscription.PricingPackage.TokenQuota, "@Model.Subscription.PricingPackage.Name");
@@ -608,14 +656,12 @@
             .withAutomaticReconnect()
             .build();
 
+        function updateTodayTokenUI(todayUsed) {
+            // Sidebar is now synced with remaining tokens directly via updateTokenUI
+        }
+
         tokenConnection.on("ReceiveTokenUpdate", (todayUsed) => {
-            const limit = @Model.DailyTokenLimit;
-            document.getElementById('token-used').textContent = todayUsed;
-            const pct = Math.min(100, Math.round(todayUsed / limit * 100));
-            const bar = document.getElementById('token-progress-bar');
-            bar.style.width = pct + '%';
-            bar.className = 'progress-bar ' + (pct >= 90 ? 'bg-danger' : pct >= 70 ? 'bg-warning' : 'bg-success');
-            document.getElementById('token-warning').classList.toggle('d-none', pct < 80);
+            // SignalR token updates handled via PaymentHub / updateTokenUI
         });
 
         tokenConnection.start().catch(err => console.error('TokenUsageHub error:', err));

@@ -1,49 +1,39 @@
 @page
 @model PRN222.RazorWebApp.Pages.Documents.UploadModel
 @{
-    ViewData["Title"] = "T?i l�n t�i li?u";
+    ViewData["Title"] = "Tải lên tài liệu";
 }
 
-<div class="container mt-5">
-    <div class="row">
-        <div class="col-md-8 offset-md-2">
-            <div class="card border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
-                <div class="card-header py-4 px-4 text-white d-flex align-items-center gap-2" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                    <div class="bg-white bg-opacity-25 rounded-circle p-2" style="width: 42px; height: 42px; display: grid; place-items: center;">
-                        <i class="bi bi-cloud-arrow-up fs-5"></i>
-                    </div>
-                    <div>
-                        <h4 class="card-title mb-0 fw-bold">T?i l�n t�i li?u m?i</h4>
-                        <small class="text-white-50">Cung c?p tri th?c cho h? th?ng RAG Assistant</small>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-lg" style="border-radius: 24px; overflow: hidden; background: #ffffff;">
+                <div class="card-header border-0 text-white p-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="p-3 bg-white bg-opacity-20 rounded-circle" style="width: 56px; height: 56px; display: grid; place-items: center;">
+                            <i class="bi bi-cloud-arrow-up-fill fs-3"></i>
+                        </div>
+                        <div>
+                            <h4 class="fw-bold mb-1">Tải lên tài liệu mới</h4>
+                            <p class="mb-0 text-white-50 small">Cung cấp tri thức cho hệ thống RAG Assistant</p>
+                        </div>
                     </div>
                 </div>
-                <div class="card-body p-4">
-                    @if (!ViewData.ModelState.IsValid)
+                <div class="card-body p-4 p-md-5">
+                    @if (TempData["ErrorMessage"] != null)
                     {
-                        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-4" role="alert" style="border-radius: 12px;">
-                            <h5 class="alert-heading text-danger fw-bold d-flex align-items-center gap-2">
-                                <i class="bi bi-exclamation-triangle-fill"></i> L?i t?i l�n t�i li?u
-                            </h5>
-                            <hr class="border-danger border-opacity-25" />
-                            @foreach (var modelState in ViewData.ModelState.Values)
-                            {
-                                foreach (var error in modelState.Errors)
-                                {
-                                    <p class="mb-1 text-danger-emphasis small">� @error.ErrorMessage</p>
-                                }
-                            }
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        <div class="alert alert-danger border-0 rounded-3 mb-4" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill"></i> @TempData["ErrorMessage"]
                         </div>
                     }
 
-                    <form method="post" enctype="multipart/form-data" id="uploadForm">
-                        @Html.AntiForgeryToken()
+                    <form method="post" id="uploadForm" enctype="multipart/form-data">
                         <div class="mb-4">
-                            <label class="form-label fw-bold text-secondary d-flex align-items-center gap-2" style="font-size: 14px;">
-                                <i class="bi bi-book" style="color: #764ba2;"></i> Ch?n m�n h?c �p d?ng
+                            <label asp-for="Input.CourseId" class="form-label fw-bold text-secondary d-flex align-items-center gap-2" style="font-size: 14px;">
+                                <i class="bi bi-journal-bookmark" style="color: #764ba2;"></i> Chọn môn học áp dụng
                             </label>
-                            <select asp-for="Input.CourseId" class="form-select form-select-lg border border-opacity-50" style="border-radius: 8px; font-size: 15px; padding: 12px 16px;" required>
-                                <option value="">-- Ch?n m�n h?c --</option>
+                            <select asp-for="Input.CourseId" class="form-select border-2" style="border-radius: 8px; padding: 10px;" required>
+                                <option value="">-- Chọn môn học --</option>
                                 @foreach (var course in Model.Courses)
                                 {
                                     <option value="@course.Id">@course.Code - @course.Name</option>
@@ -52,16 +42,16 @@
                         </div>
                         <div class="mb-4">
                             <label class="form-label fw-bold text-secondary d-flex align-items-center gap-2" style="font-size: 14px;">
-                                <i class="bi bi-file-earmark-arrow-up" style="color: #764ba2;"></i> Ch?n t?p t�i li?u gi?ng d?y
+                                <i class="bi bi-file-earmark-arrow-up" style="color: #764ba2;"></i> Chọn tệp tài liệu giảng dạy
                             </label>
                             <div id="dragDropArea" class="upload-area p-5 text-center bg-light border-dashed rounded" style="cursor: pointer;">
                                 <i class="bi bi-cloud-arrow-up display-4 text-purple mb-3 upload-icon" style="color: #764ba2; transition: transform 0.3s ease;"></i>
-                                <h5 class="fw-bold mb-2">K�o th? file v�o d�y ho?c click d? ch?n</h5>
-                                <p class="text-muted small mb-0">�?nh d?ng h? tr?: PDF, DOCX, PPTX (Dung lu?ng t?i da: 10MB)</p>
+                                <h5 class="fw-bold mb-2">Kéo thả file vào đây hoặc click để chọn</h5>
+                                <p class="text-muted small mb-0">Định dạng hỗ trợ: PDF, DOCX, PPTX (Dung lượng tối đa: 10MB)</p>
                                 <input type="file" id="File" name="Input.File" class="d-none" accept=".pdf,.docx,.pptx" required onchange="displayFileInfo()" />
                             </div>
                             <small class="form-text text-muted d-block mt-2 px-1">
-                                <strong>File dang ch?n:</strong> <span id="fileName" class="badge rounded-pill px-3 py-1" style="background-color: rgba(118, 75, 162, 0.1); color: #764ba2;">Chua ch?n</span>
+                                <strong>File đang chọn:</strong> <span id="fileName" class="badge rounded-pill px-3 py-1" style="background-color: rgba(118, 75, 162, 0.1); color: #764ba2;">Chưa chọn</span>
                             </small>
                         </div>
                         <div id="fileInfo" class="card border border-opacity-25 shadow-sm d-none mb-4" style="border-radius: 12px; background-color: #fcfaff;">
@@ -70,7 +60,7 @@
                                     <i id="infoFileIcon" class="bi bi-file-earmark-text fs-3 text-secondary"></i>
                                 </div>
                                 <div class="flex-grow-1 overflow-hidden">
-                                    <h6 class="mb-1 text-dark fw-bold text-truncate" id="infoFileName" style="font-size: 14px;">T�n t?p</h6>
+                                    <h6 class="mb-1 text-dark fw-bold text-truncate" id="infoFileName" style="font-size: 14px;">Tên tệp</h6>
                                     <div class="d-flex align-items-center gap-2">
                                         <span class="badge" id="infoFileBadge" style="font-size: 11px; background-color: rgba(118, 75, 162, 0.15); color: #764ba2;">PDF</span>
                                         <small class="text-muted" id="infoFileSize" style="font-size: 12px;">0 MB</small>
@@ -80,16 +70,16 @@
                         </div>
                         <div class="d-flex gap-2 justify-content-end align-items-center mt-4">
                             <a asp-page="/Documents/Index" asp-route-courseId="@Model.Input.CourseId" class="btn btn-light px-4 py-2 border fw-semibold" style="border-radius: 8px;">
-                                <i class="bi bi-arrow-left"></i> Quay l?i
+                                <i class="bi bi-arrow-left"></i> Quay lại
                             </a>
                             <button type="submit" class="btn text-white px-5 py-2 fw-bold" id="submitBtn" style="border-radius: 8px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
-                                <i class="bi bi-cloud-arrow-up-fill"></i> T?i l�n ngay
+                                <i class="bi bi-cloud-arrow-up-fill"></i> Tải lên ngay
                             </button>
                         </div>
                         <div id="uploadProgress" class="d-none mt-4 p-3 bg-light rounded" style="border-radius: 12px; border: 1px solid #e9ecef;">
                             <div class="d-flex align-items-center gap-2 mb-2">
                                 <span id="progressSpinner" class="spinner-border spinner-border-sm" role="status" style="color: #764ba2;"></span>
-                                <span id="progressText" class="fw-semibold text-secondary small">�ang chu?n b? t?i l�n...</span>
+                                <span id="progressText" class="fw-semibold text-secondary small">Đang chuẩn bị tải lên...</span>
                             </div>
                             <div class="progress" style="height: 18px; border-radius: 3px;">
                                 <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%">0%</div>
@@ -136,12 +126,12 @@
             infoFileBadge.textContent = badgeText;
             infoFileBadge.style.backgroundColor = badgeBg;
             infoFileBadge.style.color = badgeColor;
-            infoFileSize.innerHTML = isValid ? `? ${fileSizeInMB} MB` : `?? ${fileSizeInMB} MB (Vu?t qu� 10 MB)`;
+            infoFileSize.innerHTML = isValid ? `${fileSizeInMB} MB` : `${fileSizeInMB} MB (Vượt quá 10 MB)`;
             if (!isValid) infoFileSize.classList.add('text-danger', 'fw-bold');
             fileInfo.classList.remove('d-none');
             submitBtn.disabled = !isValid;
         } else {
-            fileName.textContent = 'Chua ch?n';
+            fileName.textContent = 'Chưa chọn';
             fileInfo.classList.add('d-none');
             submitBtn.disabled = false;
         }
@@ -191,15 +181,15 @@
         const submitBtn = document.getElementById('submitBtn');
         const progressDiv = document.getElementById('uploadProgress');
 
-        if (!courseSelect.value || !fileInput.files.length) { alert('Vui l�ng ch?n m�n h?c v� t?p t�i li?u'); return; }
+        if (!courseSelect.value || !fileInput.files.length) { alert('Vui lòng chọn môn học và tệp tài liệu'); return; }
 
         submitBtn.disabled = true;
         progressDiv.classList.remove('d-none');
         progressLog.innerHTML = '';
         progressBar.classList.remove('bg-danger');
         progressSpinner.classList.remove('d-none');
-        setProgress(0, '�ang chu?n b? t?i l�n...');
-        appendLog(`B?t d?u t?i l�n t?p '${fileInput.files[0].name}' (${formatBytes(fileInput.files[0].size)})...`);
+        setProgress(0, 'Đang chuẩn bị tải lên...');
+        appendLog(`Bắt đầu tải lên tệp '${fileInput.files[0].name}' (${formatBytes(fileInput.files[0].size)})...`);
 
         await uploadConnectionStart;
 
@@ -215,11 +205,11 @@
             if (!evt.lengthComputable) return;
             const uploadPercent = (evt.loaded / evt.total) * 100;
             const scaledPercent = uploadPercent * 0.7;
-            setProgress(scaledPercent, `�ang t?i l�n... ${Math.round(uploadPercent)}% (${formatBytes(evt.loaded)}/${formatBytes(evt.total)})`);
+            setProgress(scaledPercent, `Đang tải lên... ${Math.round(uploadPercent)}% (${formatBytes(evt.loaded)}/${formatBytes(evt.total)})`);
             const roundedPercent = Math.floor(uploadPercent / 10) * 10;
             if (roundedPercent !== lastLoggedPercent) {
                 lastLoggedPercent = roundedPercent;
-                appendLog(`�� g?i ${formatBytes(evt.loaded)}/${formatBytes(evt.total)} (${Math.round(uploadPercent)}%)`);
+                appendLog(`Đã gửi ${formatBytes(evt.loaded)}/${formatBytes(evt.total)} (${Math.round(uploadPercent)}%)`);
             }
         };
 
@@ -230,24 +220,24 @@
                     const result = JSON.parse(xhr.responseText);
                     if (result.success) {
                         setProgress(100, result.message);
-                        appendLog('? ' + result.message);
+                        appendLog('✔️ ' + result.message);
                         setTimeout(() => { window.location.href = result.redirectUrl; }, 800);
                     } else {
                         progressBar.classList.add('bg-danger');
                         progressText.textContent = result.message;
-                        appendLog('? ' + result.message);
+                        appendLog('❌ ' + result.message);
                         submitBtn.disabled = false;
                     }
                 } catch (err) {
                     progressBar.classList.add('bg-danger');
-                    progressText.textContent = 'L?i x? l� ph?n h?i t? server.';
-                    appendLog('? L?i x? l� ph?n h?i t? server: ' + err.message);
+                    progressText.textContent = 'Lỗi xử lý phản hồi từ server.';
+                    appendLog('❌ Lỗi xử lý phản hồi từ server: ' + err.message);
                     submitBtn.disabled = false;
                 }
             } else {
                 progressBar.classList.add('bg-danger');
-                progressText.textContent = `L?i server (HTTP ${xhr.status}).`;
-                appendLog(`? L?i server (HTTP ${xhr.status}).`);
+                progressText.textContent = `Lỗi server (HTTP ${xhr.status}).`;
+                appendLog(`❌ Lỗi server (HTTP ${xhr.status}).`);
                 submitBtn.disabled = false;
             }
         };
@@ -255,8 +245,8 @@
         xhr.onerror = function () {
             progressSpinner.classList.add('d-none');
             progressBar.classList.add('bg-danger');
-            progressText.textContent = 'L?i k?t n?i t?i server.';
-            appendLog('? L?i k?t n?i t?i server.');
+            progressText.textContent = 'Lỗi kết nối tới server.';
+            appendLog('❌ Lỗi kết nối tới server.');
             submitBtn.disabled = false;
         };
 
@@ -272,10 +262,8 @@
         e.preventDefault(); dragDropArea.classList.remove('dragover');
         if (e.dataTransfer.files.length > 0) {
             try { const dt = new DataTransfer(); dt.items.add(e.dataTransfer.files[0]); fileInput.files = dt.files; displayFileInfo(); }
-            catch (error) { alert("C� l?i x?y ra khi k�o th? file: " + error.message); }
+            catch (error) { alert("Có lỗi xảy ra khi kéo thả file: " + error.message); }
         }
     });
 </script>
 }
-
-
