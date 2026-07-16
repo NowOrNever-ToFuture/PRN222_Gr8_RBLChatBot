@@ -367,6 +367,7 @@
 </style>
 
 @section Scripts {
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
 <script>
     $(document).ready(function () {
         // Môn học lấy trực tiếp từ dropdown mỗi lần gửi ("" = Tất cả môn học → null)
@@ -377,6 +378,9 @@
         const streamedMessages = new Set();   // answer đã render qua stream (AJAX khỏi render lại)
         const streamBuffers = {};
 
+        // Bọc try/catch: nếu thư viện SignalR không nạp được (mất mạng CDN...)
+        // thì chat vẫn hoạt động bình thường qua AJAX fallback.
+        try {
         const chatConnection = new signalR.HubConnectionBuilder()
             .withUrl('/hubs/chat')
             .withAutomaticReconnect()
@@ -423,6 +427,9 @@
         });
 
         chatConnection.start().catch(err => console.error('ChatHub connection error:', err));
+        } catch (signalRError) {
+            console.error('SignalR không khả dụng, chat dùng AJAX fallback:', signalRError);
+        }
         let currentSessionStartDate = "@(Model.Subscription?.SessionStartDate?.ToString("o") ?? "")";
         loadChatHistory();
 
