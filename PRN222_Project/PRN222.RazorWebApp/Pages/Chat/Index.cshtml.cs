@@ -1,8 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using PRN222.Services.Interfaces;
 using PRN222.Models;
+using PRN222.Services;
+using PRN222.Services.Interfaces;
 using System.Security.Claims;
 
 namespace PRN222.RazorWebApp.Pages.Chat
@@ -14,32 +15,39 @@ namespace PRN222.RazorWebApp.Pages.Chat
         private readonly ICourseService _courseService;
         private readonly IPaymentService _paymentService;
         private readonly ITokenUsageService _tokenUsageService;
+        private readonly ISystemSettingService _systemSettingService;
 
-        public IndexModel(IChatService chatService, ICourseService courseService, IPaymentService paymentService, ITokenUsageService tokenUsageService)
+        public IndexModel(
+            IChatService chatService,
+            ICourseService courseService,
+            IPaymentService paymentService,
+            ITokenUsageService tokenUsageService,
+            ISystemSettingService systemSettingService)
         {
             _chatService = chatService ?? throw new ArgumentNullException(nameof(chatService));
             _courseService = courseService ?? throw new ArgumentNullException(nameof(courseService));
             _paymentService = paymentService ?? throw new ArgumentNullException(nameof(paymentService));
             _tokenUsageService = tokenUsageService ?? throw new ArgumentNullException(nameof(tokenUsageService));
+            _systemSettingService = systemSettingService ?? throw new ArgumentNullException(nameof(systemSettingService));
         }
 
         public Guid? CourseId { get; set; }
         public string? CourseName { get; set; }
         public UserSubscription? Subscription { get; set; }
+        public List<Course> Courses { get; set; } = new();
         public int TodayTokenUsed { get; set; }
         public int DailyTokenLimit { get; set; } = 50000;
 
         public async Task<IActionResult> OnGetAsync(Guid? courseId)
         {
             CourseId = courseId;
+            Courses = await _courseService.GetAllCoursesAsync();
+
             if (courseId.HasValue)
             {
-                try
-                {
-                    var course = await _courseService.GetCourseByIdAsync(courseId.Value);
+                var course = Courses.FirstOrDefault(c => c.Id == courseId.Value);
+                if (course != null)
                     CourseName = $"{course.Name} ({course.Code})";
-                }
-                catch { }
             }
 
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
@@ -82,8 +90,27 @@ namespace PRN222.RazorWebApp.Pages.Chat
                 string citedIds = string.Join(",", ragResponse.Sources.Select(s => s.ChunkIndex));
                 await _chatService.SaveMessageAsync(userId, "Assistant", ragResponse.Answer, citedIds);
 
+                // Ghi TokenUsageLog cho analytics
+                if (ragResponse.InputTokens > 0 || ragResponse.OutputTokens > 0)
+                {
+                    var activeModel = await _systemSettingService.GetSettingValueAsync("ActiveLLM");
+                    try
+                    {
+                        await _tokenUsageService.LogUsageAsync(
+                            userId,
+                            ragResponse.InputTokens,
+                            ragResponse.OutputTokens,
+                            activeModel ?? "gpt-4o-mini",
+                            "Chat");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.Error.WriteLine($"[TokenUsageLog] Lỗi ghi log: {ex.Message}");
+                    }
+                }
+
                 // Deduct actual tokens (Input + Output) consumed
-                int totalTokensUsed = ragResponse.InputTokens + ragResponse.OutputTokens;
+                int totalTokensUsed = Math.Max(1, ragResponse.InputTokens + ragResponse.OutputTokens);
                 await _paymentService.DeductQuotaAsync(userId, totalTokensUsed);
 
                 // Retrieve updated subscription for client display
@@ -98,7 +125,14 @@ namespace PRN222.RazorWebApp.Pages.Chat
                 {
                     success = true,
                     response = ragResponse.Answer,
-                    sources = ragResponse.Sources.Select(s => new { fileName = s.FileName, pageNumber = s.PageNumber, score = s.SimilarityScore }),
+                    sources = ragResponse.Sources.Select(s => new
+                    {
+                        fileName = s.FileName,
+                        pageNumber = s.PageNumber,
+                        score = s.SimilarityScore,
+                        // URL để mở trực tiếp tài liệu + scroll đến đúng trang (PDF hỗ trợ #page=N)
+                        fileUrl = $"/uploads/{Uri.EscapeDataString(s.FileName)}"
+                    }),
                     courseId = ragResponse.CourseId,
                     remainingQuota = updatedQuota,
                     totalQuota = totalQuota,

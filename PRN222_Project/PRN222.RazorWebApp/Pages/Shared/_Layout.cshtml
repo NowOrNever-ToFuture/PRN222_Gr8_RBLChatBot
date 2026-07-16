@@ -68,12 +68,13 @@
         .navbar-nav .nav-link {
             font-weight: 700 !important;
             color: #4a5874 !important;
-            padding: 10px 14px !important;
+            padding: 8px 12px !important;
             border-radius: 12px !important;
             transition: all 0.2s ease !important;
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
+            white-space: nowrap;
         }
         .navbar-nav .nav-link:hover,
         .navbar-nav .nav-link:focus {
@@ -141,6 +142,11 @@
                             <li class="nav-item">
                                 <a class="nav-link" asp-page="/Dashboard/Index">
                                     <i class="bi bi-speedometer2"></i> Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-page="/Analytics/Index">
+                                    <i class="bi bi-bar-chart-line"></i> Thống kê
                                 </a>
                             </li>
                         }

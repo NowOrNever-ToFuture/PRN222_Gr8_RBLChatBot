@@ -56,5 +56,38 @@ namespace PRN222.Services.Interfaces
         /// Deletes an existing pricing package.
         /// </summary>
         Task<bool> DeletePricingPackageAsync(Guid packageId);
+
+        /// <summary>
+        /// Lấy thống kê doanh thu payment theo từng tháng trong một năm (cho biểu đồ).
+        /// </summary>
+        Task<List<MonthlyPaymentStatDto>> GetMonthlyPaymentStatsAsync(int year);
+
+        /// <summary>
+        /// Lấy danh sách các năm có giao dịch thanh toán.
+        /// </summary>
+        Task<List<int>> GetPaymentAvailableYearsAsync();
+
+        /// <summary>
+        /// Lấy tổng tiền đã thanh toán theo từng user (cho bảng chi tiết admin).
+        /// </summary>
+        Task<List<UserPaymentSummaryDto>> GetUserPaymentSummaryAsync();
+    }
+
+    public class MonthlyPaymentStatDto
+    {
+        public int Month { get; set; }
+        public string MonthName { get; set; } = "";
+        public double TotalRevenue { get; set; }
+        public int TransactionCount { get; set; }
+    }
+
+    public class UserPaymentSummaryDto
+    {
+        public Guid UserId { get; set; }
+        public string FullName { get; set; } = "";
+        public string Username { get; set; } = "";
+        public double TotalAmountPaid { get; set; }
+        public int SuccessfulTransactions { get; set; }
+        public string CurrentPackage { get; set; } = "";
     }
 }
