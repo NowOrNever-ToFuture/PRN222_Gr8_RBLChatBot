@@ -1,0 +1,345 @@
+@page
+@model PRN222.RazorWebApp.Pages.Analytics.IndexModel
+@{
+    ViewData["Title"] = "Thống kê Hệ thống AI";
+}
+
+<div class="app-page">
+    <section class="app-hero">
+        <div class="app-hero-content">
+            <div class="app-eyebrow"><i class="bi bi-bar-chart-line-fill"></i> Analytics Hub</div>
+            <h2>Thống kê &amp; Báo cáo hoạt động</h2>
+            <p>Theo dõi lưu lượng tiêu thụ Token, doanh thu nạp gói dịch vụ VIP và chi tiết hoạt động của từng học viên trên hệ thống.</p>
+        </div>
+    </section>
+
+    @* BỘ BIỂU ĐỒ TOKEN VÀ REVENUE *@
+    <div class="row g-4 mb-4">
+        @* BIỂU ĐỒ TIÊU THỤ TOKEN *@
+        <div class="col-xl-6">
+            <div class="app-card h-100 shadow-sm border border-opacity-10">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="app-card-title m-0">
+                        <i class="bi bi-cpu-fill text-success me-2"></i> Lưu lượng Token tiêu thụ
+                    </div>
+                    <div>
+                        <select id="tokenYearSelect" class="form-select form-select-sm" style="border-radius: 8px;">
+                            @foreach (var y in Model.AvailableTokenYears)
+                            {
+                                <option value="@y">Năm @y</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <p class="app-muted small mb-4">Tổng số lượng Token (Prompt + Completion) được sử dụng để hỏi đáp AI theo tháng.</p>
+                <div style="position: relative; height: 320px;">
+                    <canvas id="tokenChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        @* BIỂU ĐỒ DOANH THU HỌC VIÊN NẠP VIP *@
+        <div class="col-xl-6">
+            <div class="app-card h-100 shadow-sm border border-opacity-10">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="app-card-title m-0">
+                        <i class="bi bi-wallet2 text-primary me-2"></i> Doanh thu nạp VIP
+                    </div>
+                    <div>
+                        <select id="paymentYearSelect" class="form-select form-select-sm" style="border-radius: 8px;">
+                            @foreach (var y in Model.AvailablePaymentYears)
+                            {
+                                <option value="@y">Năm @y</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <p class="app-muted small mb-4">Tổng số tiền học viên thanh toán thành công qua VNPay để nạp thêm lượt gọi AI.</p>
+                <div style="position: relative; height: 320px;">
+                    <canvas id="paymentChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* BẢNG CHI TIẾT USER *@
+    <section class="app-card shadow-sm border border-opacity-10">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+            <div>
+                <div class="app-card-title mb-1"><i class="bi bi-people-fill text-info"></i> Chi tiết hoạt động của Học viên</div>
+                <p class="app-muted mb-0">Thống kê chi tiết số lượt đặt câu hỏi, token tiêu thụ và tổng số tiền nạp gói cước của từng tài khoản.</p>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <div class="input-group input-group-sm" style="max-width: 250px;">
+                    <span class="input-group-text bg-transparent border-end-0" style="border-radius: 8px 0 0 8px;"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" id="userSearchInput" class="form-control border-start-0" placeholder="Tìm kiếm học viên..." style="border-radius: 0 8px 8px 0;" />
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive" style="border-radius: 12px; overflow: hidden; border: 1px solid rgba(0,0,0,0.06);">
+            <table class="table table-hover align-middle mb-0" id="userSummaryTable">
+                <thead class="table-light">
+                    <tr>
+                        <th class="px-4 py-3 text-secondary" style="font-size: 0.85rem; font-weight: 600;">HỌC VIÊN</th>
+                        <th class="px-4 py-3 text-secondary text-center" style="font-size: 0.85rem; font-weight: 600;">GÓI ĐANG DÙNG</th>
+                        <th class="px-4 py-3 text-secondary text-end" style="font-size: 0.85rem; font-weight: 600;">TOKEN CÒN LẠI</th>
+                        <th class="px-4 py-3 text-secondary text-center" style="font-size: 0.85rem; font-weight: 600;">SỐ CÂU HỎI</th>
+                        <th class="px-4 py-3 text-secondary text-end" style="font-size: 0.85rem; font-weight: 600;">TOKEN ĐÃ DÙNG</th>
+                        <th class="px-4 py-3 text-secondary text-end" style="font-size: 0.85rem; font-weight: 600;">TỔNG THANH TOÁN</th>
+                    </tr>
+                </thead>
+                <tbody id="userTableBody">
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">
+                            <span class="spinner-border spinner-border-sm me-2" role="status"></span> Đang tải dữ liệu học viên...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        $(document).ready(function () {
+            let tokenChart = null;
+            let paymentChart = null;
+            let usersData = [];
+
+            // Load all charts and table
+            loadTokenChart($('#tokenYearSelect').val());
+            loadPaymentChart($('#paymentYearSelect').val());
+            loadUsersSummary();
+
+            // Trigger change year events
+            $('#tokenYearSelect').change(function () {
+                loadTokenChart($(this).val());
+            });
+
+            $('#paymentYearSelect').change(function () {
+                loadPaymentChart($(this).val());
+            });
+
+            // Filter user table
+            $('#userSearchInput').on('keyup', function () {
+                const query = $(this).val().toLowerCase().trim();
+                renderUserTable(query);
+            });
+
+            function loadTokenChart(year) {
+                $.ajax({
+                    url: `/Analytics/Index?handler=TokenChartData&year=${year}`,
+                    type: 'GET',
+                    success: function (res) {
+                        if (res && res.success && res.data) {
+                            renderTokenChart(res.data);
+                        }
+                    }
+                });
+            }
+
+            function loadPaymentChart(year) {
+                $.ajax({
+                    url: `/Analytics/Index?handler=PaymentChartData&year=${year}`,
+                    type: 'GET',
+                    success: function (res) {
+                        if (res && res.success && res.data) {
+                            renderPaymentChart(res.data);
+                        }
+                    }
+                });
+            }
+
+            function loadUsersSummary() {
+                $.ajax({
+                    url: '/Analytics/Index?handler=UsersSummary',
+                    type: 'GET',
+                    success: function (res) {
+                        if (res && res.success && res.data) {
+                            usersData = res.data;
+                            renderUserTable();
+                        }
+                    }
+                });
+            }
+
+            function renderTokenChart(chartData) {
+                const labels = chartData.map(d => d.monthName);
+                const totalTokens = chartData.map(d => d.totalTokens);
+                const promptTokens = chartData.map(d => d.totalPromptTokens);
+                const completionTokens = chartData.map(d => d.totalCompletionTokens);
+
+                if (tokenChart) {
+                    tokenChart.destroy();
+                }
+
+                const ctx = document.getElementById('tokenChart').getContext('2d');
+                tokenChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Prompt Tokens',
+                                data: promptTokens,
+                                backgroundColor: 'rgba(25, 135, 84, 0.45)',
+                                borderColor: '#198754',
+                                borderWidth: 1,
+                                stack: 'Stack 0',
+                            },
+                            {
+                                label: 'Completion Tokens',
+                                data: completionTokens,
+                                backgroundColor: 'rgba(15, 157, 122, 0.45)',
+                                borderColor: '#0f9d7a',
+                                borderWidth: 1,
+                                stack: 'Stack 0',
+                            },
+                            {
+                                label: 'Tổng số lượng tiêu thụ',
+                                data: totalTokens,
+                                type: 'line',
+                                borderColor: '#1456b8',
+                                backgroundColor: 'transparent',
+                                borderWidth: 2,
+                                tension: 0.35,
+                                pointBackgroundColor: '#1456b8',
+                                pointHoverRadius: 6
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { boxWidth: 12, font: { weight: '600' } }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: 'rgba(0,0,0,0.04)' }
+                            },
+                            x: {
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                });
+            }
+
+            function renderPaymentChart(chartData) {
+                const labels = chartData.map(d => d.monthName);
+                const revenues = chartData.map(d => d.totalRevenue);
+
+                if (paymentChart) {
+                    paymentChart.destroy();
+                }
+
+                const ctx = document.getElementById('paymentChart').getContext('2d');
+                paymentChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Doanh thu (VND)',
+                            data: revenues,
+                            borderColor: '#764ba2',
+                            backgroundColor: 'rgba(118, 75, 162, 0.08)',
+                            fill: true,
+                            borderWidth: 3,
+                            tension: 0.4,
+                            pointBackgroundColor: '#764ba2',
+                            pointHoverRadius: 7
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: 'rgba(0,0,0,0.04)' },
+                                ticks: {
+                                    callback: function(value) {
+                                        return value.toLocaleString('vi-VN') + ' đ';
+                                    }
+                                }
+                            },
+                            x: {
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                });
+            }
+
+            function renderUserTable(filterQuery = '') {
+                const $body = $('#userTableBody');
+                $body.empty();
+
+                const filtered = usersData.filter(u => {
+                    return u.fullName.toLowerCase().includes(filterQuery) || 
+                           u.username.toLowerCase().includes(filterQuery) ||
+                           u.currentPackage.toLowerCase().includes(filterQuery);
+                });
+
+                if (filtered.length === 0) {
+                    $body.append('<tr><td colspan="6" class="text-center py-4 text-muted">Không tìm thấy học viên tương ứng.</td></tr>');
+                    return;
+                }
+
+                filtered.forEach(u => {
+                    const badgeClass = u.currentPackage === 'VIP' ? 'bg-success' : u.currentPackage === 'Free' ? 'bg-secondary' : 'bg-light text-dark';
+                    const amountPaidText = u.totalAmountPaid.toLocaleString('vi-VN') + ' đ';
+                    const tokensUsedText = u.totalTokensUsed.toLocaleString('vi-VN');
+                    const remainingTokensText = u.remainingTokens.toLocaleString('vi-VN');
+                    const requestsText = u.totalRequests.toLocaleString('vi-VN');
+
+                    const html = `
+                        <tr>
+                            <td class="px-4 py-3">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="avatar-circle-sm" style="width:32px; height:32px; border-radius:10px; background:linear-gradient(135deg, #1f6feb 0%, #0f9d7a 100%); color:white; display:grid; place-items:center; font-weight:700; font-size:13px;">
+                                        ${u.fullName[0].toUpperCase()}
+                                    </div>
+                                    <div>
+                                        <strong class="d-block text-dark">${escapeHtml(u.fullName)}</strong>
+                                        <small class="text-muted">@@${escapeHtml(u.username)}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-4 text-center">
+                                <span class="badge rounded-pill ${badgeClass} px-3 py-1.5 fw-semibold" style="font-size:11px;">
+                                    ${u.currentPackage}
+                                </span>
+                            </td>
+                            <td class="px-4 text-end text-dark fw-semibold">${remainingTokensText}</td>
+                            <td class="px-4 text-center text-muted">${requestsText}</td>
+                            <td class="px-4 text-end text-dark">${tokensUsedText}</td>
+                            <td class="px-4 text-end fw-bold text-success">${amountPaidText}</td>
+                        </tr>
+                    `;
+                    $body.append(html);
+                });
+            }
+
+            function escapeHtml(text) {
+                if (!text) return '';
+                const div = document.createElement('div');
+                div.appendChild(document.createTextNode(text));
+                return div.innerHTML;
+            }
+        });
+    </script>
+}

@@ -20,6 +20,12 @@ namespace PRN222.Services
 
         public async Task<string> GenerateChatResponseAsync(string prompt, bool isFineTuned = false)
         {
+            var result = await GenerateChatResponseWithUsageAsync(prompt, isFineTuned);
+            return result.Response;
+        }
+
+        public async Task<(string Response, int InputTokens, int OutputTokens)> GenerateChatResponseWithUsageAsync(string prompt, bool isFineTuned = false)
+        {
             if (string.IsNullOrWhiteSpace(prompt))
                 throw new ArgumentException("Prompt must not be empty.", nameof(prompt));
 
@@ -44,7 +50,7 @@ namespace PRN222.Services
             if (string.IsNullOrWhiteSpace(result?.Answer))
                 throw new InvalidOperationException($"FastAPI {_provider} returned an empty answer.");
 
-            return result.Answer;
+            return (result.Answer, result.InputTokens, result.OutputTokens);
         }
 
         private static string ExtractError(string responseBody)

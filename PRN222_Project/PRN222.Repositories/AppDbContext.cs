@@ -23,11 +23,6 @@ namespace PRN222.Repositories
         // Phase 2 - Token Report
         public DbSet<TokenUsageLog> TokenUsageLogs { get; set; }
 
-        // Phase 3 - Payments
-        public DbSet<PricingPackage> PricingPackages { get; set; }
-        public DbSet<UserSubscription> UserSubscriptions { get; set; }
-        public DbSet<PaymentTransaction> PaymentTransactions { get; set; }
-
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
         }

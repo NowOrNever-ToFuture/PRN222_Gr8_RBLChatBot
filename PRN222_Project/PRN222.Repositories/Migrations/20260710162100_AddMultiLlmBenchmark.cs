@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -18,13 +18,6 @@ namespace PRN222.Repositories.Migrations
                 nullable: false,
                 defaultValue: new Guid("00000000-0000-0000-0000-000000000000"));
 
-            migrationBuilder.AddColumn<string>(
-                name: "LlmModel",
-                table: "BenchmarkRuns",
-                type: "nvarchar(max)",
-                nullable: false,
-                defaultValue: "");
-
             migrationBuilder.CreateIndex(
                 name: "IX_BenchmarkRuns_BenchmarkBatchId",
                 table: "BenchmarkRuns",
@@ -40,10 +33,6 @@ namespace PRN222.Repositories.Migrations
 
             migrationBuilder.DropColumn(
                 name: "BenchmarkBatchId",
-                table: "BenchmarkRuns");
-
-            migrationBuilder.DropColumn(
-                name: "LlmModel",
                 table: "BenchmarkRuns");
         }
     }

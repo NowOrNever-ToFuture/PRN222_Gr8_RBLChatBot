@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -80,7 +80,7 @@ namespace PRN222.Repositories.Migrations
                         column: x => x.PricingPackageId,
                         principalTable: "PricingPackages",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_PaymentTransactions_Users_UserId",
                         column: x => x.UserId,
