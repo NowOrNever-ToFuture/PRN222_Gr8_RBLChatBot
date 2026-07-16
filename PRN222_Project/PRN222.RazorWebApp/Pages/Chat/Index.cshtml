@@ -14,17 +14,56 @@
             </p>
         </div>
         <div class="app-hero-actions">
-            @if (!string.IsNullOrEmpty(Model.CourseName))
-            {
-                <span class="app-chip"><i class="bi bi-pin-angle-fill"></i> @Model.CourseName</span>
-            }
-            <button id="clearChatBtn" class="btn btn-light fw-bold rounded-pill px-4 py-2">
+            <span id="selectedCourseChip" class="app-chip" style="display:none;"><i class="bi bi-pin-angle-fill"></i> <span id="selectedCourseName">Tất cả môn học</span></span>
+            <button id="changeCourseBtn" class="btn btn-light fw-bold rounded-pill px-4 py-2" style="display:none;">
+                <i class="bi bi-arrow-repeat"></i> Đổi môn
+            </button>
+            <button id="clearChatBtn" class="btn btn-light fw-bold rounded-pill px-4 py-2" style="display:none;">
                 <i class="bi bi-trash3-fill"></i> Xóa hội thoại
             </button>
         </div>
     </section>
 
-    <section class="app-panel overflow-hidden">
+    @* ====== COURSE PICKER OVERLAY (hiện khi chưa chọn môn) ====== *@
+    <section id="coursePickerSection" class="app-card" style="max-width: 540px; margin: 0 auto; min-height:340px;">
+        <div class="text-center mb-4">
+            <div class="app-eyebrow mb-2"><i class="bi bi-journal-richtext"></i> Bước 1 / 2</div>
+            <h4 class="fw-bold mb-1">Chọn môn học bạn muốn hỏi</h4>
+            <p class="app-muted">AI sẽ tìm kiếm trong tài liệu của môn đó để trả lời chính xác hơn.</p>
+        </div>
+        
+        <div class="px-2">
+            @* Search Box *@
+            <div class="input-group mb-3 shadow-sm" style="border-radius: 12px; overflow: hidden; border: 1px solid rgba(120, 138, 170, 0.2);">
+                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                <input type="text" id="courseSearchInput" class="form-control border-start-0 py-2.5 shadow-none" placeholder="Tìm tên hoặc mã môn học..." />
+            </div>
+
+            @* Course List Container *@
+            <div class="course-list-scroll" style="max-height: 280px; overflow-y: auto; border: 1px solid rgba(120, 138, 170, 0.15); border-radius: 12px; background: white;">
+                <button type="button" class="course-list-item d-flex align-items-center gap-3 w-100 text-start border-0 px-3 py-2.5 course-pick-btn course-pick-all" data-course-id="" data-course-name="Tất cả môn học">
+                    <i class="bi bi-grid-3x3-gap-fill text-primary fs-5"></i>
+                    <div>
+                        <strong class="d-block text-dark" style="font-size: 0.9rem;">Tất cả môn học</strong>
+                        <small class="text-muted d-block" style="font-size: 0.78rem;">Tìm kiếm và trả lời trên toàn bộ tài liệu hệ thống</small>
+                    </div>
+                </button>
+                @foreach (var course in Model.Courses)
+                {
+                    <button type="button" class="course-list-item d-flex align-items-center gap-3 w-100 text-start border-0 px-3 py-2.5 course-pick-btn" data-course-id="@course.Id" data-course-name="@course.Name (@course.Code)">
+                        <i class="bi bi-journal-text text-info fs-5"></i>
+                        <div>
+                            <strong class="d-block text-dark" style="font-size: 0.9rem;">@course.Code</strong>
+                            <small class="text-muted d-block text-truncate" style="font-size: 0.78rem; max-width: 420px;" title="@course.Name">@course.Name</small>
+                        </div>
+                    </button>
+                }
+            </div>
+        </div>
+    </section>
+
+    @* ====== KHUNG CHAT (hiện sau khi chọn môn) ====== *@
+    <section id="chatSection" class="app-panel overflow-hidden" style="display:none;">
         <div class="chat-topbar">
             <div class="d-flex align-items-center gap-3">
                 <div class="chat-topbar-icon"><i class="bi bi-robot"></i></div>
@@ -330,6 +369,31 @@
         .chat-layout { grid-template-columns: 1fr; }
         .chat-sidebar { border-right: 0; border-bottom: 1px solid rgba(120, 138, 170, 0.14); }
     }
+    
+    /* Course Picker Styles */
+    .course-list-item {
+        background: transparent;
+        border-bottom: 1px solid rgba(120, 138, 170, 0.08) !important;
+        transition: background 0.2s, padding-left 0.2s;
+        cursor: pointer;
+    }
+    .course-list-item:last-child {
+        border-bottom: none !important;
+    }
+    .course-list-item:hover {
+        background: rgba(31, 111, 235, 0.05);
+        padding-left: 20px !important;
+    }
+    .course-list-scroll::-webkit-scrollbar {
+        width: 6px;
+    }
+    .course-list-scroll::-webkit-scrollbar-thumb {
+        background: rgba(120, 138, 170, 0.25);
+        border-radius: 4px;
+    }
+    .course-pick-all {
+        background: linear-gradient(90deg, rgba(31, 111, 235, 0.04) 0%, rgba(255, 255, 255, 0) 100%);
+    }
 </style>
 
 @section Scripts {
@@ -337,6 +401,62 @@
     $(document).ready(function () {
         const currentCourseId = "@(Model.CourseId?.ToString() ?? "")" || null;
         let currentSessionStartDate = "@(Model.Subscription?.SessionStartDate?.ToString("o") ?? "")";
+        let activeCourseId = currentCourseId;
+
+        // Tìm kiếm môn học
+        $('#courseSearchInput').on('keyup', function () {
+            const query = $(this).val().toLowerCase().trim();
+            $('.course-list-item').each(function () {
+                const name = $(this).attr('data-course-name').toLowerCase();
+                const isAll = $(this).hasClass('course-pick-all');
+                if (isAll || name.includes(query)) {
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
+        });
+
+        // Xử lý sự kiện click chọn môn
+        $('.course-pick-btn').click(function () {
+            const courseId = $(this).attr('data-course-id') || null;
+            const courseName = $(this).attr('data-course-name');
+            selectCourse(courseId, courseName);
+        });
+
+        // Xử lý sự kiện đổi môn học
+        $('#changeCourseBtn').click(function () {
+            activeCourseId = null;
+            $('#chatSection').fadeOut(200, function() {
+                $('#coursePickerSection').fadeIn(200);
+            });
+            $('#selectedCourseChip').hide();
+            $('#changeCourseBtn').hide();
+            $('#clearChatBtn').hide();
+        });
+
+        function selectCourse(courseId, courseName) {
+            activeCourseId = courseId;
+            $('#selectedCourseName').text(courseName);
+            $('#selectedCourseChip').show();
+            $('#changeCourseBtn').show();
+            $('#clearChatBtn').show();
+            
+            $('#coursePickerSection').fadeOut(200, function() {
+                $('#chatSection').fadeIn(200);
+                scrollToBottom();
+            });
+        }
+
+        // Kiểm tra trạng thái môn học ban đầu
+        if (activeCourseId) {
+            const initialCourseName = "@(Html.Raw(Model.CourseName))" || "Môn đã chọn";
+            selectCourse(activeCourseId, initialCourseName);
+        } else {
+            $('#coursePickerSection').show();
+            $('#chatSection').hide();
+        }
+
         loadChatHistory();
 
         function loadChatHistory() {
@@ -407,7 +527,7 @@
             appendTyping(typingId);
             $.ajax({
                 url: '/Chat/Index?handler=Ask', type: 'POST',
-                data: { query: query, courseId: currentCourseId, __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val() },
+                data: { query: query, courseId: activeCourseId, __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val() },
                 timeout: 30000,
                 success: function (result) {
                     $(`#${typingId}`).remove();
@@ -473,11 +593,22 @@
             formatted = formatted.replace(/\n/g, '<br>');
             let sourcesHtml = '';
             if (sources && sources.length > 0) {
-                sourcesHtml = `<div class="mt-3 pt-3 border-top" style="border-color:#edf2fb !important;"><small class="text-muted fw-bold d-block mb-2">Nguồn tham khảo:</small>`;
+                sourcesHtml = `<div class="mt-3 pt-3 border-top" style="border-color:#edf2fb !important;"><small class="text-muted fw-bold d-block mb-2"><i class="bi bi-journal-bookmark-fill text-primary me-1"></i>Nguồn tham khảo:</small>`;
                 sources.forEach((s) => {
                     const score = (s.score * 100).toFixed(0);
                     const badgeClass = score >= 80 ? 'app-badge-green' : score >= 60 ? 'app-badge-blue' : 'app-badge-amber';
-                    sourcesHtml += `<small class="d-flex align-items-center gap-2 text-muted mb-2"><span>📄 <em>${s.fileName}</em></span><span class="app-badge-soft ${badgeClass}">${score}%</span></small>`;
+                    const fileUrl = s.fileUrl || `/uploads/${encodeURIComponent(s.fileName)}`;
+                    const pageAnchor = s.pageNumber > 0 ? `#page=${s.pageNumber}` : '';
+                    sourcesHtml += `<small class="d-flex align-items-center gap-2 text-muted mb-2">
+                        <a href="${fileUrl}${pageAnchor}" target="_blank" rel="noopener noreferrer"
+                           class="d-flex align-items-center gap-1 text-decoration-none source-link"
+                           title="Mở tài liệu - Trang ${s.pageNumber}">
+                            <i class="bi bi-file-earmark-text text-primary"></i>
+                            <em>${escapeHtml(s.fileName)}</em>
+                            ${s.pageNumber > 0 ? `<span class="text-muted" style="font-size:.75rem;">tr.${s.pageNumber}</span>` : ''}
+                        </a>
+                        <span class="app-badge-soft ${badgeClass}">${score}%</span>
+                    </small>`;
                 });
                 sourcesHtml += '</div>';
             }
