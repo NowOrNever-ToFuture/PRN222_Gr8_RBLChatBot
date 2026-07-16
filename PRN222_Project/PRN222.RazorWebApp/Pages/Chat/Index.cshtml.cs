@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.SignalR;
 using PRN222.Models;
 using PRN222.Services;
 using PRN222.Services.Interfaces;
@@ -16,19 +17,22 @@ namespace PRN222.RazorWebApp.Pages.Chat
         private readonly IPaymentService _paymentService;
         private readonly ITokenUsageService _tokenUsageService;
         private readonly ISystemSettingService _systemSettingService;
+        private readonly IHubContext<ChatHub> _chatHubContext;
 
         public IndexModel(
             IChatService chatService,
             ICourseService courseService,
             IPaymentService paymentService,
             ITokenUsageService tokenUsageService,
-            ISystemSettingService systemSettingService)
+            ISystemSettingService systemSettingService,
+            IHubContext<ChatHub> chatHubContext)
         {
             _chatService = chatService ?? throw new ArgumentNullException(nameof(chatService));
             _courseService = courseService ?? throw new ArgumentNullException(nameof(courseService));
             _paymentService = paymentService ?? throw new ArgumentNullException(nameof(paymentService));
             _tokenUsageService = tokenUsageService ?? throw new ArgumentNullException(nameof(tokenUsageService));
             _systemSettingService = systemSettingService ?? throw new ArgumentNullException(nameof(systemSettingService));
+            _chatHubContext = chatHubContext ?? throw new ArgumentNullException(nameof(chatHubContext));
         }
 
         public Guid? CourseId { get; set; }
@@ -65,7 +69,7 @@ namespace PRN222.RazorWebApp.Pages.Chat
             return Page();
         }
 
-        public async Task<IActionResult> OnPostAskAsync(string query, Guid? courseId)
+        public async Task<IActionResult> OnPostAskAsync(string query, Guid? courseId, string? clientId = null)
         {
             if (string.IsNullOrWhiteSpace(query))
                 return new JsonResult(new { success = false, message = "Vui lòng nhập câu hỏi." });
@@ -73,6 +77,7 @@ namespace PRN222.RazorWebApp.Pages.Chat
             {
                 var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
                 if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId)) return Unauthorized();
+                var signalRUserId = userIdClaim.Value;
 
                 // Check quota limit
                 var subscription = await _paymentService.GetUserSubscriptionAsync(userId);
@@ -85,10 +90,29 @@ namespace PRN222.RazorWebApp.Pages.Chat
                     return new JsonResult(new { success = false, message = errMsg });
                 }
 
-                await _chatService.SaveMessageAsync(userId, "User", query);
+                // Đồng bộ đa tab: báo mọi tab của user này biết có câu hỏi mới
+                // (tab gửi câu hỏi sẽ tự bỏ qua nhờ clientId).
+                await _chatHubContext.Clients.User(signalRUserId)
+                    .SendAsync("ReceiveUserMessage", clientId ?? "", query);
+
+                // Generate TRƯỚC rồi mới lưu message: lịch sử hội thoại dùng cho
+                // query-rewriting sẽ không lẫn chính câu đang hỏi.
                 var ragResponse = await _chatService.GenerateRagResponseAsync(query, userId, courseId);
-                string citedIds = string.Join(",", ragResponse.Sources.Select(s => s.ChunkIndex));
+                await _chatService.SaveMessageAsync(userId, "User", query);
+                string citedIds = string.Join(",", ragResponse.Sources.Select(s => s.ChunkId));
                 await _chatService.SaveMessageAsync(userId, "Assistant", ragResponse.Answer, citedIds);
+
+                // Stream câu trả lời qua SignalR: đẩy từng đoạn nhỏ để client
+                // hiển thị dần (typing effect) trên TẤT CẢ tab của user.
+                var streamMessageId = Guid.NewGuid().ToString("N");
+                await _chatHubContext.Clients.User(signalRUserId)
+                    .SendAsync("ReceiveAnswerStart", streamMessageId);
+                foreach (var chunk in SplitIntoStreamChunks(ragResponse.Answer))
+                {
+                    await _chatHubContext.Clients.User(signalRUserId)
+                        .SendAsync("ReceiveAnswerChunk", streamMessageId, chunk);
+                    await Task.Delay(30); // nhịp gõ chữ, đủ mượt mà không chậm
+                }
 
                 // Ghi TokenUsageLog cho analytics
                 if (ragResponse.InputTokens > 0 || ragResponse.OutputTokens > 0)
@@ -121,18 +145,36 @@ namespace PRN222.RazorWebApp.Pages.Chat
                 var todayTokenUsed = await _tokenUsageService.GetTodayUsageAsync(userId);
                 var sessionStartDate = updatedSub?.SessionStartDate?.ToString("o");
 
+                var sourcePayload = ragResponse.Sources.Select(s => new
+                {
+                    fileName = s.FileName,
+                    pageNumber = s.PageNumber,
+                    score = s.SimilarityScore,
+                    // URL nhảy thẳng đến đúng vector chunk đã dùng làm nguồn
+                    chunkUrl = $"/Documents/ViewChunks/{s.DocumentId}?chunkId={s.ChunkId}",
+                    // URL mở file gốc + scroll đến đúng trang (PDF hỗ trợ #page=N)
+                    fileUrl = $"/uploads/{Uri.EscapeDataString(s.FileName)}#page={s.PageNumber}"
+                }).ToList();
+
+                // Kết thúc stream: gửi bản đầy đủ (answer + nguồn + quota) cho mọi tab
+                await _chatHubContext.Clients.User(signalRUserId).SendAsync(
+                    "ReceiveAnswerComplete",
+                    streamMessageId,
+                    ragResponse.Answer,
+                    sourcePayload,
+                    updatedQuota,
+                    totalQuota,
+                    packageName,
+                    todayTokenUsed,
+                    sessionStartDate);
+
                 return new JsonResult(new
                 {
                     success = true,
+                    streamed = true,
+                    streamMessageId,
                     response = ragResponse.Answer,
-                    sources = ragResponse.Sources.Select(s => new
-                    {
-                        fileName = s.FileName,
-                        pageNumber = s.PageNumber,
-                        score = s.SimilarityScore,
-                        // URL để mở trực tiếp tài liệu + scroll đến đúng trang (PDF hỗ trợ #page=N)
-                        fileUrl = $"/uploads/{Uri.EscapeDataString(s.FileName)}"
-                    }),
+                    sources = sourcePayload,
                     courseId = ragResponse.CourseId,
                     remainingQuota = updatedQuota,
                     totalQuota = totalQuota,
@@ -142,6 +184,24 @@ namespace PRN222.RazorWebApp.Pages.Chat
                 });
             }
             catch (Exception ex) { return new JsonResult(new { success = false, message = $"Lỗi: {ex.Message}" }); }
+        }
+
+        /// <summary>
+        /// Cắt câu trả lời thành các đoạn nhỏ (~60 ký tự, cắt theo ranh giới từ)
+        /// để stream qua SignalR tạo hiệu ứng hiện dần.
+        /// </summary>
+        private static IEnumerable<string> SplitIntoStreamChunks(string text, int chunkSize = 60)
+        {
+            for (int index = 0; index < text.Length;)
+            {
+                int length = Math.Min(chunkSize, text.Length - index);
+                // Kéo dài đến hết từ hiện tại để không cắt đôi một từ
+                int end = index + length;
+                while (end < text.Length && !char.IsWhiteSpace(text[end]))
+                    end++;
+                yield return text[index..end];
+                index = end;
+            }
         }
 
         public async Task<IActionResult> OnGetHistoryAsync()

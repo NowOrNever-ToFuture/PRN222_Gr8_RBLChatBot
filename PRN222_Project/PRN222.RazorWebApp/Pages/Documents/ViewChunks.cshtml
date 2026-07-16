@@ -47,7 +47,8 @@
                             {
                                 var chunk = Model.Chunks[i];
                                 int globalIndex = (Model.CurrentPage - 1) * Model.PageSize + i + 1;
-                                <tr>
+                                var isHighlighted = Model.HighlightChunkId == chunk.Id;
+                                <tr id="chunk-@chunk.Id" class="@(isHighlighted ? "cited-chunk-highlight" : "")">
                                     <td><strong>@globalIndex</strong></td>
                                     <td><span class="badge bg-info text-dark">Trang @chunk.PageNumber</span></td>
                                     <td><span class="badge bg-secondary">@chunk.ChunkIndex</span></td>
@@ -125,3 +126,23 @@
         </div>
     </div>
 </div>
+
+<style>
+    /* Highlight chunk được trích dẫn khi đi từ khung chat sang */
+    .cited-chunk-highlight > td {
+        background: #fff8dc !important;
+        box-shadow: inset 3px 0 0 #f59e0b;
+    }
+</style>
+
+@if (Model.HighlightChunkId.HasValue)
+{
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var row = document.getElementById('chunk-@Model.HighlightChunkId');
+            if (row) {
+                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        });
+    </script>
+}

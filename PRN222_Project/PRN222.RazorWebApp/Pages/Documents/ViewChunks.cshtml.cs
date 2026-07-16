@@ -14,7 +14,8 @@ namespace PRN222.RazorWebApp.Pages.Documents
 
 {
 
-    [Authorize(Roles = "Admin,Lecturer")]
+    // Student được xem chunks (read-only) để kiểm chứng trích dẫn nguồn từ Chat.
+    [Authorize]
 
     public class ViewChunksModel : PageModel
 
@@ -52,9 +53,14 @@ namespace PRN222.RazorWebApp.Pages.Documents
 
         public Guid DocumentId { get; set; }
 
+        /// <summary>Chunk cần highlight khi đi từ trích dẫn trong Chat.</summary>
+        public Guid? HighlightChunkId { get; set; }
+
+        public bool IsReadOnlyViewer { get; set; }
 
 
-        public async Task<IActionResult> OnGetAsync(Guid id, int page = 1)
+
+        public async Task<IActionResult> OnGetAsync(Guid id, int page = 1, Guid? chunkId = null)
 
         {
 
@@ -72,9 +78,8 @@ namespace PRN222.RazorWebApp.Pages.Documents
 
             {
 
-                var isCourseManager = Document.Course?.ManagedById == userId;
-
-                if (!isCourseManager) return Forbid();
+                // Lecturer không quản lý môn này vẫn được xem read-only (kiểm chứng nguồn)
+                IsReadOnlyViewer = Document.Course?.ManagedById != userId;
 
             }
 
@@ -82,7 +87,29 @@ namespace PRN222.RazorWebApp.Pages.Documents
 
             {
 
-                return Forbid();
+                // Student: chỉ xem để đối chiếu trích dẫn từ Chat
+                IsReadOnlyViewer = true;
+
+            }
+
+
+
+            // Deep-link từ trích dẫn chat: tự tính trang chứa chunk cần xem
+            if (chunkId.HasValue)
+
+            {
+
+                int position = await _documentService.GetChunkPositionAsync(id, chunkId.Value);
+
+                if (position >= 0)
+
+                {
+
+                    page = position / PageSize + 1;
+
+                    HighlightChunkId = chunkId.Value;
+
+                }
 
             }
 
@@ -109,5 +136,3 @@ namespace PRN222.RazorWebApp.Pages.Documents
     }
 
 }
-
-

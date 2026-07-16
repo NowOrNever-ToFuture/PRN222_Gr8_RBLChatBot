@@ -282,6 +282,7 @@ app.MapHub<UserHub>("/hubs/user");
 app.MapHub<SystemSettingsHub>("/hubs/systemsettings");
 app.MapHub<TokenUsageHub>("/hubs/tokenusage");  // Phase 2
 app.MapHub<PaymentHub>("/hubs/payment");         // Phase 3
+app.MapHub<ChatHub>("/hubs/chat");               // Streaming câu trả lời chat real-time
 
 
 app.MapMethods("/api/payment/webhook", new[] { "GET", "POST" }, async (HttpContext ctx, IPaymentService paymentService) =>

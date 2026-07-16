@@ -14,56 +14,17 @@
             </p>
         </div>
         <div class="app-hero-actions">
-            <span id="selectedCourseChip" class="app-chip" style="display:none;"><i class="bi bi-pin-angle-fill"></i> <span id="selectedCourseName">Tất cả môn học</span></span>
-            <button id="changeCourseBtn" class="btn btn-light fw-bold rounded-pill px-4 py-2" style="display:none;">
-                <i class="bi bi-arrow-repeat"></i> Đổi môn
-            </button>
-            <button id="clearChatBtn" class="btn btn-light fw-bold rounded-pill px-4 py-2" style="display:none;">
+            @if (!string.IsNullOrEmpty(Model.CourseName))
+            {
+                <span class="app-chip"><i class="bi bi-pin-angle-fill"></i> @Model.CourseName</span>
+            }
+            <button id="clearChatBtn" class="btn btn-light fw-bold rounded-pill px-4 py-2">
                 <i class="bi bi-trash3-fill"></i> Xóa hội thoại
             </button>
         </div>
     </section>
 
-    @* ====== COURSE PICKER OVERLAY (hiện khi chưa chọn môn) ====== *@
-    <section id="coursePickerSection" class="app-card" style="max-width: 540px; margin: 0 auto; min-height:340px;">
-        <div class="text-center mb-4">
-            <div class="app-eyebrow mb-2"><i class="bi bi-journal-richtext"></i> Bước 1 / 2</div>
-            <h4 class="fw-bold mb-1">Chọn môn học bạn muốn hỏi</h4>
-            <p class="app-muted">AI sẽ tìm kiếm trong tài liệu của môn đó để trả lời chính xác hơn.</p>
-        </div>
-        
-        <div class="px-2">
-            @* Search Box *@
-            <div class="input-group mb-3 shadow-sm" style="border-radius: 12px; overflow: hidden; border: 1px solid rgba(120, 138, 170, 0.2);">
-                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-                <input type="text" id="courseSearchInput" class="form-control border-start-0 py-2.5 shadow-none" placeholder="Tìm tên hoặc mã môn học..." />
-            </div>
-
-            @* Course List Container *@
-            <div class="course-list-scroll" style="max-height: 280px; overflow-y: auto; border: 1px solid rgba(120, 138, 170, 0.15); border-radius: 12px; background: white;">
-                <button type="button" class="course-list-item d-flex align-items-center gap-3 w-100 text-start border-0 px-3 py-2.5 course-pick-btn course-pick-all" data-course-id="" data-course-name="Tất cả môn học">
-                    <i class="bi bi-grid-3x3-gap-fill text-primary fs-5"></i>
-                    <div>
-                        <strong class="d-block text-dark" style="font-size: 0.9rem;">Tất cả môn học</strong>
-                        <small class="text-muted d-block" style="font-size: 0.78rem;">Tìm kiếm và trả lời trên toàn bộ tài liệu hệ thống</small>
-                    </div>
-                </button>
-                @foreach (var course in Model.Courses)
-                {
-                    <button type="button" class="course-list-item d-flex align-items-center gap-3 w-100 text-start border-0 px-3 py-2.5 course-pick-btn" data-course-id="@course.Id" data-course-name="@course.Name (@course.Code)">
-                        <i class="bi bi-journal-text text-info fs-5"></i>
-                        <div>
-                            <strong class="d-block text-dark" style="font-size: 0.9rem;">@course.Code</strong>
-                            <small class="text-muted d-block text-truncate" style="font-size: 0.78rem; max-width: 420px;" title="@course.Name">@course.Name</small>
-                        </div>
-                    </button>
-                }
-            </div>
-        </div>
-    </section>
-
-    @* ====== KHUNG CHAT (hiện sau khi chọn môn) ====== *@
-    <section id="chatSection" class="app-panel overflow-hidden" style="display:none;">
+    <section class="app-panel overflow-hidden">
         <div class="chat-topbar">
             <div class="d-flex align-items-center gap-3">
                 <div class="chat-topbar-icon"><i class="bi bi-robot"></i></div>
@@ -74,6 +35,24 @@
             </div>
             
             <div class="d-flex align-items-center gap-3 justify-content-end flex-wrap">
+                <div class="d-flex align-items-center gap-2">
+                    <label class="text-white-50 small mb-0" for="courseSelect">Môn học</label>
+                    <select id="courseSelect" class="form-select form-select-sm chat-model-select" title="AI chỉ tìm câu trả lời trong tài liệu của môn được chọn">
+                        <option value="">📚 Tất cả môn học</option>
+                        @foreach (var course in Model.Courses)
+                        {
+                            if (Model.CourseId == course.Id)
+                            {
+                                <option value="@course.Id" selected>@course.Name (@course.Code)</option>
+                            }
+                            else
+                            {
+                                <option value="@course.Id">@course.Name (@course.Code)</option>
+                            }
+                        }
+                    </select>
+                </div>
+
                 @if (User.IsInRole("Admin"))
                 {
                     <div class="d-flex align-items-center gap-2">
@@ -321,6 +300,22 @@
         color: white;
         border-top-right-radius: 6px;
     }
+    .typing-cursor {
+        display: inline-block;
+        color: #1456b8;
+        animation: cursorBlink 0.9s steps(2, start) infinite;
+    }
+    @@keyframes cursorBlink { to { visibility: hidden; } }
+    .citation-link {
+        color: #1456b8;
+        text-decoration: none;
+        border-bottom: 1px dashed rgba(20, 86, 184, 0.4);
+        transition: color .15s ease, border-color .15s ease;
+    }
+    .citation-link:hover {
+        color: #0f9d7a;
+        border-bottom-color: #0f9d7a;
+    }
     .quick-prompt-tag {
         text-align: left;
         border: 1px solid rgba(31, 111, 235, 0.12);
@@ -369,94 +364,66 @@
         .chat-layout { grid-template-columns: 1fr; }
         .chat-sidebar { border-right: 0; border-bottom: 1px solid rgba(120, 138, 170, 0.14); }
     }
-    
-    /* Course Picker Styles */
-    .course-list-item {
-        background: transparent;
-        border-bottom: 1px solid rgba(120, 138, 170, 0.08) !important;
-        transition: background 0.2s, padding-left 0.2s;
-        cursor: pointer;
-    }
-    .course-list-item:last-child {
-        border-bottom: none !important;
-    }
-    .course-list-item:hover {
-        background: rgba(31, 111, 235, 0.05);
-        padding-left: 20px !important;
-    }
-    .course-list-scroll::-webkit-scrollbar {
-        width: 6px;
-    }
-    .course-list-scroll::-webkit-scrollbar-thumb {
-        background: rgba(120, 138, 170, 0.25);
-        border-radius: 4px;
-    }
-    .course-pick-all {
-        background: linear-gradient(90deg, rgba(31, 111, 235, 0.04) 0%, rgba(255, 255, 255, 0) 100%);
-    }
 </style>
 
 @section Scripts {
 <script>
     $(document).ready(function () {
-        const currentCourseId = "@(Model.CourseId?.ToString() ?? "")" || null;
-        let currentSessionStartDate = "@(Model.Subscription?.SessionStartDate?.ToString("o") ?? "")";
-        let activeCourseId = currentCourseId;
+        // Môn học lấy trực tiếp từ dropdown mỗi lần gửi ("" = Tất cả môn học → null)
+        function selectedCourseId() { return $('#courseSelect').val() || null; }
 
-        // Tìm kiếm môn học
-        $('#courseSearchInput').on('keyup', function () {
-            const query = $(this).val().toLowerCase().trim();
-            $('.course-list-item').each(function () {
-                const name = $(this).attr('data-course-name').toLowerCase();
-                const isAll = $(this).hasClass('course-pick-all');
-                if (isAll || name.includes(query)) {
-                    $(this).show();
-                } else {
-                    $(this).hide();
-                }
-            });
+        // ===== SignalR ChatHub: stream câu trả lời + đồng bộ đa tab =====
+        const pendingClientIds = new Set();   // câu hỏi do chính tab này gửi
+        const streamedMessages = new Set();   // answer đã render qua stream (AJAX khỏi render lại)
+        const streamBuffers = {};
+
+        const chatConnection = new signalR.HubConnectionBuilder()
+            .withUrl('/hubs/chat')
+            .withAutomaticReconnect()
+            .build();
+
+        chatConnection.on('ReceiveUserMessage', (clientId, query) => {
+            if (clientId && pendingClientIds.has(clientId)) return; // tab gửi đã tự hiển thị
+            appendMessage(query, 'user'); // tab khác của cùng user: hiện câu hỏi real-time
         });
 
-        // Xử lý sự kiện click chọn môn
-        $('.course-pick-btn').click(function () {
-            const courseId = $(this).attr('data-course-id') || null;
-            const courseName = $(this).attr('data-course-name');
-            selectCourse(courseId, courseName);
+        chatConnection.on('ReceiveAnswerStart', (messageId) => {
+            streamedMessages.add(messageId);
+            $('[id^="typing-"]').remove();
+            streamBuffers[messageId] = '';
+            const timestamp = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+            const html = `<div class="d-flex mb-3" id="stream-${messageId}"><div class="chat-avatar me-2"><i class="bi bi-robot"></i></div><div style="flex-grow:1;"><div class="bot-bubble chat-bubble bot stream-body"><span class="typing-cursor">▍</span></div><small class="message-time" style="margin-left:8px;">${timestamp}</small></div></div>`;
+            $('#chatMessages').append(html);
+            scrollToBottom();
         });
 
-        // Xử lý sự kiện đổi môn học
-        $('#changeCourseBtn').click(function () {
-            activeCourseId = null;
-            $('#chatSection').fadeOut(200, function() {
-                $('#coursePickerSection').fadeIn(200);
-            });
-            $('#selectedCourseChip').hide();
-            $('#changeCourseBtn').hide();
-            $('#clearChatBtn').hide();
-        });
-
-        function selectCourse(courseId, courseName) {
-            activeCourseId = courseId;
-            $('#selectedCourseName').text(courseName);
-            $('#selectedCourseChip').show();
-            $('#changeCourseBtn').show();
-            $('#clearChatBtn').show();
-            
-            $('#coursePickerSection').fadeOut(200, function() {
-                $('#chatSection').fadeIn(200);
+        chatConnection.on('ReceiveAnswerChunk', (messageId, chunk) => {
+            if (!(messageId in streamBuffers)) return;
+            streamBuffers[messageId] += chunk;
+            const body = $(`#stream-${messageId} .stream-body`);
+            if (body.length) {
+                body.html(formatBotContent(streamBuffers[messageId]) + '<span class="typing-cursor">▍</span>');
                 scrollToBottom();
-            });
-        }
+            }
+        });
 
-        // Kiểm tra trạng thái môn học ban đầu
-        if (activeCourseId) {
-            const initialCourseName = "@(Html.Raw(Model.CourseName))" || "Môn đã chọn";
-            selectCourse(activeCourseId, initialCourseName);
-        } else {
-            $('#coursePickerSection').show();
-            $('#chatSection').hide();
-        }
+        chatConnection.on('ReceiveAnswerComplete', (messageId, answer, sources, remainingQuota, totalQuota, packageName, todayTokenUsed, sessionStartDate) => {
+            streamedMessages.add(messageId);
+            const body = $(`#stream-${messageId} .stream-body`);
+            const content = stripCitationFooter(answer, sources && sources.length > 0);
+            if (body.length) {
+                body.html(formatBotContent(content) + buildSourcesHtml(sources));
+            } else {
+                appendBotMessage(answer, sources);
+            }
+            delete streamBuffers[messageId];
+            if (remainingQuota !== undefined && totalQuota !== undefined) updateTokenUI(remainingQuota, totalQuota, packageName);
+            if (sessionStartDate) { currentSessionStartDate = sessionStartDate; updateResetCountdown(); }
+            scrollToBottom();
+        });
 
+        chatConnection.start().catch(err => console.error('ChatHub connection error:', err));
+        let currentSessionStartDate = "@(Model.Subscription?.SessionStartDate?.ToString("o") ?? "")";
         loadChatHistory();
 
         function loadChatHistory() {
@@ -519,6 +486,8 @@
         function sendMessage() {
             const query = $('#queryInput').val().trim();
             if (!query) { $('#queryInput').focus(); return; }
+            const clientId = 'c' + Date.now() + Math.random().toString(16).slice(2);
+            pendingClientIds.add(clientId);
             appendMessage(query, 'user');
             $('#queryInput').val('').focus();
             const $sendBtn = $('#sendBtn');
@@ -527,21 +496,25 @@
             appendTyping(typingId);
             $.ajax({
                 url: '/Chat/Index?handler=Ask', type: 'POST',
-                data: { query: query, courseId: activeCourseId, __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val() },
-                timeout: 30000,
+                data: { query: query, courseId: selectedCourseId(), clientId: clientId, __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val() },
+                timeout: 120000,
                 success: function (result) {
                     $(`#${typingId}`).remove();
                     if (result.success) {
-                        appendBotMessage(result.response, result.sources);
-                        if (result.remainingQuota !== undefined && result.totalQuota !== undefined) {
-                            updateTokenUI(result.remainingQuota, result.totalQuota, result.packageName);
+                        // Answer đã stream qua SignalR thì không render lại (tránh trùng);
+                        // chỉ render từ AJAX khi hub không kết nối (fallback).
+                        if (!(result.streamMessageId && streamedMessages.has(result.streamMessageId))) {
+                            appendBotMessage(result.response, result.sources);
+                            if (result.remainingQuota !== undefined && result.totalQuota !== undefined) {
+                                updateTokenUI(result.remainingQuota, result.totalQuota, result.packageName);
+                            }
+                            if (result.sessionStartDate) {
+                                currentSessionStartDate = result.sessionStartDate;
+                                updateResetCountdown();
+                            }
                         }
                         if (result.todayTokenUsed !== undefined) {
                             updateTodayTokenUI(result.todayTokenUsed);
-                        }
-                        if (result.sessionStartDate) {
-                            currentSessionStartDate = result.sessionStartDate;
-                            updateResetCountdown();
                         }
                     }
                     else appendBotMessage('Cảnh báo: ' + (result.message || 'Không thể xử lý câu hỏi này.'), []);
@@ -564,21 +537,23 @@
             scrollToBottom();
         }
 
-        function appendBotMessage(content, sources) {
-            if (sources && sources.length > 0) {
-                const citationMarker = '\n---\n📚 **Nguồn tham khảo:**';
-                const citationMarkerAlt = '\n---\n📚 Nguồn tham khảo:';
-                let markerIndex = content.indexOf(citationMarker);
-                if (markerIndex === -1) markerIndex = content.indexOf(citationMarker.replace(/\n/g, '\r\n'));
-                if (markerIndex === -1) markerIndex = content.indexOf(citationMarkerAlt);
-                if (markerIndex === -1) markerIndex = content.indexOf(citationMarkerAlt.replace(/\n/g, '\r\n'));
-                if (markerIndex === -1) {
-                    const simpleMarker = '\n---';
-                    const simpleIndex = content.lastIndexOf(simpleMarker);
-                    if (simpleIndex !== -1 && simpleIndex > content.length - 400) markerIndex = simpleIndex;
-                }
-                if (markerIndex !== -1) content = content.substring(0, markerIndex).trim();
+        function stripCitationFooter(content, hasSources) {
+            if (!hasSources) return content;
+            const citationMarker = '\n---\n📚 **Nguồn tham khảo:**';
+            const citationMarkerAlt = '\n---\n📚 Nguồn tham khảo:';
+            let markerIndex = content.indexOf(citationMarker);
+            if (markerIndex === -1) markerIndex = content.indexOf(citationMarker.replace(/\n/g, '\r\n'));
+            if (markerIndex === -1) markerIndex = content.indexOf(citationMarkerAlt);
+            if (markerIndex === -1) markerIndex = content.indexOf(citationMarkerAlt.replace(/\n/g, '\r\n'));
+            if (markerIndex === -1) {
+                const simpleMarker = '\n---';
+                const simpleIndex = content.lastIndexOf(simpleMarker);
+                if (simpleIndex !== -1 && simpleIndex > content.length - 400) markerIndex = simpleIndex;
             }
+            return markerIndex !== -1 ? content.substring(0, markerIndex).trim() : content;
+        }
+
+        function formatBotContent(content) {
             let formatted = escapeHtml(content);
             formatted = formatted.replace(/^### (.+)$/gm, '<h5 class="mt-2 mb-1" style="color:#1456b8;">$1</h5>');
             formatted = formatted.replace(/^## (.+)$/gm, '<h4 class="mt-2 mb-1" style="color:#0f1d3a;">$1</h4>');
@@ -591,27 +566,29 @@
             formatted = formatted.replace(/^&gt; (.+)$/gm, '<blockquote style="border-left:3px solid #1456b8;padding-left:10px;color:#555;margin:4px 0;">$1</blockquote>');
             formatted = formatted.replace(/^---$/gm, '<hr style="border-top:1px solid #e0e7f2;margin:8px 0;">');
             formatted = formatted.replace(/\n/g, '<br>');
-            let sourcesHtml = '';
-            if (sources && sources.length > 0) {
-                sourcesHtml = `<div class="mt-3 pt-3 border-top" style="border-color:#edf2fb !important;"><small class="text-muted fw-bold d-block mb-2"><i class="bi bi-journal-bookmark-fill text-primary me-1"></i>Nguồn tham khảo:</small>`;
-                sources.forEach((s) => {
-                    const score = (s.score * 100).toFixed(0);
-                    const badgeClass = score >= 80 ? 'app-badge-green' : score >= 60 ? 'app-badge-blue' : 'app-badge-amber';
-                    const fileUrl = s.fileUrl || `/uploads/${encodeURIComponent(s.fileName)}`;
-                    const pageAnchor = s.pageNumber > 0 ? `#page=${s.pageNumber}` : '';
-                    sourcesHtml += `<small class="d-flex align-items-center gap-2 text-muted mb-2">
-                        <a href="${fileUrl}${pageAnchor}" target="_blank" rel="noopener noreferrer"
-                           class="d-flex align-items-center gap-1 text-decoration-none source-link"
-                           title="Mở tài liệu - Trang ${s.pageNumber}">
-                            <i class="bi bi-file-earmark-text text-primary"></i>
-                            <em>${escapeHtml(s.fileName)}</em>
-                            ${s.pageNumber > 0 ? `<span class="text-muted" style="font-size:.75rem;">tr.${s.pageNumber}</span>` : ''}
-                        </a>
-                        <span class="app-badge-soft ${badgeClass}">${score}%</span>
-                    </small>`;
-                });
-                sourcesHtml += '</div>';
-            }
+            return formatted;
+        }
+
+        function buildSourcesHtml(sources) {
+            if (!sources || sources.length === 0) return '';
+            let sourcesHtml = `<div class="mt-3 pt-3 border-top" style="border-color:#edf2fb !important;"><small class="text-muted fw-bold d-block mb-2">Nguồn tham khảo <span class="fw-normal">(bấm để xem đúng đoạn tài liệu)</span>:</small>`;
+            sources.forEach((s) => {
+                const score = (s.score * 100).toFixed(0);
+                const badgeClass = score >= 80 ? 'app-badge-green' : score >= 60 ? 'app-badge-blue' : 'app-badge-amber';
+                const label = `📄 <em>${escapeHtml(s.fileName)}</em> · Trang ${s.pageNumber}`;
+                const link = s.chunkUrl
+                    ? `<a href="${s.chunkUrl}" target="_blank" rel="noopener" class="citation-link" title="Mở đúng vector chunk đã dùng làm nguồn">${label} <i class="bi bi-box-arrow-up-right small"></i></a>`
+                    : `<span>${label}</span>`;
+                sourcesHtml += `<small class="d-flex align-items-center gap-2 text-muted mb-2">${link}<span class="app-badge-soft ${badgeClass}">${score}%</span></small>`;
+            });
+            sourcesHtml += '</div>';
+            return sourcesHtml;
+        }
+
+        function appendBotMessage(content, sources) {
+            content = stripCitationFooter(content, sources && sources.length > 0);
+            const formatted = formatBotContent(content);
+            const sourcesHtml = buildSourcesHtml(sources);
             const timestamp = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
             const html = `<div class="d-flex mb-3"><div class="chat-avatar me-2"><i class="bi bi-robot"></i></div><div style="flex-grow:1;"><div class="bot-bubble chat-bubble bot">${formatted}${sourcesHtml}</div><small class="message-time" style="margin-left:8px;">${timestamp}</small></div></div>`;
             $('#chatMessages').append(html);
