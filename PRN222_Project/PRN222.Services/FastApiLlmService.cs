@@ -35,7 +35,9 @@ namespace PRN222.Services
                 {
                     message = prompt,
                     provider = _provider,
-                    max_new_tokens = 256,
+                    // 256 làm câu trả lời dài bị cắt cụt giữa chừng; 1024 đủ cho
+                    // câu trả lời học thuật đầy đủ (model vẫn tự dừng khi xong).
+                    max_new_tokens = 1024,
                     temperature = 0.0
                 });
 

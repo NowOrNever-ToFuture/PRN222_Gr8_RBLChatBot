@@ -19,7 +19,7 @@
                 <span class="app-chip"><i class="bi bi-pin-angle-fill"></i> @Model.CourseName</span>
             }
             <button id="clearChatBtn" class="btn btn-light fw-bold rounded-pill px-4 py-2">
-                <i class="bi bi-trash3-fill"></i> Xóa hội thoại
+                <i class="bi bi-trash3-fill"></i> Xóa hội thoại này
             </button>
         </div>
     </section>
@@ -37,8 +37,8 @@
             <div class="d-flex align-items-center gap-3 justify-content-end flex-wrap">
                 <div class="d-flex align-items-center gap-2">
                     <label class="text-white-50 small mb-0" for="courseSelect">Môn học</label>
-                    <select id="courseSelect" class="form-select form-select-sm chat-model-select" title="AI chỉ tìm câu trả lời trong tài liệu của môn được chọn">
-                        <option value="">📚 Tất cả môn học</option>
+                    <select id="courseSelect" class="form-select form-select-sm chat-model-select" title="Bắt buộc chọn môn học — AI chỉ trả lời từ tài liệu của môn được chọn">
+                        <option value="" selected disabled hidden>-- Chọn môn học --</option>
                         @foreach (var course in Model.Courses)
                         {
                             if (Model.CourseId == course.Id)
@@ -119,13 +119,21 @@
                     </div>
                 </div>
 
-                <div class="app-card flex-grow-1">
+                <div class="app-card p-3 d-flex flex-column conversation-panel">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="small fw-bold text-secondary"><i class="bi bi-chat-left-text"></i> Hội thoại</span>
+                        <button type="button" id="newChatBtn" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold">
+                            <i class="bi bi-plus-lg"></i> Chat mới
+                        </button>
+                    </div>
+                    <div id="conversationList" class="conversation-list flex-grow-1"></div>
+                </div>
+
+                <div class="app-card">
                     <div class="app-card-title"><i class="bi bi-lightbulb text-warning"></i> Gợi ý nhanh</div>
                     <div id="quickSuggestions" class="d-grid gap-2">
                         <button type="button" class="quick-prompt-tag" data-prompt="Ý nghĩa phương pháp luận của quy luật chuyển hóa từ những sự thay đổi về lượng thành những sự thay đổi về chất và ngược lại?">Quy luật Lượng - Chất</button>
                         <button type="button" class="quick-prompt-tag" data-prompt="Định nghĩa vật chất của Lênin và ý nghĩa khoa học của định nghĩa này?">Định nghĩa Vật chất</button>
-                        <button type="button" class="quick-prompt-tag" data-prompt="Mối quan hệ biện chứng giữa Cơ sở hạ tầng và Kiến trúc thượng tầng?">Cơ sở hạ tầng & Kiến trúc thượng tầng</button>
-                        <button type="button" class="quick-prompt-tag" data-prompt="Vai trò của thực tiễn đối với nhận thức theo quan điểm triết học Mác - Lênin?">Vai trò của Thực tiễn</button>
                     </div>
                     <div class="small app-muted mt-3">
                         Trả lời được ưu tiên dựa trên tài liệu thực tế đã tải lên trong hệ thống.
@@ -214,6 +222,28 @@
     </div>
 </div>
 
+<!-- Citation Modal: xem đoạn tài liệu được trích dẫn ngay trong trang chat -->
+<div class="modal fade text-dark" id="citationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header border-0 bg-light p-3 px-4" style="border-top-left-radius: 20px; border-top-right-radius: 20px;">
+                <h6 class="modal-title fw-bold" id="citationModalTitle">Đoạn trích dẫn</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-2"><span class="badge bg-warning text-dark"><i class="bi bi-quote"></i> Đoạn tài liệu được dùng làm nguồn trả lời</span></div>
+                <div id="citationModalBody" class="p-3 border rounded bg-light" style="white-space: pre-wrap; max-height: 420px; overflow-y: auto; font-size: 0.95rem; line-height: 1.7;"></div>
+            </div>
+            <div class="modal-footer border-0 p-3 px-4 d-flex justify-content-between">
+                <a id="citationModalFullLink" href="#" target="_blank" rel="noopener" class="small text-decoration-none">
+                    <i class="bi bi-box-arrow-up-right"></i> Mở trang Vector Chunks đầy đủ
+                </a>
+                <button type="button" class="btn btn-light fw-semibold px-4 rounded-3" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
     .chat-topbar {
         display: flex;
@@ -281,6 +311,15 @@
     .chat-model-select option {
         color: #172033;
     }
+    /* Khi môn học bị khóa theo hội thoại: nền sáng + chữ đậm tối cho dễ đọc
+       (mặc định browser làm chữ trắng trên nền trắng — không đọc được) */
+    .chat-model-select:disabled {
+        background: rgba(255, 255, 255, 0.92);
+        color: #0f1d3a;
+        font-weight: 700;
+        opacity: 1;
+        cursor: default;
+    }
     .chat-bubble {
         max-width: min(820px, 100%);
         border-radius: 18px;
@@ -300,6 +339,52 @@
         color: white;
         border-top-right-radius: 6px;
     }
+    .conversation-panel { min-height: 180px; }
+    .conversation-list {
+        overflow-y: auto;
+        max-height: 300px;
+        display: grid;
+        gap: 6px;
+        align-content: start;
+    }
+    .conversation-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 8px 10px;
+        border-radius: 12px;
+        border: 1px solid rgba(120, 138, 170, 0.14);
+        background: white;
+        cursor: pointer;
+        transition: border-color .15s ease, background .15s ease;
+    }
+    .conversation-item:hover { border-color: rgba(31, 111, 235, 0.35); }
+    .conversation-item.active {
+        border-color: #1f6feb;
+        background: rgba(31, 111, 235, 0.06);
+    }
+    .conv-main { min-width: 0; }
+    .conv-title {
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: #24324d;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .conv-meta { font-size: 0.72rem; color: #7c8aa5; }
+    .conv-delete {
+        border: none;
+        background: transparent;
+        color: #b53a61;
+        border-radius: 8px;
+        padding: 4px 6px;
+        flex: none;
+    }
+    .conv-delete:hover { background: rgba(209, 77, 114, 0.12); }
+    #conversationList::-webkit-scrollbar { width: 6px; }
+    #conversationList::-webkit-scrollbar-thumb { background: rgba(95, 107, 133, 0.3); border-radius: 999px; }
     .typing-cursor {
         display: inline-block;
         color: #1456b8;
@@ -370,13 +455,22 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
 <script>
     $(document).ready(function () {
-        // Môn học lấy trực tiếp từ dropdown mỗi lần gửi ("" = Tất cả môn học → null)
+        // Môn học lấy trực tiếp từ dropdown (bắt buộc chọn khi mở chat mới)
         function selectedCourseId() { return $('#courseSelect').val() || null; }
+        function antiForgeryToken() { return $('input[name="__RequestVerificationToken"]').val(); }
+
+        // ===== Trạng thái hội thoại =====
+        // null = đang ở chế độ "chat mới" (chưa có conversation)
+        let currentConversationId = null;
+        let conversationsCache = [];
+
+        function lockCourseSelect(locked) { $('#courseSelect').prop('disabled', locked); }
 
         // ===== SignalR ChatHub: stream câu trả lời + đồng bộ đa tab =====
         const pendingClientIds = new Set();   // câu hỏi do chính tab này gửi
         const streamedMessages = new Set();   // answer đã render qua stream (AJAX khỏi render lại)
         const streamBuffers = {};
+        const streamSkipped = new Set();      // stream thuộc hội thoại khác (tab này không hiển thị)
 
         // Bọc try/catch: nếu thư viện SignalR không nạp được (mất mạng CDN...)
         // thì chat vẫn hoạt động bình thường qua AJAX fallback.
@@ -386,13 +480,26 @@
             .withAutomaticReconnect()
             .build();
 
-        chatConnection.on('ReceiveUserMessage', (clientId, query) => {
-            if (clientId && pendingClientIds.has(clientId)) return; // tab gửi đã tự hiển thị
-            appendMessage(query, 'user'); // tab khác của cùng user: hiện câu hỏi real-time
+        chatConnection.on('ReceiveUserMessage', (clientId, query, conversationId) => {
+            if (clientId && pendingClientIds.has(clientId)) {
+                // Tab này vừa gửi: nếu là chat mới thì nhận conversation server vừa tạo
+                if (!currentConversationId && conversationId) {
+                    currentConversationId = conversationId;
+                    lockCourseSelect(true);
+                }
+                return;
+            }
+            // Tab khác của cùng user: chỉ hiện nếu đang xem đúng hội thoại đó
+            if (conversationId && conversationId === currentConversationId) appendMessage(query, 'user');
+            loadConversations();
         });
 
-        chatConnection.on('ReceiveAnswerStart', (messageId) => {
+        chatConnection.on('ReceiveAnswerStart', (messageId, conversationId) => {
             streamedMessages.add(messageId);
+            if (conversationId && conversationId !== currentConversationId) {
+                streamSkipped.add(messageId); // hội thoại khác: không vẽ vào khung này
+                return;
+            }
             $('[id^="typing-"]').remove();
             streamBuffers[messageId] = '';
             const timestamp = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
@@ -413,16 +520,18 @@
 
         chatConnection.on('ReceiveAnswerComplete', (messageId, answer, sources, remainingQuota, totalQuota, packageName, todayTokenUsed, sessionStartDate) => {
             streamedMessages.add(messageId);
+            if (remainingQuota !== undefined && totalQuota !== undefined) updateTokenUI(remainingQuota, totalQuota, packageName);
+            if (sessionStartDate) { currentSessionStartDate = sessionStartDate; updateResetCountdown(); }
+            loadConversations(); // cập nhật thứ tự/tiêu đề danh sách hội thoại
+            if (streamSkipped.has(messageId)) { streamSkipped.delete(messageId); return; }
             const body = $(`#stream-${messageId} .stream-body`);
             const content = stripCitationFooter(answer, sources && sources.length > 0);
             if (body.length) {
-                body.html(formatBotContent(content) + buildSourcesHtml(sources));
+                body.html(formatBotContent(content) + buildSourcesHtml(sources, content));
             } else {
                 appendBotMessage(answer, sources);
             }
             delete streamBuffers[messageId];
-            if (remainingQuota !== undefined && totalQuota !== undefined) updateTokenUI(remainingQuota, totalQuota, packageName);
-            if (sessionStartDate) { currentSessionStartDate = sessionStartDate; updateResetCountdown(); }
             scrollToBottom();
         });
 
@@ -431,22 +540,104 @@
             console.error('SignalR không khả dụng, chat dùng AJAX fallback:', signalRError);
         }
         let currentSessionStartDate = "@(Model.Subscription?.SessionStartDate?.ToString("o") ?? "")";
-        loadChatHistory();
 
-        function loadChatHistory() {
-            const welcomeHtml = `<div class="d-flex mb-3"><div class="chat-avatar me-2"><i class="bi bi-robot"></i></div><div class="bot-bubble chat-bubble bot"><p class="mb-1">Xin chào! Tôi sẵn sàng hỗ trợ bạn tìm câu trả lời dựa trên học liệu đã có trong hệ thống.</p><p class="mb-0 text-muted small">Hãy đặt một câu hỏi cụ thể để tôi truy xuất đúng ngữ cảnh và trả lời có nguồn.</p></div></div>`;
+        // ===== Quản lý hội thoại (sidebar) =====
+        function showWelcome() {
+            const welcomeHtml = `<div class="d-flex mb-3"><div class="chat-avatar me-2"><i class="bi bi-robot"></i></div><div class="bot-bubble chat-bubble bot"><p class="mb-1">Xin chào! Tôi sẵn sàng hỗ trợ bạn tìm câu trả lời dựa trên học liệu đã có trong hệ thống.</p><p class="mb-0 text-muted small">Chọn môn học rồi đặt câu hỏi để bắt đầu một hội thoại mới, hoặc mở lại hội thoại cũ ở thanh bên trái.</p></div></div>`;
             $('#chatMessages').html(welcomeHtml);
+        }
+
+        function startNewChat() {
+            currentConversationId = null;
+            lockCourseSelect(false);
+            showWelcome();
+            renderActiveConversation();
+            $('#queryInput').focus();
+        }
+
+        function loadConversations() {
             $.ajax({
-                url: '/Chat/Index?handler=History', type: 'GET',
+                url: '/Chat/Index?handler=Conversations', type: 'GET',
                 success: function (res) {
-                    if (res && res.success && res.history && res.history.length > 0) {
-                        $('#chatMessages').empty();
-                        res.history.forEach(function (msg) { if (msg.role === 'User') appendMessage(msg.content, 'user'); else appendBotMessage(msg.content, []); });
-                        scrollToBottom();
+                    if (!res || !res.success) return;
+                    conversationsCache = res.conversations || [];
+                    renderConversationList();
+                }
+            });
+        }
+
+        function renderConversationList() {
+            const list = $('#conversationList');
+            list.empty();
+            if (!conversationsCache.length) {
+                list.html('<div class="small app-muted text-center py-3">Chưa có hội thoại nào.<br/>Chọn môn và đặt câu hỏi để bắt đầu.</div>');
+                return;
+            }
+            conversationsCache.forEach(function (c) {
+                const active = c.id === currentConversationId ? ' active' : '';
+                const item = $(
+                    `<div class="conversation-item${active}" data-id="${c.id}">` +
+                    `<div class="conv-main"><div class="conv-title">${escapeHtml(c.title)}</div>` +
+                    `<div class="conv-meta"><i class="bi bi-journal-text"></i> ${escapeHtml(c.courseCode || 'Chưa gắn môn')}</div></div>` +
+                    `<button type="button" class="conv-delete" title="Xóa hội thoại này"><i class="bi bi-trash3"></i></button>` +
+                    `</div>`);
+                item.on('click', function (e) {
+                    if ($(e.target).closest('.conv-delete').length) return;
+                    openConversation(c.id);
+                });
+                item.find('.conv-delete').on('click', function () { deleteConversation(c.id); });
+                list.append(item);
+            });
+        }
+
+        function renderActiveConversation() {
+            $('#conversationList .conversation-item').removeClass('active');
+            if (currentConversationId)
+                $(`#conversationList .conversation-item[data-id="${currentConversationId}"]`).addClass('active');
+        }
+
+        function openConversation(id) {
+            $.ajax({
+                url: '/Chat/Index?handler=History&conversationId=' + encodeURIComponent(id), type: 'GET',
+                success: function (res) {
+                    if (!res || !res.success) { alert((res && res.message) || 'Không tải được hội thoại.'); return; }
+                    currentConversationId = id;
+                    if (res.courseId) $('#courseSelect').val(res.courseId);
+                    lockCourseSelect(true); // môn học khóa theo hội thoại — không trộn môn
+                    $('#chatMessages').empty();
+                    if (res.history && res.history.length) {
+                        res.history.forEach(function (msg) {
+                            if (msg.role === 'User') appendMessage(msg.content, 'user');
+                            else appendBotMessage(msg.content, msg.sources || []); // nguồn vẫn bấm được sau khi load lại
+                        });
+                    } else {
+                        showWelcome();
+                    }
+                    renderActiveConversation();
+                    scrollToBottom();
+                }
+            });
+        }
+
+        function deleteConversation(id) {
+            if (!confirm('Xóa hội thoại này cùng toàn bộ tin nhắn của nó?')) return;
+            $.ajax({
+                url: '/Chat/Index?handler=DeleteConversation', type: 'POST',
+                data: { conversationId: id, __RequestVerificationToken: antiForgeryToken() },
+                success: function (res) {
+                    if (res && res.success) {
+                        if (id === currentConversationId) startNewChat();
+                        loadConversations();
+                    } else {
+                        alert((res && res.message) || 'Không xóa được hội thoại.');
                     }
                 }
             });
         }
+
+        $('#newChatBtn').click(startNewChat);
+        showWelcome();
+        loadConversations();
 
         $('#switchModelBtn').click(function () {
             const model = $('#modelSelect').val();
@@ -470,16 +661,8 @@
         $('.quick-prompt-tag').click(function () { const prompt = $(this).attr('data-prompt'); if (prompt) { $('#queryInput').val(prompt); sendMessage(); } });
 
         $('#clearChatBtn').click(function () {
-            if (confirm('Bạn có chắc chắn muốn xóa toàn bộ lịch sử trò chuyện?')) {
-                $.ajax({
-                    url: '/Chat/Index?handler=ClearHistory', type: 'POST',
-                    data: { __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val() },
-                    success: function (res) {
-                        if (res && res.success) { loadChatHistory(); $('#scrollToBottomBtn').addClass('d-none'); }
-                        else alert('Không thể xóa lịch sử: ' + (res.message || 'Lỗi không xác định'));
-                    }
-                });
-            }
+            if (!currentConversationId) { alert('Chưa có hội thoại nào đang mở để xóa.'); return; }
+            deleteConversation(currentConversationId);
         });
 
         const chatMsgsEl = $('#chatMessages');
@@ -493,6 +676,12 @@
         function sendMessage() {
             const query = $('#queryInput').val().trim();
             if (!query) { $('#queryInput').focus(); return; }
+            // Chat mới bắt buộc chọn môn học; hội thoại cũ dùng môn của chính nó
+            if (!currentConversationId && !selectedCourseId()) {
+                appendBotMessage('⚠️ **Vui lòng chọn môn học trước khi đặt câu hỏi.** Tôi chỉ trả lời dựa trên tài liệu của môn bạn chọn để đảm bảo chính xác.', []);
+                $('#courseSelect').focus();
+                return;
+            }
             const clientId = 'c' + Date.now() + Math.random().toString(16).slice(2);
             pendingClientIds.add(clientId);
             appendMessage(query, 'user');
@@ -503,11 +692,17 @@
             appendTyping(typingId);
             $.ajax({
                 url: '/Chat/Index?handler=Ask', type: 'POST',
-                data: { query: query, courseId: selectedCourseId(), clientId: clientId, __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val() },
+                data: { query: query, courseId: selectedCourseId(), conversationId: currentConversationId, clientId: clientId, __RequestVerificationToken: antiForgeryToken() },
                 timeout: 120000,
                 success: function (result) {
                     $(`#${typingId}`).remove();
                     if (result.success) {
+                        // Nhận conversation do server tạo/xác nhận, khóa môn theo hội thoại
+                        if (result.conversationId) {
+                            currentConversationId = result.conversationId;
+                            lockCourseSelect(true);
+                            loadConversations();
+                        }
                         // Answer đã stream qua SignalR thì không render lại (tránh trùng);
                         // chỉ render từ AJAX khi hub không kết nối (fallback).
                         if (!(result.streamMessageId && streamedMessages.has(result.streamMessageId))) {
@@ -546,12 +741,17 @@
 
         function stripCitationFooter(content, hasSources) {
             if (!hasSources) return content;
-            const citationMarker = '\n---\n📚 **Nguồn tham khảo:**';
-            const citationMarkerAlt = '\n---\n📚 Nguồn tham khảo:';
-            let markerIndex = content.indexOf(citationMarker);
-            if (markerIndex === -1) markerIndex = content.indexOf(citationMarker.replace(/\n/g, '\r\n'));
-            if (markerIndex === -1) markerIndex = content.indexOf(citationMarkerAlt);
-            if (markerIndex === -1) markerIndex = content.indexOf(citationMarkerAlt.replace(/\n/g, '\r\n'));
+            // Footer có thể là tiếng Việt hoặc tiếng Anh tùy ngôn ngữ câu trả lời
+            const markers = [
+                '\n---\n📚 **Nguồn tham khảo:**', '\n---\n📚 Nguồn tham khảo:',
+                '\n---\n📚 **References:**', '\n---\n📚 References:'
+            ];
+            let markerIndex = -1;
+            for (const m of markers) {
+                markerIndex = content.indexOf(m);
+                if (markerIndex === -1) markerIndex = content.indexOf(m.replace(/\n/g, '\r\n'));
+                if (markerIndex !== -1) break;
+            }
             if (markerIndex === -1) {
                 const simpleMarker = '\n---';
                 const simpleIndex = content.lastIndexOf(simpleMarker);
@@ -576,26 +776,61 @@
             return formatted;
         }
 
-        function buildSourcesHtml(sources) {
+        // Nhận diện văn bản tiếng Việt (có dấu) — để nhãn nguồn khớp ngôn ngữ câu trả lời
+        function isVietnameseText(text) {
+            return /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(text || '');
+        }
+
+        function buildSourcesHtml(sources, answerText) {
             if (!sources || sources.length === 0) return '';
-            let sourcesHtml = `<div class="mt-3 pt-3 border-top" style="border-color:#edf2fb !important;"><small class="text-muted fw-bold d-block mb-2">Nguồn tham khảo <span class="fw-normal">(bấm để xem đúng đoạn tài liệu)</span>:</small>`;
+            const vn = answerText === undefined ? true : isVietnameseText(answerText);
+            const heading = vn
+                ? 'Nguồn tham khảo <span class="fw-normal">(bấm để xem đoạn trích)</span>:'
+                : 'References <span class="fw-normal">(click to view the cited excerpt)</span>:';
+            const pageWord = vn ? 'Trang' : 'Page';
+            let sourcesHtml = `<div class="mt-3 pt-3 border-top" style="border-color:#edf2fb !important;"><small class="text-muted fw-bold d-block mb-2">${heading}</small>`;
             sources.forEach((s) => {
-                const score = (s.score * 100).toFixed(0);
-                const badgeClass = score >= 80 ? 'app-badge-green' : score >= 60 ? 'app-badge-blue' : 'app-badge-amber';
-                const label = `📄 <em>${escapeHtml(s.fileName)}</em> · Trang ${s.pageNumber}`;
-                const link = s.chunkUrl
-                    ? `<a href="${s.chunkUrl}" target="_blank" rel="noopener" class="citation-link" title="Mở đúng vector chunk đã dùng làm nguồn">${label} <i class="bi bi-box-arrow-up-right small"></i></a>`
+                const label = `📄 <em>${escapeHtml(s.fileName)}</em> · ${pageWord} ${s.pageNumber}`;
+                // Bấm mở popup đoạn trích ngay trong trang chat (không chuyển trang)
+                const link = s.chunkId
+                    ? `<a href="#" class="citation-link" data-chunk-id="${s.chunkId}" title="Xem đoạn tài liệu được trích dẫn">${label} <i class="bi bi-eye small"></i></a>`
                     : `<span>${label}</span>`;
-                sourcesHtml += `<small class="d-flex align-items-center gap-2 text-muted mb-2">${link}<span class="app-badge-soft ${badgeClass}">${score}%</span></small>`;
+                let badge = '';
+                if (s.score !== undefined && s.score !== null) {
+                    const score = (s.score * 100).toFixed(0);
+                    const badgeClass = score >= 80 ? 'app-badge-green' : score >= 60 ? 'app-badge-blue' : 'app-badge-amber';
+                    badge = `<span class="app-badge-soft ${badgeClass}">${score}%</span>`;
+                }
+                sourcesHtml += `<small class="d-flex align-items-center gap-2 text-muted mb-2">${link}${badge}</small>`;
             });
             sourcesHtml += '</div>';
             return sourcesHtml;
         }
 
+        // Delegated handler: hoạt động cho MỌI trích dẫn, kể cả tin nhắn cũ load lại
+        $('#chatMessages').on('click', '.citation-link', function (e) {
+            e.preventDefault();
+            const chunkId = $(this).data('chunk-id');
+            if (chunkId) openCitationModal(chunkId);
+        });
+
+        function openCitationModal(chunkId) {
+            $.ajax({
+                url: '/Chat/Index?handler=Chunk&chunkId=' + encodeURIComponent(chunkId), type: 'GET',
+                success: function (res) {
+                    if (!res || !res.success) { alert((res && res.message) || 'Không tải được đoạn trích.'); return; }
+                    $('#citationModalTitle').html(`📄 ${escapeHtml(res.fileName)} <span class="text-muted fw-normal">· Trang ${res.pageNumber}</span>`);
+                    $('#citationModalBody').text(res.content);
+                    $('#citationModalFullLink').attr('href', res.chunkUrl);
+                    new bootstrap.Modal(document.getElementById('citationModal')).show();
+                }
+            });
+        }
+
         function appendBotMessage(content, sources) {
             content = stripCitationFooter(content, sources && sources.length > 0);
             const formatted = formatBotContent(content);
-            const sourcesHtml = buildSourcesHtml(sources);
+            const sourcesHtml = buildSourcesHtml(sources, content);
             const timestamp = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
             const html = `<div class="d-flex mb-3"><div class="chat-avatar me-2"><i class="bi bi-robot"></i></div><div style="flex-grow:1;"><div class="bot-bubble chat-bubble bot">${formatted}${sourcesHtml}</div><small class="message-time" style="margin-left:8px;">${timestamp}</small></div></div>`;
             $('#chatMessages').append(html);

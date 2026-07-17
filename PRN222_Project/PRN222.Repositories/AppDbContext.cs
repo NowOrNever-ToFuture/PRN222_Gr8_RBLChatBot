@@ -143,6 +143,13 @@ namespace PRN222.Repositories
                 .HasForeignKey(c => c.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // Xóa môn học không xóa hội thoại — chỉ gỡ liên kết (CourseId = null)
+            modelBuilder.Entity<Conversation>()
+                .HasOne(c => c.Course)
+                .WithMany()
+                .HasForeignKey(c => c.CourseId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             modelBuilder.Entity<Message>()
                 .HasOne(m => m.Conversation)
                 .WithMany(c => c.Messages)

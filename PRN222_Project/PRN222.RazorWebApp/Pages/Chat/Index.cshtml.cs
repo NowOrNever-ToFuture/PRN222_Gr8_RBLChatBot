@@ -69,7 +69,7 @@ namespace PRN222.RazorWebApp.Pages.Chat
             return Page();
         }
 
-        public async Task<IActionResult> OnPostAskAsync(string query, Guid? courseId, string? clientId = null)
+        public async Task<IActionResult> OnPostAskAsync(string query, Guid? courseId, Guid? conversationId = null, string? clientId = null)
         {
             if (string.IsNullOrWhiteSpace(query))
                 return new JsonResult(new { success = false, message = "Vui lòng nhập câu hỏi." });
@@ -78,6 +78,23 @@ namespace PRN222.RazorWebApp.Pages.Chat
                 var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
                 if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId)) return Unauthorized();
                 var signalRUserId = userIdClaim.Value;
+
+                // Xác định hội thoại: tiếp tục hội thoại cũ (môn học lấy THEO hội
+                // thoại, không theo dropdown) hoặc tạo mới (bắt buộc đã chọn môn).
+                PRN222.Models.Conversation? conversation = null;
+                bool isNewConversation = false;
+                if (conversationId.HasValue && conversationId.Value != Guid.Empty)
+                {
+                    conversation = await _chatService.GetConversationAsync(conversationId.Value, userId);
+                    if (conversation == null)
+                        return new JsonResult(new { success = false, message = "Không tìm thấy hội thoại. Hãy tạo chat mới." });
+                }
+                else if (!courseId.HasValue || courseId.Value == Guid.Empty)
+                {
+                    // Bắt buộc chọn môn học khi mở hội thoại mới: retrieval chỉ chạy
+                    // trong tài liệu môn đó (tiết kiệm token, tránh trộn ngữ cảnh).
+                    return new JsonResult(new { success = false, message = "Vui lòng chọn môn học trước khi đặt câu hỏi." });
+                }
 
                 // Check quota limit
                 var subscription = await _paymentService.GetUserSubscriptionAsync(userId);
@@ -90,23 +107,30 @@ namespace PRN222.RazorWebApp.Pages.Chat
                     return new JsonResult(new { success = false, message = errMsg });
                 }
 
+                if (conversation == null)
+                {
+                    conversation = await _chatService.CreateConversationAsync(userId, courseId, query);
+                    isNewConversation = true;
+                }
+                var effectiveCourseId = conversation.CourseId;
+
                 // Đồng bộ đa tab: báo mọi tab của user này biết có câu hỏi mới
                 // (tab gửi câu hỏi sẽ tự bỏ qua nhờ clientId).
                 await _chatHubContext.Clients.User(signalRUserId)
-                    .SendAsync("ReceiveUserMessage", clientId ?? "", query);
+                    .SendAsync("ReceiveUserMessage", clientId ?? "", query, conversation.Id.ToString());
 
                 // Generate TRƯỚC rồi mới lưu message: lịch sử hội thoại dùng cho
                 // query-rewriting sẽ không lẫn chính câu đang hỏi.
-                var ragResponse = await _chatService.GenerateRagResponseAsync(query, userId, courseId);
-                await _chatService.SaveMessageAsync(userId, "User", query);
+                var ragResponse = await _chatService.GenerateRagResponseAsync(query, userId, effectiveCourseId, conversation.Id);
+                await _chatService.SaveMessageAsync(conversation.Id, "User", query);
                 string citedIds = string.Join(",", ragResponse.Sources.Select(s => s.ChunkId));
-                await _chatService.SaveMessageAsync(userId, "Assistant", ragResponse.Answer, citedIds);
+                await _chatService.SaveMessageAsync(conversation.Id, "Assistant", ragResponse.Answer, citedIds);
 
                 // Stream câu trả lời qua SignalR: đẩy từng đoạn nhỏ để client
                 // hiển thị dần (typing effect) trên TẤT CẢ tab của user.
                 var streamMessageId = Guid.NewGuid().ToString("N");
                 await _chatHubContext.Clients.User(signalRUserId)
-                    .SendAsync("ReceiveAnswerStart", streamMessageId);
+                    .SendAsync("ReceiveAnswerStart", streamMessageId, conversation.Id.ToString());
                 foreach (var chunk in SplitIntoStreamChunks(ragResponse.Answer))
                 {
                     await _chatHubContext.Clients.User(signalRUserId)
@@ -149,7 +173,8 @@ namespace PRN222.RazorWebApp.Pages.Chat
                 {
                     fileName = s.FileName,
                     pageNumber = s.PageNumber,
-                    score = s.SimilarityScore,
+                    score = (double?)s.SimilarityScore,
+                    chunkId = s.ChunkId,
                     // URL nhảy thẳng đến đúng vector chunk đã dùng làm nguồn
                     chunkUrl = $"/Documents/ViewChunks/{s.DocumentId}?chunkId={s.ChunkId}",
                     // URL mở file gốc + scroll đến đúng trang (PDF hỗ trợ #page=N)
@@ -175,7 +200,10 @@ namespace PRN222.RazorWebApp.Pages.Chat
                     streamMessageId,
                     response = ragResponse.Answer,
                     sources = sourcePayload,
-                    courseId = ragResponse.CourseId,
+                    conversationId = conversation.Id,
+                    conversationTitle = conversation.Title,
+                    isNewConversation,
+                    courseId = effectiveCourseId,
                     remainingQuota = updatedQuota,
                     totalQuota = totalQuota,
                     packageName = packageName,
@@ -204,27 +232,114 @@ namespace PRN222.RazorWebApp.Pages.Chat
             }
         }
 
-        public async Task<IActionResult> OnGetHistoryAsync()
+        /// <summary>Danh sách hội thoại của user (sidebar).</summary>
+        public async Task<IActionResult> OnGetConversationsAsync()
         {
             try
             {
                 var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
                 if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId)) return Unauthorized();
-                var history = await _chatService.GetChatHistoryAsync(userId);
-                var formattedHistory = history.Select(m => new { role = m.Role, content = m.Content, createdDate = m.CreatedDate.ToString("yyyy-MM-dd HH:mm:ss") });
-                return new JsonResult(new { success = true, history = formattedHistory });
+                var conversations = await _chatService.GetConversationsAsync(userId);
+                var payload = conversations.Select(c => new
+                {
+                    id = c.Id,
+                    title = c.Title,
+                    courseId = c.CourseId,
+                    courseCode = c.Course?.Code ?? "",
+                    courseName = c.Course?.Name ?? "",
+                    lastModified = (c.LastModifiedDate ?? c.CreatedDate).ToString("yyyy-MM-dd HH:mm:ss")
+                });
+                return new JsonResult(new { success = true, conversations = payload });
             }
             catch (Exception ex) { return new JsonResult(new { success = false, message = $"Lỗi: {ex.Message}" }); }
         }
 
-        public async Task<IActionResult> OnPostClearHistoryAsync()
+        /// <summary>Tin nhắn của MỘT hội thoại cụ thể.</summary>
+        public async Task<IActionResult> OnGetHistoryAsync(Guid conversationId)
         {
             try
             {
                 var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
                 if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId)) return Unauthorized();
-                await _chatService.ClearChatHistoryAsync(userId);
-                return new JsonResult(new { success = true });
+                var conversation = await _chatService.GetConversationAsync(conversationId, userId);
+                if (conversation == null)
+                    return new JsonResult(new { success = false, message = "Không tìm thấy hội thoại." });
+
+                var history = await _chatService.GetConversationMessagesAsync(conversationId, userId);
+
+                // Dựng lại trích dẫn từ CitedChunkIds đã lưu — để nguồn tham khảo
+                // vẫn bấm được sau khi mở lại hội thoại cũ (không chỉ lần đầu).
+                var allChunkIds = history
+                    .Where(m => !string.IsNullOrWhiteSpace(m.CitedChunkIds))
+                    .SelectMany(m => m.CitedChunkIds.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    .Select(raw => Guid.TryParse(raw.Trim(), out var id) ? id : Guid.Empty)
+                    .Where(id => id != Guid.Empty)
+                    .Distinct()
+                    .ToList();
+                var chunkMap = (await _chatService.GetChunksByIdsAsync(allChunkIds))
+                    .ToDictionary(c => c.Id);
+
+                var formattedHistory = history.Select(m => new
+                {
+                    role = m.Role,
+                    content = m.Content,
+                    createdDate = m.CreatedDate.ToString("yyyy-MM-dd HH:mm:ss"),
+                    sources = (m.CitedChunkIds ?? "")
+                        .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                        .Select(raw => Guid.TryParse(raw.Trim(), out var id) ? id : Guid.Empty)
+                        .Where(id => chunkMap.ContainsKey(id))
+                        .Select(id => new
+                        {
+                            fileName = chunkMap[id].Document.FileName,
+                            pageNumber = chunkMap[id].PageNumber,
+                            score = (double?)null, // điểm liên quan không lưu trong DB
+                            chunkId = id,
+                            chunkUrl = $"/Documents/ViewChunks/{chunkMap[id].DocumentId}?chunkId={id}"
+                        })
+                        .ToList()
+                });
+                return new JsonResult(new
+                {
+                    success = true,
+                    history = formattedHistory,
+                    courseId = conversation.CourseId,
+                    title = conversation.Title
+                });
+            }
+            catch (Exception ex) { return new JsonResult(new { success = false, message = $"Lỗi: {ex.Message}" }); }
+        }
+
+        /// <summary>Nội dung một vector chunk — hiển thị popup trích dẫn ngay trong trang chat.</summary>
+        public async Task<IActionResult> OnGetChunkAsync(Guid chunkId)
+        {
+            try
+            {
+                var chunk = (await _chatService.GetChunksByIdsAsync(new[] { chunkId })).FirstOrDefault();
+                if (chunk == null)
+                    return new JsonResult(new { success = false, message = "Không tìm thấy đoạn trích dẫn." });
+
+                return new JsonResult(new
+                {
+                    success = true,
+                    content = chunk.Content,
+                    fileName = chunk.Document.FileName,
+                    pageNumber = chunk.PageNumber,
+                    chunkIndex = chunk.ChunkIndex,
+                    chunkUrl = $"/Documents/ViewChunks/{chunk.DocumentId}?chunkId={chunk.Id}"
+                });
+            }
+            catch (Exception ex) { return new JsonResult(new { success = false, message = $"Lỗi: {ex.Message}" }); }
+        }
+
+        /// <summary>Xóa một hội thoại (kèm toàn bộ tin nhắn của nó).</summary>
+        public async Task<IActionResult> OnPostDeleteConversationAsync(Guid conversationId)
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId)) return Unauthorized();
+                var deleted = await _chatService.DeleteConversationAsync(conversationId, userId);
+                return new JsonResult(new { success = deleted, message = deleted ? "" : "Không tìm thấy hội thoại." });
             }
             catch (Exception ex) { return new JsonResult(new { success = false, message = $"Lỗi: {ex.Message}" }); }
         }
