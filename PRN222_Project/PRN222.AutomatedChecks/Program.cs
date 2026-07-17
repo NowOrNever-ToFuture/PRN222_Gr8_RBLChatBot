@@ -140,7 +140,7 @@ internal sealed class AutomatedCheckRunner
 
 
 
-        var service = new UserService(db, new FakeAccountService(), new FakeHubContext<UserHub>());
+        var service = new UserService(db, new FakeAccountService(), new FakeHubContext<UserHub>(), new FakeHubContext<CourseHub>());
 
         var result = await service.UpdateUserAsync(lecturer.Id, lecturer.Username, "Student", null);
 
@@ -174,7 +174,7 @@ internal sealed class AutomatedCheckRunner
 
 
 
-        var service = new CourseService(db, new FakeHubContext<CourseHub>());
+        var service = new CourseService(db, new FakeHubContext<CourseHub>(), new FakeHubContext<UserHub>());
 
 
 
@@ -214,7 +214,7 @@ internal sealed class AutomatedCheckRunner
 
 
 
-        var service = new CourseService(db, new FakeHubContext<CourseHub>());
+        var service = new CourseService(db, new FakeHubContext<CourseHub>(), new FakeHubContext<UserHub>());
 
         var course = await service.CreateCourseAsync("Mac Lenin", "MLN", "desc", lecturer.Id);
 
@@ -318,7 +318,7 @@ internal sealed class AutomatedCheckRunner
 
         {
 
-            AssertTrue(ex.Message.Contains("Admin", StringComparison.OrdinalIgnoreCase), "Expected admin upload rejection.");
+            AssertTrue(ex.Message.Contains("Quản trị viên", StringComparison.OrdinalIgnoreCase), "Expected admin upload rejection.");
 
         }
 
@@ -422,7 +422,11 @@ internal sealed class AutomatedCheckRunner
 
         AssertEqual(2, lecturerDocs.Count, "Assigned lecturer should see all documents in selected course.");
 
-        AssertEqual(0, outsiderDocs.Count, "Unassigned lecturer should not see documents in the course.");
+        // Rule hiện tại: giảng viên không thuộc môn vẫn xem được tài liệu Completed
+        // (giống Student), chỉ không thấy tài liệu đang Pending.
+        AssertEqual(1, outsiderDocs.Count, "Unassigned lecturer should only see completed documents.");
+
+        AssertEqual("Completed", outsiderDocs[0].Status, "Unassigned lecturer must not see pending docs.");
 
     }
 
@@ -564,7 +568,7 @@ internal sealed class FakeDocumentProcessingService : IDocumentProcessingService
 
     public Task<bool> UploadAndProcessDocumentAsync(IFormFile file, Guid courseId, string modelName = "bge-m3", string chunkStrategy = "markdown_header") => Task.FromResult(true);
 
-    public Task<PythonParseResponseDto> ParseDocumentAsync(string filePath, string modelName = "bge-m3", string chunkStrategy = "markdown_header") => Task.FromResult(new PythonParseResponseDto());
+    public Task<PythonParseResponseDto> ParseDocumentAsync(string filePath, string modelName = "bge-m3", string chunkStrategy = "markdown_header", int chunkSize = 500) => Task.FromResult(new PythonParseResponseDto());
 
 }
 

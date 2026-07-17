@@ -303,6 +303,22 @@ namespace PRN222.Services
             return (chunks, totalCount);
         }
 
+        public async Task<int> GetChunkPositionAsync(Guid documentId, Guid chunkId)
+        {
+            var target = await _dbContext.DocumentChunks
+                .Where(c => c.DocumentId == documentId && c.Id == chunkId)
+                .Select(c => new { c.PageNumber, c.ChunkIndex })
+                .FirstOrDefaultAsync();
+            if (target == null) return -1;
+
+            // Đếm số chunk đứng trước theo đúng thứ tự hiển thị (PageNumber, ChunkIndex)
+            return await _dbContext.DocumentChunks
+                .Where(c => c.DocumentId == documentId &&
+                    (c.PageNumber < target.PageNumber ||
+                     (c.PageNumber == target.PageNumber && c.ChunkIndex < target.ChunkIndex)))
+                .CountAsync();
+        }
+
         private string CalculateSHA256(Stream stream)
         {
             using var sha256 = System.Security.Cryptography.SHA256.Create();
