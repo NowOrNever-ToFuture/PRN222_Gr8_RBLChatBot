@@ -18,12 +18,29 @@
         @* BIỂU ĐỒ TIÊU THỤ TOKEN *@
         <div class="col-xl-6">
             <div class="app-card h-100 shadow-sm border border-opacity-10">
-                <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
                     <div class="app-card-title m-0">
                         <i class="bi bi-cpu-fill text-success me-2"></i> Lưu lượng Token tiêu thụ
                     </div>
-                    <div>
-                        <select id="tokenYearSelect" class="form-select form-select-sm" style="border-radius: 8px;">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <select id="tokenChartTypeSelect" class="form-select form-select-sm" style="border-radius: 8px; min-width: 115px; width: auto;">
+                            <option value="mixed">Cả hai</option>
+                            <option value="bar">Biểu đồ cột</option>
+                            <option value="line">Biểu đồ line</option>
+                        </select>
+                        <select id="tokenStartMonthSelect" class="form-select form-select-sm" style="border-radius: 8px; min-width: 105px; width: auto;">
+                            @for (int i = 1; i <= 12; i++)
+                            {
+                                <option value="@i">Từ Th.@i</option>
+                            }
+                        </select>
+                        <select id="tokenEndMonthSelect" class="form-select form-select-sm" style="border-radius: 8px; min-width: 105px; width: auto;">
+                            @for (int i = 1; i <= 12; i++)
+                            {
+                                <option value="@i" selected="@(i == 12 ? "selected" : null)">Đến Th.@i</option>
+                            }
+                        </select>
+                        <select id="tokenYearSelect" class="form-select form-select-sm" style="border-radius: 8px; min-width: 105px; width: auto;">
                             @foreach (var y in Model.AvailableTokenYears)
                             {
                                 <option value="@y">Năm @y</option>
@@ -41,12 +58,28 @@
         @* BIỂU ĐỒ DOANH THU HỌC VIÊN NẠP VIP *@
         <div class="col-xl-6">
             <div class="app-card h-100 shadow-sm border border-opacity-10">
-                <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
                     <div class="app-card-title m-0">
                         <i class="bi bi-wallet2 text-primary me-2"></i> Doanh thu nạp VIP
                     </div>
-                    <div>
-                        <select id="paymentYearSelect" class="form-select form-select-sm" style="border-radius: 8px;">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <select id="paymentChartTypeSelect" class="form-select form-select-sm" style="border-radius: 8px; min-width: 125px; width: auto;">
+                            <option value="line">Biểu đồ line</option>
+                            <option value="bar">Biểu đồ cột</option>
+                        </select>
+                        <select id="paymentStartMonthSelect" class="form-select form-select-sm" style="border-radius: 8px; min-width: 105px; width: auto;">
+                            @for (int i = 1; i <= 12; i++)
+                            {
+                                <option value="@i">Từ Th.@i</option>
+                            }
+                        </select>
+                        <select id="paymentEndMonthSelect" class="form-select form-select-sm" style="border-radius: 8px; min-width: 105px; width: auto;">
+                            @for (int i = 1; i <= 12; i++)
+                            {
+                                <option value="@i" selected="@(i == 12 ? "selected" : null)">Đến Th.@i</option>
+                            }
+                        </select>
+                        <select id="paymentYearSelect" class="form-select form-select-sm" style="border-radius: 8px; min-width: 105px; width: auto;">
                             @foreach (var y in Model.AvailablePaymentYears)
                             {
                                 <option value="@y">Năm @y</option>
@@ -87,11 +120,12 @@
                         <th class="px-4 py-3 text-secondary text-center" style="font-size: 0.85rem; font-weight: 600;">SỐ CÂU HỎI</th>
                         <th class="px-4 py-3 text-secondary text-end" style="font-size: 0.85rem; font-weight: 600;">TOKEN ĐÃ DÙNG</th>
                         <th class="px-4 py-3 text-secondary text-end" style="font-size: 0.85rem; font-weight: 600;">TỔNG THANH TOÁN</th>
+                        <th class="px-4 py-3 text-secondary text-center" style="font-size: 0.85rem; font-weight: 600;">LỊCH SỬ MUA GÓI</th>
                     </tr>
                 </thead>
                 <tbody id="userTableBody">
                     <tr>
-                        <td colspan="6" class="text-center py-4 text-muted">
+                        <td colspan="7" class="text-center py-4 text-muted">
                             <span class="spinner-border spinner-border-sm me-2" role="status"></span> Đang tải dữ liệu học viên...
                         </td>
                     </tr>
@@ -101,26 +135,90 @@
     </section>
 </div>
 
+<!-- Modal Lịch sử nạp gói/sử dụng Token -->
+<div class="modal fade" id="userHistoryModal" tabindex="-1" aria-labelledby="userHistoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 16px; border: none; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+            <div class="modal-header bg-light border-0 py-3 px-4">
+                <h5 class="modal-title fw-bold text-dark m-0" id="userHistoryModalLabel">
+                    <i class="bi bi-clock-history text-primary me-2"></i> Lịch sử nạp gói &amp; Hoạt động
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-4">
+                    <h6 class="fw-bold text-secondary mb-2" style="font-size: 0.85rem; letter-spacing: 0.5px;">THÔNG TIN HỌC VIÊN</h6>
+                    <div class="row g-3 bg-light p-3 rounded-3 mx-0">
+                        <div class="col-sm-6">
+                            <span class="d-block text-muted small">Họ và tên</span>
+                            <strong id="modalUserFullName" class="text-dark">-</strong>
+                        </div>
+                        <div class="col-sm-6">
+                            <span class="d-block text-muted small">Gói hiện tại</span>
+                            <div>
+                                <span id="modalUserPackage" class="badge rounded-pill bg-success px-3 py-1 fw-semibold" style="font-size:11px;">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h6 class="fw-bold text-secondary mb-3" style="font-size: 0.85rem; letter-spacing: 0.5px;">LỊCH SỬ GIAO DỊCH MUA SUBSCRIPTION</h6>
+                    <div class="table-responsive" style="border-radius: 10px; border: 1px solid rgba(0,0,0,0.06); max-height: 280px; overflow-y: auto;">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th class="px-3 py-2 text-secondary" style="font-size: 0.8rem;">Gói cước</th>
+                                    <th class="px-3 py-2 text-secondary text-end" style="font-size: 0.8rem;">Giá tiền</th>
+                                    <th class="px-3 py-2 text-secondary text-center" style="font-size: 0.8rem;">Ngày mua</th>
+                                    <th class="px-3 py-2 text-secondary text-center" style="font-size: 0.8rem;">Trạng thái</th>
+                                </tr>
+                            </thead>
+                            <tbody id="modalTxHistoryBody">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="modalTxHistoryLoadMoreContainer" class="text-center mt-3 d-none">
+                        <button id="btnModalLoadMore" class="btn btn-sm btn-outline-secondary px-3" style="border-radius: 6px; font-weight: 600; font-size: 11px;">
+                            <i class="bi bi-chevron-down"></i> Xem thêm giao dịch
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
     <script>
         $(document).ready(function () {
             let tokenChart = null;
             let paymentChart = null;
             let usersData = [];
+            let cachedTokenData = [];
+            let cachedPaymentData = [];
 
-            // Load all charts and table
-            loadTokenChart($('#tokenYearSelect').val());
-            loadPaymentChart($('#paymentYearSelect').val());
+            // Load initial data
+            loadTokenData($('#tokenYearSelect').val());
+            loadPaymentData($('#paymentYearSelect').val());
             loadUsersSummary();
 
-            // Trigger change year events
+            // Set up event listeners for filters
             $('#tokenYearSelect').change(function () {
-                loadTokenChart($(this).val());
+                loadTokenData($(this).val());
+            });
+            $('#tokenChartTypeSelect, #tokenStartMonthSelect, #tokenEndMonthSelect').change(function () {
+                filterAndRenderTokenChart();
             });
 
             $('#paymentYearSelect').change(function () {
-                loadPaymentChart($(this).val());
+                loadPaymentData($(this).val());
+            });
+            $('#paymentChartTypeSelect, #paymentStartMonthSelect, #paymentEndMonthSelect').change(function () {
+                filterAndRenderPaymentChart();
             });
 
             // Filter user table
@@ -129,28 +227,74 @@
                 renderUserTable(query);
             });
 
-            function loadTokenChart(year) {
+            // Connect to TokenUsageHub for real-time dashboard updates
+            const tokenConnection = new signalR.HubConnectionBuilder()
+                .withUrl("/hubs/tokenusage")
+                .withAutomaticReconnect()
+                .build();
+
+            tokenConnection.on("ReceiveTokenLogged", function () {
+                loadTokenData($('#tokenYearSelect').val());
+                loadUsersSummary();
+            });
+
+            tokenConnection.start()
+                .then(() => console.log("SignalR TokenUsageHub connected."))
+                .catch(err => console.error("SignalR TokenUsageHub connection error: ", err));
+
+            // Connect to PaymentHub for real-time dashboard updates
+            const paymentConnection = new signalR.HubConnectionBuilder()
+                .withUrl("/hubs/payment")
+                .withAutomaticReconnect()
+                .build();
+
+            paymentConnection.on("ReceivePaymentLogged", function () {
+                loadPaymentData($('#paymentYearSelect').val());
+                loadUsersSummary();
+            });
+
+            paymentConnection.start()
+                .then(() => console.log("SignalR PaymentHub connected."))
+                .catch(err => console.error("SignalR PaymentHub connection error: ", err));
+
+            function loadTokenData(year) {
                 $.ajax({
                     url: `/Analytics/Index?handler=TokenChartData&year=${year}`,
                     type: 'GET',
                     success: function (res) {
                         if (res && res.success && res.data) {
-                            renderTokenChart(res.data);
+                            cachedTokenData = res.data;
+                            filterAndRenderTokenChart();
                         }
                     }
                 });
             }
 
-            function loadPaymentChart(year) {
+            function filterAndRenderTokenChart() {
+                const startMonth = parseInt($('#tokenStartMonthSelect').val());
+                const endMonth = parseInt($('#tokenEndMonthSelect').val());
+                const filtered = cachedTokenData.filter(d => d.month >= startMonth && d.month <= endMonth);
+                renderTokenChart(filtered);
+            }
+
+            function loadPaymentData(year) {
                 $.ajax({
                     url: `/Analytics/Index?handler=PaymentChartData&year=${year}`,
                     type: 'GET',
                     success: function (res) {
                         if (res && res.success && res.data) {
-                            renderPaymentChart(res.data);
+                            cachedPaymentData = res.data;
+                            filterAndRenderPaymentChart();
                         }
                     }
                 });
+            }
+
+            function filterAndRenderPaymentChart() {
+                const startMonth = parseInt($('#paymentStartMonthSelect').val());
+                const endMonth = parseInt($('#paymentEndMonthSelect').val());
+                const filtered = cachedPaymentData.filter(d => d.month >= startMonth && d.month <= endMonth);
+                renderPaymentChart(filtered);
             }
 
             function loadUsersSummary() {
@@ -161,6 +305,11 @@
                         if (res && res.success && res.data) {
                             usersData = res.data;
                             renderUserTable();
+
+                            const activeUserId = $('#userHistoryModal').data('active-userId');
+                            if (activeUserId && $('#userHistoryModal').hasClass('show')) {
+                                populateModalData(activeUserId);
+                            }
                         }
                     }
                 });
@@ -176,40 +325,94 @@
                     tokenChart.destroy();
                 }
 
+                const chartType = $('#tokenChartTypeSelect').val();
+                let datasets = [];
+
+                if (chartType === 'bar') {
+                    datasets = [
+                        {
+                            label: 'Prompt Tokens',
+                            data: promptTokens,
+                            backgroundColor: 'rgba(25, 135, 84, 0.55)',
+                            borderColor: '#198754',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Completion Tokens',
+                            data: completionTokens,
+                            backgroundColor: 'rgba(15, 157, 122, 0.55)',
+                            borderColor: '#0f9d7a',
+                            borderWidth: 1
+                        }
+                    ];
+                } else if (chartType === 'line') {
+                    datasets = [
+                        {
+                            label: 'Prompt Tokens',
+                            data: promptTokens,
+                            borderColor: '#198754',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Completion Tokens',
+                            data: completionTokens,
+                            borderColor: '#0f9d7a',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Tổng số lượng tiêu thụ',
+                            data: totalTokens,
+                            borderColor: '#1456b8',
+                            backgroundColor: 'rgba(20, 86, 184, 0.05)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.3
+                        }
+                    ];
+                } else {
+                    datasets = [
+                        {
+                            label: 'Prompt Tokens',
+                            data: promptTokens,
+                            backgroundColor: 'rgba(25, 135, 84, 0.45)',
+                            borderColor: '#198754',
+                            borderWidth: 1,
+                            type: 'bar',
+                            stack: 'Stack 0',
+                        },
+                        {
+                            label: 'Completion Tokens',
+                            data: completionTokens,
+                            backgroundColor: 'rgba(15, 157, 122, 0.45)',
+                            borderColor: '#0f9d7a',
+                            borderWidth: 1,
+                            type: 'bar',
+                            stack: 'Stack 0',
+                        },
+                        {
+                            label: 'Tổng số lượng tiêu thụ',
+                            data: totalTokens,
+                            type: 'line',
+                            borderColor: '#1456b8',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            tension: 0.35,
+                            pointBackgroundColor: '#1456b8',
+                            pointHoverRadius: 6
+                        }
+                    ];
+                }
+
                 const ctx = document.getElementById('tokenChart').getContext('2d');
                 tokenChart = new Chart(ctx, {
-                    type: 'bar',
+                    type: chartType === 'mixed' ? 'bar' : chartType,
                     data: {
                         labels: labels,
-                        datasets: [
-                            {
-                                label: 'Prompt Tokens',
-                                data: promptTokens,
-                                backgroundColor: 'rgba(25, 135, 84, 0.45)',
-                                borderColor: '#198754',
-                                borderWidth: 1,
-                                stack: 'Stack 0',
-                            },
-                            {
-                                label: 'Completion Tokens',
-                                data: completionTokens,
-                                backgroundColor: 'rgba(15, 157, 122, 0.45)',
-                                borderColor: '#0f9d7a',
-                                borderWidth: 1,
-                                stack: 'Stack 0',
-                            },
-                            {
-                                label: 'Tổng số lượng tiêu thụ',
-                                data: totalTokens,
-                                type: 'line',
-                                borderColor: '#1456b8',
-                                backgroundColor: 'transparent',
-                                borderWidth: 2,
-                                tension: 0.35,
-                                pointBackgroundColor: '#1456b8',
-                                pointHoverRadius: 6
-                            }
-                        ]
+                        datasets: datasets
                     },
                     options: {
                         responsive: true,
@@ -241,22 +444,34 @@
                     paymentChart.destroy();
                 }
 
+                const chartType = $('#paymentChartTypeSelect').val();
+                let dataset = {
+                    label: 'Doanh thu (VND)',
+                    data: revenues,
+                    borderColor: '#764ba2',
+                    borderWidth: 3,
+                };
+
+                if (chartType === 'bar') {
+                    dataset.type = 'bar';
+                    dataset.backgroundColor = 'rgba(118, 75, 162, 0.55)';
+                    dataset.borderColor = '#764ba2';
+                    dataset.borderWidth = 1;
+                } else {
+                    dataset.type = 'line';
+                    dataset.backgroundColor = 'rgba(118, 75, 162, 0.08)';
+                    dataset.fill = true;
+                    dataset.tension = 0.4;
+                    dataset.pointBackgroundColor = '#764ba2';
+                    dataset.pointHoverRadius = 7;
+                }
+
                 const ctx = document.getElementById('paymentChart').getContext('2d');
                 paymentChart = new Chart(ctx, {
-                    type: 'line',
+                    type: chartType,
                     data: {
                         labels: labels,
-                        datasets: [{
-                            label: 'Doanh thu (VND)',
-                            data: revenues,
-                            borderColor: '#764ba2',
-                            backgroundColor: 'rgba(118, 75, 162, 0.08)',
-                            fill: true,
-                            borderWidth: 3,
-                            tension: 0.4,
-                            pointBackgroundColor: '#764ba2',
-                            pointHoverRadius: 7
-                        }]
+                        datasets: [dataset]
                     },
                     options: {
                         responsive: true,
@@ -295,7 +510,7 @@
                 });
 
                 if (filtered.length === 0) {
-                    $body.append('<tr><td colspan="6" class="text-center py-4 text-muted">Không tìm thấy học viên tương ứng.</td></tr>');
+                    $body.append('<tr><td colspan="7" class="text-center py-4 text-muted">Không tìm thấy học viên tương ứng.</td></tr>');
                     return;
                 }
 
@@ -328,11 +543,90 @@
                             <td class="px-4 text-center text-muted">${requestsText}</td>
                             <td class="px-4 text-end text-dark">${tokensUsedText}</td>
                             <td class="px-4 text-end fw-bold text-success">${amountPaidText}</td>
+                            <td class="px-4 text-center">
+                                <button class="btn btn-sm btn-outline-primary px-3 btn-view-history" data-id="${u.userId}" style="border-radius:6px; font-size:11px; font-weight:600;">
+                                    <i class="bi bi-clock-history"></i> Xem lịch sử
+                                </button>
+                            </td>
                         </tr>
                     `;
                     $body.append(html);
                 });
             }
+
+            let modalDisplayLimit = 5;
+
+            function populateModalData(userId) {
+                const user = usersData.find(u => u.userId === userId);
+                if (user) {
+                    $('#modalUserFullName').text(user.fullName);
+                    $('#modalUserPackage').text(user.currentPackage);
+                    
+                    const badgeClass = user.currentPackage === 'VIP' ? 'bg-success' : user.currentPackage === 'Free' ? 'bg-secondary' : 'bg-light text-dark';
+                    $('#modalUserPackage').removeClass().addClass(`badge rounded-pill ${badgeClass} px-3 py-1 fw-semibold`);
+
+                    const $historyBody = $('#modalTxHistoryBody');
+                    $historyBody.empty();
+
+                    if (!user.purchaseHistory || user.purchaseHistory.length === 0) {
+                        $historyBody.append('<tr><td colspan="4" class="text-center py-3 text-muted">Chưa có giao dịch mua gói nào.</td></tr>');
+                        $('#modalTxHistoryLoadMoreContainer').addClass('d-none');
+                    } else {
+                        const totalTx = user.purchaseHistory.length;
+                        const visibleTx = user.purchaseHistory.slice(0, modalDisplayLimit);
+
+                        visibleTx.forEach(tx => {
+                            const date = new Date(tx.purchaseDate).toLocaleDateString('vi-VN', {
+                                year: 'numeric', month: '2-digit', day: '2-digit',
+                                hour: '2-digit', minute: '2-digit'
+                            });
+                            const priceText = tx.price.toLocaleString('vi-VN') + ' đ';
+                            let statusBadge = '';
+                            if (tx.status === 'Success') {
+                                statusBadge = '<span class="badge bg-success">Thành công</span>';
+                            } else if (tx.status === 'Pending') {
+                                statusBadge = '<span class="badge bg-warning text-dark">Chờ thanh toán</span>';
+                            } else {
+                                statusBadge = `<span class="badge bg-danger">${tx.status}</span>`;
+                            }
+
+                            $historyBody.append(`
+                                <tr>
+                                    <td class="px-3 py-2 fw-semibold text-dark">${escapeHtml(tx.packageName)}</td>
+                                    <td class="px-3 py-2 text-end text-success fw-bold">${priceText}</td>
+                                    <td class="px-3 py-2 text-center text-muted">${date}</td>
+                                    <td class="px-3 py-2 text-center">${statusBadge}</td>
+                                </tr>
+                            `);
+                        });
+
+                        if (totalTx > modalDisplayLimit) {
+                            $('#modalTxHistoryLoadMoreContainer').removeClass('d-none');
+                        } else {
+                            $('#modalTxHistoryLoadMoreContainer').addClass('d-none');
+                        }
+                    }
+                }
+            }
+
+            // Click view history handler
+            $(document).on('click', '.btn-view-history', function () {
+                const userId = $(this).data('id');
+                $('#userHistoryModal').data('active-userId', userId);
+                modalDisplayLimit = 5; // Reset limit
+                populateModalData(userId);
+                const myModal = new bootstrap.Modal(document.getElementById('userHistoryModal'));
+                myModal.show();
+            });
+
+            // Load more button inside modal handler
+            $('#btnModalLoadMore').click(function () {
+                const activeUserId = $('#userHistoryModal').data('active-userId');
+                if (activeUserId) {
+                    modalDisplayLimit += 5;
+                    populateModalData(activeUserId);
+                }
+            });
 
             function escapeHtml(text) {
                 if (!text) return '';

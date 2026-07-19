@@ -25,6 +25,11 @@ namespace PRN222.RazorWebApp.Pages.Payments
 
         public async Task<IActionResult> OnGetAsync()
         {
+            if (!User.IsInRole("Student"))
+            {
+                return RedirectToPage("/Index");
+            }
+
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
             if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
             {

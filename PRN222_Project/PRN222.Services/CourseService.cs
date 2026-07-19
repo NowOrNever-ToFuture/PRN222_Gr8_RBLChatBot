@@ -223,17 +223,6 @@ namespace PRN222.Services
                 throw new InvalidOperationException("Chỉ tài khoản có role Lecturer mới được gán làm trưởng bộ môn.");
             }
 
-            // Quy tắc: mỗi giảng viên chỉ được làm trưởng bộ môn của MỘT môn học.
-            // Phải chuyển giao môn đang quản lý trước khi nhận môn mới.
-            var alreadyManagedCourse = await _dbContext.Courses.FirstOrDefaultAsync(c =>
-                c.ManagedById == managedById.Value
-                && (!currentCourseId.HasValue || c.Id != currentCourseId.Value));
-            if (alreadyManagedCourse != null)
-            {
-                throw new InvalidOperationException(
-                    $"Giảng viên này đang là trưởng bộ môn của môn '{alreadyManagedCourse.Name}'. " +
-                    "Hãy chuyển giao quyền quản lý môn đó trước khi gán môn mới.");
-            }
         }
 
         private async Task EnsureHeadLecturerAlsoAssignedAsync(Guid courseId, Guid? managedById)

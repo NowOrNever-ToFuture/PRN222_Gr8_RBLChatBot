@@ -50,6 +50,9 @@ namespace PRN222.Services
             var todayUsed = await GetTodayUsageAsync(log.UserId);
             await _hubContext.Clients.User(log.UserId.ToString())
                 .SendAsync("ReceiveTokenUpdate", todayUsed);
+
+            // Broadcast to everyone (including Admin dashboard) for live update
+            await _hubContext.Clients.All.SendAsync("ReceiveTokenLogged");
         }
 
         public async Task LogUsageAsync(Guid userId, int promptTokens, int completionTokens, string modelName, string feature)
@@ -131,7 +134,8 @@ namespace PRN222.Services
         public async Task<List<MonthlyTokenStatDto>> GetMonthlyTokenStatsAsync(int year)
         {
             var rawData = await _dbContext.TokenUsageLogs
-                .Where(t => t.CreatedDate.Year == year)
+                .Include(t => t.User)
+                .Where(t => t.CreatedDate.Year == year && t.User.Role == "Student")
                 .GroupBy(t => t.CreatedDate.Month)
                 .Select(g => new
                 {
@@ -201,7 +205,13 @@ namespace PRN222.Services
                 .Where(us => us.Status == "Active")
                 .ToListAsync();
 
+            var transactionsByUser = await _dbContext.PaymentTransactions
+                .Include(p => p.PricingPackage)
+                .OrderByDescending(p => p.CreatedDate)
+                .ToListAsync();
+
             var users = await _dbContext.Users
+                .Where(u => u.Role == "Student")
                 .OrderBy(u => u.FullName)
                 .ToListAsync();
 
@@ -210,6 +220,15 @@ namespace PRN222.Services
                 var tokenStat = tokenByUser.FirstOrDefault(t => t.UserId == u.Id);
                 var paymentStat = paymentByUser.FirstOrDefault(p => p.UserId == u.Id);
                 var sub = subscriptions.FirstOrDefault(s => s.UserId == u.Id);
+                var userTx = transactionsByUser
+                    .Where(tx => tx.UserId == u.Id && tx.PricingPackage != null && tx.PricingPackage.Name != "Free")
+                    .Select(tx => new UserSubscriptionDetailDto
+                    {
+                        PackageName = tx.PricingPackage.Name,
+                        Price = tx.Amount,
+                        PurchaseDate = tx.CreatedDate,
+                        Status = tx.Status
+                    }).ToList();
 
                 return new AdminUserTokenSummaryDto
                 {
@@ -219,8 +238,9 @@ namespace PRN222.Services
                     TotalTokensUsed = tokenStat?.TotalTokens ?? 0,
                     TotalRequests = tokenStat?.TotalRequests ?? 0,
                     TotalAmountPaid = paymentStat?.TotalPaid ?? 0,
-                    CurrentPackage = sub?.PricingPackage?.Name ?? "Chưa có",
-                    RemainingTokens = sub?.RemainingTokens ?? 0
+                    CurrentPackage = sub?.PricingPackage?.Name ?? "Free",
+                    RemainingTokens = sub?.RemainingTokens ?? 0,
+                    PurchaseHistory = userTx
                 };
             }).ToList();
 

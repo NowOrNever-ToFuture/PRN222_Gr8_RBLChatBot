@@ -238,6 +238,9 @@ namespace PRN222.Services
             await _hubContext.Clients.User(transaction.UserId.ToString())
                 .SendAsync("ReceivePaymentConfirmed", package.Name, subscription.RemainingTokens);
 
+            // Broadcast to everyone (including Admin dashboard) for live update
+            await _hubContext.Clients.All.SendAsync("ReceivePaymentLogged");
+
             return (true, "Payment confirmed and subscription updated.");
         }
 
@@ -468,7 +471,8 @@ namespace PRN222.Services
         public async Task<List<MonthlyPaymentStatDto>> GetMonthlyPaymentStatsAsync(int year)
         {
             var rawData = await _dbContext.PaymentTransactions
-                .Where(p => p.Status == "Success" && p.Amount > 0 && p.CreatedDate.Year == year)
+                .Include(p => p.User)
+                .Where(p => p.Status == "Success" && p.Amount > 0 && p.CreatedDate.Year == year && p.User.Role == "Student")
                 .GroupBy(p => p.CreatedDate.Month)
                 .Select(g => new
                 {

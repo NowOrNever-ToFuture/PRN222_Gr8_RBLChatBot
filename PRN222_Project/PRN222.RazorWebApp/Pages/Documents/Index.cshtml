@@ -119,6 +119,14 @@
         const connection = new signalR.HubConnectionBuilder().withUrl("/hubs/documentupload").withAutomaticReconnect().build();
         connection.start().catch(err => console.error("SignalR Connection Error:", err));
 
+        const courseConnection = new signalR.HubConnectionBuilder().withUrl("/hubs/course").withAutomaticReconnect().build();
+        courseConnection.on("ReceiveUpdatedCourse", (course) => {
+            if (course.id === selectedCourseId) {
+                window.location.reload();
+            }
+        });
+        courseConnection.start().catch(err => console.error("SignalR CourseConnection Error:", err));
+
         function shouldRenderDocument(doc) {
             if (doc.courseId !== selectedCourseId) return false;
             if (isCurrentStudent && doc.status !== "Completed") return false;
