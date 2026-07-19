@@ -597,7 +597,8 @@ Chỉ trả về JSON đúng định dạng: {{""search_query"": ""..."", ""inst
             return await _dbContext.Conversations
                 .Include(c => c.Course)
                 .Where(c => c.UserId == userId)
-                .OrderByDescending(c => c.LastModifiedDate ?? c.CreatedDate)
+                .OrderByDescending(c => c.IsPinned) // hội thoại ghim luôn nằm trên
+                .ThenByDescending(c => c.LastModifiedDate ?? c.CreatedDate)
                 .ToListAsync();
         }
 
@@ -637,6 +638,31 @@ Chỉ trả về JSON đúng định dạng: {{""search_query"": ""..."", ""inst
             _dbContext.Conversations.Remove(conversation); // messages xóa theo (cascade)
             await _dbContext.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<bool> RenameConversationAsync(Guid conversationId, Guid userId, string newTitle)
+        {
+            if (string.IsNullOrWhiteSpace(newTitle)) return false;
+            var conversation = await _dbContext.Conversations
+                .FirstOrDefaultAsync(c => c.Id == conversationId && c.UserId == userId);
+            if (conversation == null) return false;
+
+            newTitle = newTitle.Trim();
+            if (newTitle.Length > 60) newTitle = newTitle[..60] + "…";
+            conversation.Title = newTitle;
+            await _dbContext.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool?> TogglePinConversationAsync(Guid conversationId, Guid userId)
+        {
+            var conversation = await _dbContext.Conversations
+                .FirstOrDefaultAsync(c => c.Id == conversationId && c.UserId == userId);
+            if (conversation == null) return null;
+
+            conversation.IsPinned = !conversation.IsPinned;
+            await _dbContext.SaveChangesAsync();
+            return conversation.IsPinned;
         }
 
         public async Task<List<Message>> GetConversationMessagesAsync(Guid conversationId, Guid userId)

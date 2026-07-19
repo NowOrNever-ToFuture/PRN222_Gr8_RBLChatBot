@@ -102,7 +102,7 @@ namespace PRN222.RazorWebApp.Pages.Chat
                 {
                     var isFreePkg = subscription?.PricingPackage?.Name == "Free";
                     var errMsg = isFreePkg
-                        ? "Bạn đã hết hạn mức Token miễn phí trong ngày. Vui lòng đợi đến ngày hôm sau để hệ thống tự động reset lại 100 Tokens, hoặc nâng cấp lên gói VIP để tiếp tục trò chuyện ngay lập tức."
+                        ? "Bạn đã hết hạn mức Token miễn phí. Hạn mức sẽ tự động reset đầy lại sau 5 tiếng kể từ câu chat đầu tiên của phiên, hoặc nâng cấp lên gói VIP để tiếp tục trò chuyện ngay lập tức."
                         : "Tài khoản của bạn đã hết Token. Vui lòng nạp thêm gói cước để tiếp tục trò chuyện.";
                     return new JsonResult(new { success = false, message = errMsg });
                 }
@@ -244,6 +244,7 @@ namespace PRN222.RazorWebApp.Pages.Chat
                 {
                     id = c.Id,
                     title = c.Title,
+                    isPinned = c.IsPinned,
                     courseId = c.CourseId,
                     courseCode = c.Course?.Code ?? "",
                     courseName = c.Course?.Name ?? "",
@@ -340,6 +341,36 @@ namespace PRN222.RazorWebApp.Pages.Chat
                 if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId)) return Unauthorized();
                 var deleted = await _chatService.DeleteConversationAsync(conversationId, userId);
                 return new JsonResult(new { success = deleted, message = deleted ? "" : "Không tìm thấy hội thoại." });
+            }
+            catch (Exception ex) { return new JsonResult(new { success = false, message = $"Lỗi: {ex.Message}" }); }
+        }
+
+        /// <summary>Đổi tên một hội thoại.</summary>
+        public async Task<IActionResult> OnPostRenameConversationAsync(Guid conversationId, string newTitle)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(newTitle))
+                    return new JsonResult(new { success = false, message = "Tên hội thoại không được để trống." });
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId)) return Unauthorized();
+                var renamed = await _chatService.RenameConversationAsync(conversationId, userId, newTitle);
+                return new JsonResult(new { success = renamed, message = renamed ? "" : "Không tìm thấy hội thoại." });
+            }
+            catch (Exception ex) { return new JsonResult(new { success = false, message = $"Lỗi: {ex.Message}" }); }
+        }
+
+        /// <summary>Ghim / bỏ ghim một hội thoại (hội thoại ghim hiển thị đầu danh sách).</summary>
+        public async Task<IActionResult> OnPostTogglePinAsync(Guid conversationId)
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId)) return Unauthorized();
+                var isPinned = await _chatService.TogglePinConversationAsync(conversationId, userId);
+                if (isPinned == null)
+                    return new JsonResult(new { success = false, message = "Không tìm thấy hội thoại." });
+                return new JsonResult(new { success = true, isPinned });
             }
             catch (Exception ex) { return new JsonResult(new { success = false, message = $"Lỗi: {ex.Message}" }); }
         }

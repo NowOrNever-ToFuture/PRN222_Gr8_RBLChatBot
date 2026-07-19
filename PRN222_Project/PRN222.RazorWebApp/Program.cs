@@ -181,8 +181,10 @@ using (var scope = app.Services.CreateScope())
     bool databaseUpdated = false;
     
     var dbFree = existingPackages.FirstOrDefault(p => p.Name == "Free");
+    bool freeQuotaChanged = false;
     if (dbFree != null && (dbFree.TokenQuota != 5000 || dbFree.Price != 0 || dbFree.DurationDays != 36500))
     {
+        freeQuotaChanged = dbFree.TokenQuota != 5000;
         dbFree.TokenQuota = 5000;
         dbFree.Price = 0;
         dbFree.DurationDays = 36500;
@@ -208,8 +210,10 @@ using (var scope = app.Services.CreateScope())
         databaseUpdated = true;
     }
     
-    // Reset existing active Free subscriptions that are outdated to the new 5,000 quota
-    if (dbFree != null)
+    // Data-fix MỘT LẦN khi quota gói Free vừa được nâng: nạp lại token cho các
+    // subscription cũ. Không được chạy mỗi lần khởi động — nếu không token đã
+    // dùng sẽ bị reset đầy lại sau mỗi lần restart app.
+    if (dbFree != null && freeQuotaChanged)
     {
         var outdatedFreeSubs = dbContext.UserSubscriptions
             .Where(us => us.PricingPackageId == dbFree.Id && us.Status == "Active" && us.RemainingTokens < 5000)
