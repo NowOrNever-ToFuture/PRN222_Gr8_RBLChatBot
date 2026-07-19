@@ -44,6 +44,11 @@ namespace PRN222.RazorWebApp.Pages.Chat
 
         public async Task<IActionResult> OnGetAsync(Guid? courseId)
         {
+            if (!User.IsInRole("Student"))
+            {
+                return RedirectToPage("/Index");
+            }
+
             CourseId = courseId;
             Courses = await _courseService.GetAllCoursesAsync();
 

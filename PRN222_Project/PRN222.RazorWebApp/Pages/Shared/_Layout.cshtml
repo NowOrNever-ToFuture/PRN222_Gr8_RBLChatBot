@@ -168,11 +168,11 @@
                             </li>
                         }
 
-                        @if (User.Identity?.IsAuthenticated ?? false)
+                        @if (User.IsInRole("Student"))
                         {
                             <li class="nav-item">
                                 <a class="nav-link" asp-page="/Chat/Index">
-                                    <i class="bi bi-chat-dots"></i> @(User.IsInRole("Student") ? "Trò chuyện" : "AI Workspace")
+                                    <i class="bi bi-chat-dots"></i> Trò chuyện
                                 </a>
                             </li>
                             <li class="nav-item">
