@@ -178,6 +178,11 @@
                             </tbody>
                         </table>
                     </div>
+                    <div id="modalTxHistoryLoadMoreContainer" class="text-center mt-3 d-none">
+                        <button id="btnModalLoadMore" class="btn btn-sm btn-outline-secondary px-3" style="border-radius: 6px; font-weight: 600; font-size: 11px;">
+                            <i class="bi bi-chevron-down"></i> Xem thêm giao dịch
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -549,6 +554,8 @@
                 });
             }
 
+            let modalDisplayLimit = 5;
+
             function populateModalData(userId) {
                 const user = usersData.find(u => u.userId === userId);
                 if (user) {
@@ -563,8 +570,12 @@
 
                     if (!user.purchaseHistory || user.purchaseHistory.length === 0) {
                         $historyBody.append('<tr><td colspan="4" class="text-center py-3 text-muted">Chưa có giao dịch mua gói nào.</td></tr>');
+                        $('#modalTxHistoryLoadMoreContainer').addClass('d-none');
                     } else {
-                        user.purchaseHistory.forEach(tx => {
+                        const totalTx = user.purchaseHistory.length;
+                        const visibleTx = user.purchaseHistory.slice(0, modalDisplayLimit);
+
+                        visibleTx.forEach(tx => {
                             const date = new Date(tx.purchaseDate).toLocaleDateString('vi-VN', {
                                 year: 'numeric', month: '2-digit', day: '2-digit',
                                 hour: '2-digit', minute: '2-digit'
@@ -588,6 +599,12 @@
                                 </tr>
                             `);
                         });
+
+                        if (totalTx > modalDisplayLimit) {
+                            $('#modalTxHistoryLoadMoreContainer').removeClass('d-none');
+                        } else {
+                            $('#modalTxHistoryLoadMoreContainer').addClass('d-none');
+                        }
                     }
                 }
             }
@@ -596,9 +613,19 @@
             $(document).on('click', '.btn-view-history', function () {
                 const userId = $(this).data('id');
                 $('#userHistoryModal').data('active-userId', userId);
+                modalDisplayLimit = 5; // Reset limit
                 populateModalData(userId);
                 const myModal = new bootstrap.Modal(document.getElementById('userHistoryModal'));
                 myModal.show();
+            });
+
+            // Load more button inside modal handler
+            $('#btnModalLoadMore').click(function () {
+                const activeUserId = $('#userHistoryModal').data('active-userId');
+                if (activeUserId) {
+                    modalDisplayLimit += 5;
+                    populateModalData(activeUserId);
+                }
             });
 
             function escapeHtml(text) {

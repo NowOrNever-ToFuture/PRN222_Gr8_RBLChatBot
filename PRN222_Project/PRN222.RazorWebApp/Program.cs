@@ -44,6 +44,7 @@ builder.Services.AddScoped<IEmbeddingService>(sp =>
 builder.Services.AddScoped<AiModelFactory>();
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
+builder.Services.AddHostedService<PRN222.RazorWebApp.BackgroundServices.PaymentExpiryBackgroundService>();
 
 var app = builder.Build();
 
