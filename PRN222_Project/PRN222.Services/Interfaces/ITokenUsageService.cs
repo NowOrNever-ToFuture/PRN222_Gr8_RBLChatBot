@@ -80,5 +80,14 @@ namespace PRN222.Services.Interfaces
         public double TotalAmountPaid { get; set; }
         public string CurrentPackage { get; set; } = "";
         public int RemainingTokens { get; set; }
+        public List<UserSubscriptionDetailDto> PurchaseHistory { get; set; } = new();
+    }
+
+    public class UserSubscriptionDetailDto
+    {
+        public string PackageName { get; set; } = "";
+        public double Price { get; set; }
+        public DateTime PurchaseDate { get; set; }
+        public string Status { get; set; } = "";
     }
 }

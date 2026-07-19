@@ -238,6 +238,9 @@ namespace PRN222.Services
             await _hubContext.Clients.User(transaction.UserId.ToString())
                 .SendAsync("ReceivePaymentConfirmed", package.Name, subscription.RemainingTokens);
 
+            // Broadcast to everyone (including Admin dashboard) for live update
+            await _hubContext.Clients.All.SendAsync("ReceivePaymentLogged");
+
             return (true, "Payment confirmed and subscription updated.");
         }
 
