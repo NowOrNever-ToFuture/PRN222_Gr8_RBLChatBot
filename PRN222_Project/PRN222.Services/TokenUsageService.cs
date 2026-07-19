@@ -134,7 +134,8 @@ namespace PRN222.Services
         public async Task<List<MonthlyTokenStatDto>> GetMonthlyTokenStatsAsync(int year)
         {
             var rawData = await _dbContext.TokenUsageLogs
-                .Where(t => t.CreatedDate.Year == year)
+                .Include(t => t.User)
+                .Where(t => t.CreatedDate.Year == year && t.User.Role == "Student")
                 .GroupBy(t => t.CreatedDate.Month)
                 .Select(g => new
                 {

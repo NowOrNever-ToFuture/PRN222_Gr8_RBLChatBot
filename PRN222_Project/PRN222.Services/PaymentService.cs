@@ -471,7 +471,8 @@ namespace PRN222.Services
         public async Task<List<MonthlyPaymentStatDto>> GetMonthlyPaymentStatsAsync(int year)
         {
             var rawData = await _dbContext.PaymentTransactions
-                .Where(p => p.Status == "Success" && p.Amount > 0 && p.CreatedDate.Year == year)
+                .Include(p => p.User)
+                .Where(p => p.Status == "Success" && p.Amount > 0 && p.CreatedDate.Year == year && p.User.Role == "Student")
                 .GroupBy(p => p.CreatedDate.Month)
                 .Select(g => new
                 {
