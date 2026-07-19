@@ -210,6 +210,7 @@ namespace PRN222.Services
                 .ToListAsync();
 
             var users = await _dbContext.Users
+                .Where(u => u.Role == "Student")
                 .OrderBy(u => u.FullName)
                 .ToListAsync();
 
