@@ -17,7 +17,7 @@
                 <div class="app-card mb-0 py-3 px-4" style="background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.25); min-width: 290px; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.25);">
                     <div class="fw-bold mb-1" style="color: #38bdf8; font-size: 0.95rem;"><i class="bi bi-shield-check"></i> Gói hiện tại: @Model.CurrentSubscription.PricingPackage.Name</div>
                     <div class="fw-extrabold text-white mb-1" id="remainingTokensDisplay" style="font-size: 2.1rem; line-height: 1.1;">
-                        @Model.CurrentSubscription.RemainingTokens.ToString("N0") <span class="fw-normal text-white-50" style="font-size: 1.05rem; margin-left: 2px;">Lượt gọi AI</span>
+                        @Model.CurrentSubscription.RemainingTokens.ToString("N0") <span class="fw-normal text-white-50" style="font-size: 1.05rem; margin-left: 2px;">Tokens</span>
                     </div>
                     <div class="small fw-semibold text-white-50" style="font-size: 0.85rem;">Hết hạn: @Model.CurrentSubscription.EndDate.AddHours(7).ToString("dd/MM/yyyy HH:mm")</div>
                 </div>
@@ -85,11 +85,11 @@
                                 <i class="bi bi-check-circle-fill text-success me-2 fs-5"></i>
                                 @if (pkg.Name == "Free")
                                 {
-                                    <span>Cấp <strong>@pkg.TokenQuota.ToString("N0")</strong> Lượt gọi AI/ngày (tự động reset)</span>
+                                    <span>Cấp <strong>@pkg.TokenQuota.ToString("N0")</strong> Tokens/5 tiếng (tự động reset)</span>
                                 }
                                 else
                                 {
-                                    <span>Nạp thêm <strong>@pkg.TokenQuota.ToString("N0")</strong> Lượt gọi AI</span>
+                                    <span>Cấp <strong>@pkg.TokenQuota.ToString("N0")</strong> Tokens/5 tiếng (tự động reset)</span>
                                 }
                             </li>
                             <li class="mb-3 d-flex align-items-center">
@@ -154,13 +154,13 @@
     paymentConnection.on("ReceivePaymentConfirmed", (packageName, remainingTokens) => {
         // Show success toast
         const toast = document.getElementById("paymentSuccessToast");
-        document.getElementById("toastMessage").innerText = `Thanh toán thành công gói ${packageName}! Hạn mức mới: ${remainingTokens.toLocaleString()} lượt gọi AI.`;
+        document.getElementById("toastMessage").innerText = `Thanh toán thành công gói ${packageName}! Hạn mức mới: ${remainingTokens.toLocaleString()} Tokens.`;
         toast.style.display = "block";
         
         // Dynamically update tokens counter in header hero
         const display = document.getElementById("remainingTokensDisplay");
         if (display) {
-            display.innerHTML = `${remainingTokens.toLocaleString()} <span class="fw-normal text-white-50" style="font-size: 1.05rem; margin-left: 2px;">Lượt gọi AI</span>`;
+            display.innerHTML = `${remainingTokens.toLocaleString()} <span class="fw-normal text-white-50" style="font-size: 1.05rem; margin-left: 2px;">Tokens</span>`;
         }
 
         // Auto reload page after 4 seconds to update all UI cards

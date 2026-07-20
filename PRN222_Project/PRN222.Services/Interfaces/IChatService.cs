@@ -9,11 +9,22 @@ namespace PRN222.Services.Interfaces
     {
         Task<Guid?> SmartRouteAsync(string query);
         Task<List<(DocumentChunk Chunk, double Score)>> SearchChunksByVectorAsync(string query, Guid? courseId = null);
-        Task<RagResponse> GenerateRagResponseAsync(string query, Guid userId, Guid? selectedCourseId = null);
+        Task<RagResponse> GenerateRagResponseAsync(string query, Guid userId, Guid? selectedCourseId = null, Guid? conversationId = null);
         Task<List<DocumentChunk>> SearchChunksAsync(string query);
         string FormatSearchResults(List<DocumentChunk> chunks);
-        Task<List<Message>> GetChatHistoryAsync(Guid userId);
-        Task SaveMessageAsync(Guid userId, string role, string content, string citedChunkIds = "");
-        Task ClearChatHistoryAsync(Guid userId);
+
+        // ===== Quản lý hội thoại: mỗi conversation gắn 1 môn học =====
+        Task<List<Conversation>> GetConversationsAsync(Guid userId);
+        Task<Conversation?> GetConversationAsync(Guid conversationId, Guid userId);
+        Task<Conversation> CreateConversationAsync(Guid userId, Guid? courseId, string title);
+        Task<bool> DeleteConversationAsync(Guid conversationId, Guid userId);
+        Task<bool> RenameConversationAsync(Guid conversationId, Guid userId, string newTitle);
+        /// <summary>Đảo trạng thái ghim; trả về trạng thái mới, null nếu không tìm thấy hội thoại.</summary>
+        Task<bool?> TogglePinConversationAsync(Guid conversationId, Guid userId);
+        Task<List<Message>> GetConversationMessagesAsync(Guid conversationId, Guid userId);
+        Task SaveMessageAsync(Guid conversationId, string role, string content, string citedChunkIds = "");
+
+        /// <summary>Lấy chunks (kèm Document) theo danh sách id — dựng lại trích dẫn cho history.</summary>
+        Task<List<DocumentChunk>> GetChunksByIdsAsync(IEnumerable<Guid> chunkIds);
     }
 }

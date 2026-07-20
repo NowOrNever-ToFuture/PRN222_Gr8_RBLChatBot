@@ -55,6 +55,12 @@ namespace PRN222.Services.Interfaces
         /// </summary>
         Task<(List<DocumentChunk> Chunks, int TotalCount)> GetDocumentChunksPagedAsync(
             Guid documentId, int pageNumber = 1, int pageSize = 10);
+
+        /// <summary>
+        /// Vị trí (0-based) của chunk trong thứ tự hiển thị (PageNumber, ChunkIndex).
+        /// Dùng để tính trang chứa chunk khi deep-link từ trích dẫn chat. -1 nếu không thấy.
+        /// </summary>
+        Task<int> GetChunkPositionAsync(Guid documentId, Guid chunkId);
     }
 }
 

@@ -34,6 +34,13 @@ namespace PRN222.RazorWebApp.Pages.Payments
                 return RedirectToPage("/Account/Login");
             }
 
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+            if (userRole != "Student")
+            {
+                ErrorMessage = "Chỉ học viên (Student) mới được phép đăng ký mua các gói dịch vụ AI.";
+                return Page();
+            }
+
             Package = await _dbContext.PricingPackages.FindAsync(packageId);
             if (Package == null || !Package.IsActive)
             {
@@ -51,7 +58,7 @@ namespace PRN222.RazorWebApp.Pages.Payments
             }
             catch (Exception ex)
             {
-                ErrorMessage = $"Không thể khởi tạo link thanh toán với PayOS: {ex.Message}";
+                ErrorMessage = $"Không thể khởi tạo link thanh toán: {ex.Message}";
             }
 
             return Page();

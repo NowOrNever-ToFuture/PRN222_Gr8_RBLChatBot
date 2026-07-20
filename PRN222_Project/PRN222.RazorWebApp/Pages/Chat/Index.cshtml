@@ -19,7 +19,7 @@
                 <span class="app-chip"><i class="bi bi-pin-angle-fill"></i> @Model.CourseName</span>
             }
             <button id="clearChatBtn" class="btn btn-light fw-bold rounded-pill px-4 py-2">
-                <i class="bi bi-trash3-fill"></i> Xóa hội thoại
+                <i class="bi bi-trash3-fill"></i> Xóa hội thoại này
             </button>
         </div>
     </section>
@@ -35,6 +35,24 @@
             </div>
             
             <div class="d-flex align-items-center gap-3 justify-content-end flex-wrap">
+                <div class="d-flex align-items-center gap-2">
+                    <label class="text-white-50 small mb-0" for="courseSelect">Môn học</label>
+                    <select id="courseSelect" class="form-select form-select-sm chat-model-select" title="Bắt buộc chọn môn học — AI chỉ trả lời từ tài liệu của môn được chọn">
+                        <option value="" selected disabled hidden>-- Chọn môn học --</option>
+                        @foreach (var course in Model.Courses)
+                        {
+                            if (Model.CourseId == course.Id)
+                            {
+                                <option value="@course.Id" selected>@course.Name (@course.Code)</option>
+                            }
+                            else
+                            {
+                                <option value="@course.Id">@course.Name (@course.Code)</option>
+                            }
+                        }
+                    </select>
+                </div>
+
                 @if (User.IsInRole("Admin"))
                 {
                     <div class="d-flex align-items-center gap-2">
@@ -81,33 +99,41 @@
         <div class="chat-layout">
             <aside class="chat-sidebar d-flex flex-column gap-3">
 
-                <div id="token-widget" class="app-card p-3">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="small fw-bold">🔋 Token hôm nay</span>
-                        <span class="small">
-                            <span id="token-used">@Model.TodayTokenUsed</span>
-                            / @Model.DailyTokenLimit
+                <div id="token-widget" class="app-card p-3" data-bs-toggle="modal" data-bs-target="#tokenQuotaDetailModal">
+                    <div class="d-flex justify-content-between align-items-center mb-2 gap-3 flex-wrap">
+                        <span class="small fw-bold text-secondary text-nowrap">🔋 Token còn lại</span>
+                        <span class="small fw-semibold text-primary">
+                            <span id="token-used">@(Model.Subscription?.RemainingTokens ?? 0)</span>
+                            / <span id="token-limit">@(Model.Subscription?.PricingPackage?.TokenQuota ?? 5000)</span>
                         </span>
                     </div>
                     <div class="progress" style="height: 8px; border-radius: 999px;">
                         <div id="token-progress-bar"
-                             class="progress-bar @((Model.TodayTokenUsed * 100.0 / Model.DailyTokenLimit) >= 90 ? "bg-danger" : (Model.TodayTokenUsed * 100.0 / Model.DailyTokenLimit) >= 70 ? "bg-warning" : "bg-success")"
+                             class="progress-bar @((Model.Subscription != null && Model.Subscription.PricingPackage != null && (Model.Subscription.RemainingTokens * 100.0 / Model.Subscription.PricingPackage.TokenQuota) <= 20) ? "bg-danger" : (Model.Subscription != null && Model.Subscription.PricingPackage != null && (Model.Subscription.RemainingTokens * 100.0 / Model.Subscription.PricingPackage.TokenQuota) <= 50) ? "bg-warning" : "bg-success")"
                              role="progressbar"
-                             style="width: @(Math.Min(100, (int)((double)Model.TodayTokenUsed / Model.DailyTokenLimit * 100)))%">
+                             style="width: @(Model.Subscription != null && Model.Subscription.PricingPackage != null ? Math.Min(100, (int)((double)Model.Subscription.RemainingTokens / Model.Subscription.PricingPackage.TokenQuota * 100)) : 0)%">
                         </div>
                     </div>
-                    <div id="token-warning" class="small text-warning mt-1 @((Model.TodayTokenUsed * 100.0 / Model.DailyTokenLimit) >= 80 ? "" : "d-none")">
-                        ⚠️ Bạn đã dùng hơn 80% quota hôm nay!
+                    <div id="token-warning" class="small text-danger mt-2 @((Model.Subscription != null && Model.Subscription.PricingPackage != null && (Model.Subscription.RemainingTokens * 100.0 / Model.Subscription.PricingPackage.TokenQuota) <= 20) ? "" : "d-none")">
+                        ⚠️ Bạn đã dùng hơn 80% hạn mức của session!
                     </div>
                 </div>
 
-                <div class="app-card flex-grow-1">
+                <div class="app-card p-3 d-flex flex-column conversation-panel">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="small fw-bold text-secondary"><i class="bi bi-chat-left-text"></i> Hội thoại</span>
+                        <button type="button" id="newChatBtn" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold">
+                            <i class="bi bi-plus-lg"></i> Chat mới
+                        </button>
+                    </div>
+                    <div id="conversationList" class="conversation-list flex-grow-1"></div>
+                </div>
+
+                <div class="app-card">
                     <div class="app-card-title"><i class="bi bi-lightbulb text-warning"></i> Gợi ý nhanh</div>
                     <div id="quickSuggestions" class="d-grid gap-2">
                         <button type="button" class="quick-prompt-tag" data-prompt="Ý nghĩa phương pháp luận của quy luật chuyển hóa từ những sự thay đổi về lượng thành những sự thay đổi về chất và ngược lại?">Quy luật Lượng - Chất</button>
                         <button type="button" class="quick-prompt-tag" data-prompt="Định nghĩa vật chất của Lênin và ý nghĩa khoa học của định nghĩa này?">Định nghĩa Vật chất</button>
-                        <button type="button" class="quick-prompt-tag" data-prompt="Mối quan hệ biện chứng giữa Cơ sở hạ tầng và Kiến trúc thượng tầng?">Cơ sở hạ tầng & Kiến trúc thượng tầng</button>
-                        <button type="button" class="quick-prompt-tag" data-prompt="Vai trò của thực tiễn đối với nhận thức theo quan điểm triết học Mác - Lênin?">Vai trò của Thực tiễn</button>
                     </div>
                     <div class="small app-muted mt-3">
                         Trả lời được ưu tiên dựa trên tài liệu thực tế đã tải lên trong hệ thống.
@@ -169,7 +195,7 @@
                         <div class="position-absolute fw-extrabold text-dark" id="modalTokenPercentText" style="font-size: 1.4rem; letter-spacing: -0.5px;">100%</div>
                     </div>
                     <h5 class="fw-bold text-dark mb-1" id="modalTokenPackageName">Gói Free</h5>
-                    <p class="text-muted small mb-0">Hạn mức sẽ tự động reset mỗi 24 giờ</p>
+                    <p class="text-muted small mb-0">Hạn mức tự động reset sau mỗi 5 tiếng kể từ câu chat đầu tiên.</p>
                 </div>
                 
                 <div class="card border-0 bg-light p-3 mb-3" style="border-radius: 16px;">
@@ -191,6 +217,28 @@
             <div class="modal-footer border-0 p-4 pt-0 d-flex justify-content-center">
                 <button type="button" class="btn btn-light fw-semibold px-4 py-2 rounded-3" data-bs-dismiss="modal">Đóng</button>
                 <a href="/Payments/Pricing" class="btn btn-primary fw-bold px-4 py-2 rounded-3" id="modalUpgradeBtn"><i class="bi bi-lightning-fill"></i> Nâng cấp lên VIP</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Citation Modal: xem đoạn tài liệu được trích dẫn ngay trong trang chat -->
+<div class="modal fade text-dark" id="citationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header border-0 bg-light p-3 px-4" style="border-top-left-radius: 20px; border-top-right-radius: 20px;">
+                <h6 class="modal-title fw-bold" id="citationModalTitle">Đoạn trích dẫn</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-2"><span class="badge bg-warning text-dark"><i class="bi bi-quote"></i> Đoạn tài liệu được dùng làm nguồn trả lời</span></div>
+                <div id="citationModalBody" class="p-3 border rounded bg-light" style="white-space: pre-wrap; max-height: 420px; overflow-y: auto; font-size: 0.95rem; line-height: 1.7;"></div>
+            </div>
+            <div class="modal-footer border-0 p-3 px-4 d-flex justify-content-between">
+                <a id="citationModalFullLink" href="#" target="_blank" rel="noopener" class="small text-decoration-none">
+                    <i class="bi bi-box-arrow-up-right"></i> Mở trang Vector Chunks đầy đủ
+                </a>
+                <button type="button" class="btn btn-light fw-semibold px-4 rounded-3" data-bs-dismiss="modal">Đóng</button>
             </div>
         </div>
     </div>
@@ -263,6 +311,15 @@
     .chat-model-select option {
         color: #172033;
     }
+    /* Khi môn học bị khóa theo hội thoại: nền sáng + chữ đậm tối cho dễ đọc
+       (mặc định browser làm chữ trắng trên nền trắng — không đọc được) */
+    .chat-model-select:disabled {
+        background: rgba(255, 255, 255, 0.92);
+        color: #0f1d3a;
+        font-weight: 700;
+        opacity: 1;
+        cursor: default;
+    }
     .chat-bubble {
         max-width: min(820px, 100%);
         border-radius: 18px;
@@ -281,6 +338,98 @@
         background: linear-gradient(135deg, #1f6feb 0%, #1456b8 100%);
         color: white;
         border-top-right-radius: 6px;
+    }
+    .conversation-panel { min-height: 180px; }
+    .conversation-list {
+        overflow-y: auto;
+        max-height: 300px;
+        display: grid;
+        gap: 6px;
+        align-content: start;
+    }
+    .conversation-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 8px 10px;
+        border-radius: 12px;
+        border: 1px solid rgba(120, 138, 170, 0.14);
+        background: white;
+        cursor: pointer;
+        transition: border-color .15s ease, background .15s ease;
+    }
+    .conversation-item:hover { border-color: rgba(31, 111, 235, 0.35); }
+    .conversation-item.active {
+        border-color: #1f6feb;
+        background: rgba(31, 111, 235, 0.06);
+    }
+    .conv-main { min-width: 0; }
+    .conv-title {
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: #24324d;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .conv-meta { font-size: 0.72rem; color: #7c8aa5; }
+    .conv-actions {
+        display: flex;
+        gap: 2px;
+        flex: none;
+        opacity: 0;
+        transition: opacity .15s ease;
+    }
+    .conversation-item:hover .conv-actions,
+    .conversation-item.active .conv-actions { opacity: 1; }
+    .conv-action {
+        border: none;
+        background: transparent;
+        color: #7c8aa5;
+        border-radius: 8px;
+        padding: 4px 6px;
+        flex: none;
+        transition: color .15s ease, background .15s ease;
+    }
+    .conv-pin:hover { color: #b8860b; background: rgba(255, 193, 7, 0.15); }
+    .conv-rename:hover { color: #1456b8; background: rgba(31, 111, 235, 0.1); }
+    .conv-delete { color: #b53a61; }
+    .conv-delete:hover { background: rgba(209, 77, 114, 0.12); }
+    /* Hội thoại đã ghim: viền vàng nhạt + icon ghim luôn hiển thị */
+    .conversation-item.pinned {
+        border-color: rgba(212, 160, 23, 0.45);
+        background: rgba(255, 248, 225, 0.6);
+    }
+    .conversation-item.pinned .conv-pin { color: #b8860b; opacity: 1; }
+    .conv-pin-flag { color: #b8860b; font-size: 0.75rem; }
+    .conv-rename-input {
+        width: 100%;
+        border: 1px solid rgba(31, 111, 235, 0.45);
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #24324d;
+        padding: 2px 6px;
+        outline: none;
+    }
+    #conversationList::-webkit-scrollbar { width: 6px; }
+    #conversationList::-webkit-scrollbar-thumb { background: rgba(95, 107, 133, 0.3); border-radius: 999px; }
+    .typing-cursor {
+        display: inline-block;
+        color: #1456b8;
+        animation: cursorBlink 0.9s steps(2, start) infinite;
+    }
+    @@keyframes cursorBlink { to { visibility: hidden; } }
+    .citation-link {
+        color: #1456b8;
+        text-decoration: none;
+        border-bottom: 1px dashed rgba(20, 86, 184, 0.4);
+        transition: color .15s ease, border-color .15s ease;
+    }
+    .citation-link:hover {
+        color: #0f9d7a;
+        border-bottom-color: #0f9d7a;
     }
     .quick-prompt-tag {
         text-align: left;
@@ -315,6 +464,28 @@
     #chatMessages::-webkit-scrollbar { width: 7px; }
     #chatMessages::-webkit-scrollbar-thumb { background: rgba(95, 107, 133, 0.3); border-radius: 999px; }
     .message-time { font-size: 11px; color: #8a94a8; margin-top: 4px; }
+    .copy-msg-btn {
+        border: none;
+        background: transparent;
+        color: #8a94a8;
+        font-size: 11px;
+        padding: 0 4px;
+        cursor: pointer;
+        border-radius: 6px;
+        transition: color .15s ease, background .15s ease;
+    }
+    .copy-msg-btn:hover { color: #1456b8; background: rgba(31, 111, 235, 0.08); }
+    #token-widget {
+        cursor: pointer;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid rgba(120, 138, 170, 0.12);
+    }
+    #token-widget:hover {
+        background-color: rgba(31, 111, 235, 0.04);
+        border-color: rgba(31, 111, 235, 0.25);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(31, 111, 235, 0.06);
+    }
     @@media (max-width: 991.98px) {
         .chat-layout { grid-template-columns: 1fr; }
         .chat-sidebar { border-right: 0; border-bottom: 1px solid rgba(120, 138, 170, 0.14); }
@@ -322,25 +493,241 @@
 </style>
 
 @section Scripts {
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
 <script>
     $(document).ready(function () {
-        const currentCourseId = "@(Model.CourseId?.ToString() ?? "")" || null;
-        loadChatHistory();
+        // Môn học lấy trực tiếp từ dropdown (bắt buộc chọn khi mở chat mới)
+        function selectedCourseId() { return $('#courseSelect').val() || null; }
+        function antiForgeryToken() { return $('input[name="__RequestVerificationToken"]').val(); }
 
-        function loadChatHistory() {
-            const welcomeHtml = `<div class="d-flex mb-3"><div class="chat-avatar me-2"><i class="bi bi-robot"></i></div><div class="bot-bubble chat-bubble bot"><p class="mb-1">Xin chào! Tôi sẵn sàng hỗ trợ bạn tìm câu trả lời dựa trên học liệu đã có trong hệ thống.</p><p class="mb-0 text-muted small">Hãy đặt một câu hỏi cụ thể để tôi truy xuất đúng ngữ cảnh và trả lời có nguồn.</p></div></div>`;
+        // ===== Trạng thái hội thoại =====
+        // null = đang ở chế độ "chat mới" (chưa có conversation)
+        let currentConversationId = null;
+        let conversationsCache = [];
+
+        function lockCourseSelect(locked) { $('#courseSelect').prop('disabled', locked); }
+
+        // ===== SignalR ChatHub: stream câu trả lời + đồng bộ đa tab =====
+        const pendingClientIds = new Set();   // câu hỏi do chính tab này gửi
+        const streamedMessages = new Set();   // answer đã render qua stream (AJAX khỏi render lại)
+        const streamBuffers = {};
+        const streamSkipped = new Set();      // stream thuộc hội thoại khác (tab này không hiển thị)
+
+        // Bọc try/catch: nếu thư viện SignalR không nạp được (mất mạng CDN...)
+        // thì chat vẫn hoạt động bình thường qua AJAX fallback.
+        try {
+        const chatConnection = new signalR.HubConnectionBuilder()
+            .withUrl('/hubs/chat')
+            .withAutomaticReconnect()
+            .build();
+
+        chatConnection.on('ReceiveUserMessage', (clientId, query, conversationId) => {
+            if (clientId && pendingClientIds.has(clientId)) {
+                // Tab này vừa gửi: nếu là chat mới thì nhận conversation server vừa tạo
+                if (!currentConversationId && conversationId) {
+                    currentConversationId = conversationId;
+                    lockCourseSelect(true);
+                }
+                return;
+            }
+            // Tab khác của cùng user: chỉ hiện nếu đang xem đúng hội thoại đó
+            if (conversationId && conversationId === currentConversationId) appendMessage(query, 'user');
+            loadConversations();
+        });
+
+        chatConnection.on('ReceiveAnswerStart', (messageId, conversationId) => {
+            streamedMessages.add(messageId);
+            if (conversationId && conversationId !== currentConversationId) {
+                streamSkipped.add(messageId); // hội thoại khác: không vẽ vào khung này
+                return;
+            }
+            $('[id^="typing-"]').remove();
+            streamBuffers[messageId] = '';
+            const timestamp = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+            const html = `<div class="d-flex mb-3" id="stream-${messageId}"><div class="chat-avatar me-2"><i class="bi bi-robot"></i></div><div style="flex-grow:1;"><div class="bot-bubble chat-bubble bot stream-body"><span class="typing-cursor">▍</span></div><small class="message-time" style="margin-left:8px;">${timestamp} ${copyButtonHtml()}</small></div></div>`;
+            $('#chatMessages').append(html);
+            scrollToBottom();
+        });
+
+        chatConnection.on('ReceiveAnswerChunk', (messageId, chunk) => {
+            if (!(messageId in streamBuffers)) return;
+            streamBuffers[messageId] += chunk;
+            const body = $(`#stream-${messageId} .stream-body`);
+            if (body.length) {
+                body.html(formatBotContent(streamBuffers[messageId]) + '<span class="typing-cursor">▍</span>');
+                scrollToBottom();
+            }
+        });
+
+        chatConnection.on('ReceiveAnswerComplete', (messageId, answer, sources, remainingQuota, totalQuota, packageName, todayTokenUsed, sessionStartDate) => {
+            streamedMessages.add(messageId);
+            if (remainingQuota !== undefined && totalQuota !== undefined) updateTokenUI(remainingQuota, totalQuota, packageName);
+            if (sessionStartDate) { currentSessionStartDate = sessionStartDate; updateResetCountdown(); }
+            loadConversations(); // cập nhật thứ tự/tiêu đề danh sách hội thoại
+            if (streamSkipped.has(messageId)) { streamSkipped.delete(messageId); return; }
+            const body = $(`#stream-${messageId} .stream-body`);
+            const content = stripCitationFooter(answer, sources && sources.length > 0);
+            if (body.length) {
+                body.html(formatBotContent(content) + buildSourcesHtml(sources, content));
+            } else {
+                appendBotMessage(answer, sources);
+            }
+            delete streamBuffers[messageId];
+            scrollToBottom();
+        });
+
+        chatConnection.start().catch(err => console.error('ChatHub connection error:', err));
+        } catch (signalRError) {
+            console.error('SignalR không khả dụng, chat dùng AJAX fallback:', signalRError);
+        }
+        let currentSessionStartDate = "@(Model.Subscription?.SessionStartDate?.ToString("o") ?? "")";
+
+        // ===== Quản lý hội thoại (sidebar) =====
+        function showWelcome() {
+            const welcomeHtml = `<div class="d-flex mb-3"><div class="chat-avatar me-2"><i class="bi bi-robot"></i></div><div class="bot-bubble chat-bubble bot"><p class="mb-1">Xin chào! Tôi sẵn sàng hỗ trợ bạn tìm câu trả lời dựa trên học liệu đã có trong hệ thống.</p><p class="mb-0 text-muted small">Chọn môn học rồi đặt câu hỏi để bắt đầu một hội thoại mới, hoặc mở lại hội thoại cũ ở thanh bên trái.</p></div></div>`;
             $('#chatMessages').html(welcomeHtml);
+        }
+
+        function startNewChat() {
+            currentConversationId = null;
+            lockCourseSelect(false);
+            showWelcome();
+            renderActiveConversation();
+            $('#queryInput').focus();
+        }
+
+        function loadConversations() {
             $.ajax({
-                url: '/Chat/Index?handler=History', type: 'GET',
+                url: '/Chat/Index?handler=Conversations', type: 'GET',
                 success: function (res) {
-                    if (res && res.success && res.history && res.history.length > 0) {
-                        $('#chatMessages').empty();
-                        res.history.forEach(function (msg) { if (msg.role === 'User') appendMessage(msg.content, 'user'); else appendBotMessage(msg.content, []); });
-                        scrollToBottom();
+                    if (!res || !res.success) return;
+                    conversationsCache = res.conversations || [];
+                    renderConversationList();
+                }
+            });
+        }
+
+        function renderConversationList() {
+            const list = $('#conversationList');
+            list.empty();
+            if (!conversationsCache.length) {
+                list.html('<div class="small app-muted text-center py-3">Chưa có hội thoại nào.<br/>Chọn môn và đặt câu hỏi để bắt đầu.</div>');
+                return;
+            }
+            conversationsCache.forEach(function (c) {
+                const active = c.id === currentConversationId ? ' active' : '';
+                const pinned = c.isPinned ? ' pinned' : '';
+                const pinFlag = c.isPinned ? '<i class="bi bi-pin-angle-fill conv-pin-flag"></i> ' : '';
+                const item = $(
+                    `<div class="conversation-item${active}${pinned}" data-id="${c.id}">` +
+                    `<div class="conv-main"><div class="conv-title">${pinFlag}${escapeHtml(c.title)}</div>` +
+                    `<div class="conv-meta"><i class="bi bi-journal-text"></i> ${escapeHtml(c.courseCode || 'Chưa gắn môn')}</div></div>` +
+                    `<div class="conv-actions">` +
+                    `<button type="button" class="conv-action conv-pin" title="${c.isPinned ? 'Bỏ ghim' : 'Ghim lên đầu'}"><i class="bi ${c.isPinned ? 'bi-pin-fill' : 'bi-pin-angle'}"></i></button>` +
+                    `<button type="button" class="conv-action conv-rename" title="Đổi tên hội thoại"><i class="bi bi-pencil"></i></button>` +
+                    `<button type="button" class="conv-action conv-delete" title="Xóa hội thoại này"><i class="bi bi-trash3"></i></button>` +
+                    `</div>` +
+                    `</div>`);
+                item.on('click', function (e) {
+                    if ($(e.target).closest('.conv-action, .conv-rename-input').length) return;
+                    openConversation(c.id);
+                });
+                item.find('.conv-pin').on('click', function () { togglePin(c.id); });
+                item.find('.conv-rename').on('click', function () { startRename(item, c); });
+                item.find('.conv-delete').on('click', function () { deleteConversation(c.id); });
+                list.append(item);
+            });
+        }
+
+        // Đổi tên inline: thay tiêu đề bằng ô nhập, Enter/blur để lưu, Esc để hủy
+        function startRename(item, c) {
+            const titleEl = item.find('.conv-title');
+            if (titleEl.find('input').length) return;
+            const input = $('<input type="text" class="conv-rename-input" maxlength="60" />').val(c.title);
+            titleEl.empty().append(input);
+            input.trigger('focus').select();
+            let done = false;
+            function finish(save) {
+                if (done) return;
+                done = true;
+                const newTitle = input.val().trim();
+                if (!save || !newTitle || newTitle === c.title) { renderConversationList(); return; }
+                $.ajax({
+                    url: '/Chat/Index?handler=RenameConversation', type: 'POST',
+                    data: { conversationId: c.id, newTitle: newTitle, __RequestVerificationToken: antiForgeryToken() },
+                    success: function (res) {
+                        if (!(res && res.success)) alert((res && res.message) || 'Không đổi tên được hội thoại.');
+                        loadConversations();
+                    },
+                    error: function () { loadConversations(); }
+                });
+            }
+            input.on('keydown', function (e) {
+                if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+                else if (e.key === 'Escape') { finish(false); }
+            });
+            input.on('blur', function () { finish(true); });
+        }
+
+        function togglePin(id) {
+            $.ajax({
+                url: '/Chat/Index?handler=TogglePin', type: 'POST',
+                data: { conversationId: id, __RequestVerificationToken: antiForgeryToken() },
+                success: function (res) {
+                    if (res && res.success) loadConversations();
+                    else alert((res && res.message) || 'Không ghim được hội thoại.');
+                }
+            });
+        }
+
+        function renderActiveConversation() {
+            $('#conversationList .conversation-item').removeClass('active');
+            if (currentConversationId)
+                $(`#conversationList .conversation-item[data-id="${currentConversationId}"]`).addClass('active');
+        }
+
+        function openConversation(id) {
+            $.ajax({
+                url: '/Chat/Index?handler=History&conversationId=' + encodeURIComponent(id), type: 'GET',
+                success: function (res) {
+                    if (!res || !res.success) { alert((res && res.message) || 'Không tải được hội thoại.'); return; }
+                    currentConversationId = id;
+                    if (res.courseId) $('#courseSelect').val(res.courseId);
+                    lockCourseSelect(true); // môn học khóa theo hội thoại — không trộn môn
+                    $('#chatMessages').empty();
+                    if (res.history && res.history.length) {
+                        res.history.forEach(function (msg) {
+                            if (msg.role === 'User') appendMessage(msg.content, 'user');
+                            else appendBotMessage(msg.content, msg.sources || []); // nguồn vẫn bấm được sau khi load lại
+                        });
+                    } else {
+                        showWelcome();
+                    }
+                    renderActiveConversation();
+                    scrollToBottom();
+                }
+            });
+        }
+
+        function deleteConversation(id) {
+            if (!confirm('Xóa hội thoại này cùng toàn bộ tin nhắn của nó?')) return;
+            $.ajax({
+                url: '/Chat/Index?handler=DeleteConversation', type: 'POST',
+                data: { conversationId: id, __RequestVerificationToken: antiForgeryToken() },
+                success: function (res) {
+                    if (res && res.success) {
+                        if (id === currentConversationId) startNewChat();
+                        loadConversations();
+                    } else {
+                        alert((res && res.message) || 'Không xóa được hội thoại.');
                     }
                 }
             });
         }
+
+        $('#newChatBtn').click(startNewChat);
+        showWelcome();
+        loadConversations();
 
         $('#switchModelBtn').click(function () {
             const model = $('#modelSelect').val();
@@ -364,16 +751,8 @@
         $('.quick-prompt-tag').click(function () { const prompt = $(this).attr('data-prompt'); if (prompt) { $('#queryInput').val(prompt); sendMessage(); } });
 
         $('#clearChatBtn').click(function () {
-            if (confirm('Bạn có chắc chắn muốn xóa toàn bộ lịch sử trò chuyện?')) {
-                $.ajax({
-                    url: '/Chat/Index?handler=ClearHistory', type: 'POST',
-                    data: { __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val() },
-                    success: function (res) {
-                        if (res && res.success) { loadChatHistory(); $('#scrollToBottomBtn').addClass('d-none'); }
-                        else alert('Không thể xóa lịch sử: ' + (res.message || 'Lỗi không xác định'));
-                    }
-                });
-            }
+            if (!currentConversationId) { alert('Chưa có hội thoại nào đang mở để xóa.'); return; }
+            deleteConversation(currentConversationId);
         });
 
         const chatMsgsEl = $('#chatMessages');
@@ -387,6 +766,14 @@
         function sendMessage() {
             const query = $('#queryInput').val().trim();
             if (!query) { $('#queryInput').focus(); return; }
+            // Chat mới bắt buộc chọn môn học; hội thoại cũ dùng môn của chính nó
+            if (!currentConversationId && !selectedCourseId()) {
+                appendBotMessage('⚠️ **Vui lòng chọn môn học trước khi đặt câu hỏi.** Tôi chỉ trả lời dựa trên tài liệu của môn bạn chọn để đảm bảo chính xác.', []);
+                $('#courseSelect').focus();
+                return;
+            }
+            const clientId = 'c' + Date.now() + Math.random().toString(16).slice(2);
+            pendingClientIds.add(clientId);
             appendMessage(query, 'user');
             $('#queryInput').val('').focus();
             const $sendBtn = $('#sendBtn');
@@ -395,14 +782,31 @@
             appendTyping(typingId);
             $.ajax({
                 url: '/Chat/Index?handler=Ask', type: 'POST',
-                data: { query: query, courseId: currentCourseId, __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val() },
-                timeout: 30000,
+                data: { query: query, courseId: selectedCourseId(), conversationId: currentConversationId, clientId: clientId, __RequestVerificationToken: antiForgeryToken() },
+                timeout: 120000,
                 success: function (result) {
                     $(`#${typingId}`).remove();
                     if (result.success) {
-                        appendBotMessage(result.response, result.sources);
-                        if (result.remainingQuota !== undefined && result.totalQuota !== undefined) {
-                            updateTokenUI(result.remainingQuota, result.totalQuota, result.packageName);
+                        // Nhận conversation do server tạo/xác nhận, khóa môn theo hội thoại
+                        if (result.conversationId) {
+                            currentConversationId = result.conversationId;
+                            lockCourseSelect(true);
+                            loadConversations();
+                        }
+                        // Answer đã stream qua SignalR thì không render lại (tránh trùng);
+                        // chỉ render từ AJAX khi hub không kết nối (fallback).
+                        if (!(result.streamMessageId && streamedMessages.has(result.streamMessageId))) {
+                            appendBotMessage(result.response, result.sources);
+                            if (result.remainingQuota !== undefined && result.totalQuota !== undefined) {
+                                updateTokenUI(result.remainingQuota, result.totalQuota, result.packageName);
+                            }
+                            if (result.sessionStartDate) {
+                                currentSessionStartDate = result.sessionStartDate;
+                                updateResetCountdown();
+                            }
+                        }
+                        if (result.todayTokenUsed !== undefined) {
+                            updateTodayTokenUI(result.todayTokenUsed);
                         }
                     }
                     else appendBotMessage('Cảnh báo: ' + (result.message || 'Không thể xử lý câu hỏi này.'), []);
@@ -415,31 +819,72 @@
             });
         }
 
+        function copyButtonHtml() {
+            return `<button type="button" class="copy-msg-btn" title="Sao chép nội dung tin nhắn"><i class="bi bi-clipboard"></i> Sao chép</button>`;
+        }
+
         function appendMessage(content, type) {
             const isUser = type === 'user';
             const timestamp = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
             const html = isUser
-                ? `<div class="d-flex justify-content-end mb-3"><div style="text-align:right;margin-right:8px;"><div class="user-bubble chat-bubble user">${escapeHtml(content)}</div><small class="message-time d-block">${timestamp}</small></div></div>`
-                : `<div class="d-flex mb-3"><div class="chat-avatar me-2"><i class="bi bi-robot"></i></div><div style="flex-grow:1;"><div class="bot-bubble chat-bubble bot">${content}</div><small class="message-time" style="margin-left:8px;">${timestamp}</small></div></div>`;
+                ? `<div class="d-flex justify-content-end mb-3"><div style="text-align:right;margin-right:8px;"><div class="user-bubble chat-bubble user">${escapeHtml(content)}</div><small class="message-time d-block">${timestamp} ${copyButtonHtml()}</small></div></div>`
+                : `<div class="d-flex mb-3"><div class="chat-avatar me-2"><i class="bi bi-robot"></i></div><div style="flex-grow:1;"><div class="bot-bubble chat-bubble bot">${content}</div><small class="message-time" style="margin-left:8px;">${timestamp} ${copyButtonHtml()}</small></div></div>`;
             $('#chatMessages').append(html);
             scrollToBottom();
         }
 
-        function appendBotMessage(content, sources) {
-            if (sources && sources.length > 0) {
-                const citationMarker = '\n---\n📚 **Nguồn tham khảo:**';
-                const citationMarkerAlt = '\n---\n📚 Nguồn tham khảo:';
-                let markerIndex = content.indexOf(citationMarker);
-                if (markerIndex === -1) markerIndex = content.indexOf(citationMarker.replace(/\n/g, '\r\n'));
-                if (markerIndex === -1) markerIndex = content.indexOf(citationMarkerAlt);
-                if (markerIndex === -1) markerIndex = content.indexOf(citationMarkerAlt.replace(/\n/g, '\r\n'));
-                if (markerIndex === -1) {
-                    const simpleMarker = '\n---';
-                    const simpleIndex = content.lastIndexOf(simpleMarker);
-                    if (simpleIndex !== -1 && simpleIndex > content.length - 400) markerIndex = simpleIndex;
-                }
-                if (markerIndex !== -1) content = content.substring(0, markerIndex).trim();
+        // Copy nội dung tin nhắn (bỏ phần danh sách nguồn + con trỏ gõ chữ)
+        $('#chatMessages').on('click', '.copy-msg-btn', function () {
+            const $btn = $(this);
+            const bubble = $btn.closest('.d-flex').find('.chat-bubble').first();
+            if (!bubble.length) return;
+            const clone = bubble.clone();
+            clone.find('.sources-block, .typing-cursor').remove();
+            const text = (clone[0].innerText || clone.text()).trim();
+            const showCopied = () => {
+                const original = $btn.html();
+                $btn.html('<i class="bi bi-check2"></i> Đã chép');
+                setTimeout(() => $btn.html(original), 1500);
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(showCopied).catch(() => fallbackCopy(text, showCopied));
+            } else {
+                fallbackCopy(text, showCopied);
             }
+        });
+
+        function fallbackCopy(text, onDone) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed'; ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            try { document.execCommand('copy'); onDone(); } catch (e) { alert('Không copy được: ' + e); }
+            document.body.removeChild(ta);
+        }
+
+        function stripCitationFooter(content, hasSources) {
+            if (!hasSources) return content;
+            // Footer có thể là tiếng Việt hoặc tiếng Anh tùy ngôn ngữ câu trả lời
+            const markers = [
+                '\n---\n📚 **Nguồn tham khảo:**', '\n---\n📚 Nguồn tham khảo:',
+                '\n---\n📚 **References:**', '\n---\n📚 References:'
+            ];
+            let markerIndex = -1;
+            for (const m of markers) {
+                markerIndex = content.indexOf(m);
+                if (markerIndex === -1) markerIndex = content.indexOf(m.replace(/\n/g, '\r\n'));
+                if (markerIndex !== -1) break;
+            }
+            if (markerIndex === -1) {
+                const simpleMarker = '\n---';
+                const simpleIndex = content.lastIndexOf(simpleMarker);
+                if (simpleIndex !== -1 && simpleIndex > content.length - 400) markerIndex = simpleIndex;
+            }
+            return markerIndex !== -1 ? content.substring(0, markerIndex).trim() : content;
+        }
+
+        function formatBotContent(content) {
             let formatted = escapeHtml(content);
             formatted = formatted.replace(/^### (.+)$/gm, '<h5 class="mt-2 mb-1" style="color:#1456b8;">$1</h5>');
             formatted = formatted.replace(/^## (.+)$/gm, '<h4 class="mt-2 mb-1" style="color:#0f1d3a;">$1</h4>');
@@ -452,18 +897,66 @@
             formatted = formatted.replace(/^&gt; (.+)$/gm, '<blockquote style="border-left:3px solid #1456b8;padding-left:10px;color:#555;margin:4px 0;">$1</blockquote>');
             formatted = formatted.replace(/^---$/gm, '<hr style="border-top:1px solid #e0e7f2;margin:8px 0;">');
             formatted = formatted.replace(/\n/g, '<br>');
-            let sourcesHtml = '';
-            if (sources && sources.length > 0) {
-                sourcesHtml = `<div class="mt-3 pt-3 border-top" style="border-color:#edf2fb !important;"><small class="text-muted fw-bold d-block mb-2">Nguồn tham khảo:</small>`;
-                sources.forEach((s) => {
+            return formatted;
+        }
+
+        // Nhận diện văn bản tiếng Việt (có dấu) — để nhãn nguồn khớp ngôn ngữ câu trả lời
+        function isVietnameseText(text) {
+            return /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i.test(text || '');
+        }
+
+        function buildSourcesHtml(sources, answerText) {
+            if (!sources || sources.length === 0) return '';
+            const vn = answerText === undefined ? true : isVietnameseText(answerText);
+            const heading = vn
+                ? 'Nguồn tham khảo <span class="fw-normal">(bấm để xem đoạn trích)</span>:'
+                : 'References <span class="fw-normal">(click to view the cited excerpt)</span>:';
+            const pageWord = vn ? 'Trang' : 'Page';
+            let sourcesHtml = `<div class="sources-block mt-3 pt-3 border-top" style="border-color:#edf2fb !important;"><small class="text-muted fw-bold d-block mb-2">${heading}</small>`;
+            sources.forEach((s) => {
+                const label = `📄 <em>${escapeHtml(s.fileName)}</em> · ${pageWord} ${s.pageNumber}`;
+                // Bấm mở popup đoạn trích ngay trong trang chat (không chuyển trang)
+                const link = s.chunkId
+                    ? `<a href="#" class="citation-link" data-chunk-id="${s.chunkId}" title="Xem đoạn tài liệu được trích dẫn">${label} <i class="bi bi-eye small"></i></a>`
+                    : `<span>${label}</span>`;
+                let badge = '';
+                if (s.score !== undefined && s.score !== null) {
                     const score = (s.score * 100).toFixed(0);
                     const badgeClass = score >= 80 ? 'app-badge-green' : score >= 60 ? 'app-badge-blue' : 'app-badge-amber';
-                    sourcesHtml += `<small class="d-flex align-items-center gap-2 text-muted mb-2"><span>📄 <em>${s.fileName}</em></span><span class="app-badge-soft ${badgeClass}">${score}%</span></small>`;
-                });
-                sourcesHtml += '</div>';
-            }
+                    badge = `<span class="app-badge-soft ${badgeClass}">${score}%</span>`;
+                }
+                sourcesHtml += `<small class="d-flex align-items-center gap-2 text-muted mb-2">${link}${badge}</small>`;
+            });
+            sourcesHtml += '</div>';
+            return sourcesHtml;
+        }
+
+        // Delegated handler: hoạt động cho MỌI trích dẫn, kể cả tin nhắn cũ load lại
+        $('#chatMessages').on('click', '.citation-link', function (e) {
+            e.preventDefault();
+            const chunkId = $(this).data('chunk-id');
+            if (chunkId) openCitationModal(chunkId);
+        });
+
+        function openCitationModal(chunkId) {
+            $.ajax({
+                url: '/Chat/Index?handler=Chunk&chunkId=' + encodeURIComponent(chunkId), type: 'GET',
+                success: function (res) {
+                    if (!res || !res.success) { alert((res && res.message) || 'Không tải được đoạn trích.'); return; }
+                    $('#citationModalTitle').html(`📄 ${escapeHtml(res.fileName)} <span class="text-muted fw-normal">· Trang ${res.pageNumber}</span>`);
+                    $('#citationModalBody').text(res.content);
+                    $('#citationModalFullLink').attr('href', res.chunkUrl);
+                    new bootstrap.Modal(document.getElementById('citationModal')).show();
+                }
+            });
+        }
+
+        function appendBotMessage(content, sources) {
+            content = stripCitationFooter(content, sources && sources.length > 0);
+            const formatted = formatBotContent(content);
+            const sourcesHtml = buildSourcesHtml(sources, content);
             const timestamp = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-            const html = `<div class="d-flex mb-3"><div class="chat-avatar me-2"><i class="bi bi-robot"></i></div><div style="flex-grow:1;"><div class="bot-bubble chat-bubble bot">${formatted}${sourcesHtml}</div><small class="message-time" style="margin-left:8px;">${timestamp}</small></div></div>`;
+            const html = `<div class="d-flex mb-3"><div class="chat-avatar me-2"><i class="bi bi-robot"></i></div><div style="flex-grow:1;"><div class="bot-bubble chat-bubble bot">${formatted}${sourcesHtml}</div><small class="message-time" style="margin-left:8px;">${timestamp} ${copyButtonHtml()}</small></div></div>`;
             $('#chatMessages').append(html);
             scrollToBottom();
         }
@@ -483,6 +976,24 @@
             $('#chatRemainingQuotaVal').text(remaining.toLocaleString('vi-VN'));
             $('#chatTotalQuotaVal').text(total.toLocaleString('vi-VN'));
             $('#tokenPercentVal').text(percent + '%');
+            
+            // Sync to left sidebar
+            $('#token-used').text(remaining.toLocaleString('vi-VN'));
+            $('#token-limit').text(total.toLocaleString('vi-VN'));
+            
+            const $sidebarBar = $('#token-progress-bar');
+            if ($sidebarBar.length) {
+                $sidebarBar.css('width', percent + '%');
+                $sidebarBar.removeClass('bg-success bg-warning bg-danger');
+                if (percent > 50) $sidebarBar.addClass('bg-success');
+                else if (percent > 20) $sidebarBar.addClass('bg-warning');
+                else $sidebarBar.addClass('bg-danger');
+            }
+            const $sidebarWarning = $('#token-warning');
+            if ($sidebarWarning.length) {
+                if (percent <= 20) $sidebarWarning.removeClass('d-none');
+                else $sidebarWarning.addClass('d-none');
+            }
             
             const $bar = $('#tokenProgressBar');
             if ($bar.length) {
@@ -512,7 +1023,7 @@
                 const isFree = packageName === "Free";
                 $('#tokenCardTitle').text(isFree ? 'Hạn mức hôm nay' : 'Hạn mức gói VIP');
                 const descHtml = isFree 
-                    ? `Bạn đã sử dụng một lượng hạn mức hàng ngày. Hạn mức sẽ tự động refresh đầy lại sau <strong id="resetTimeDisplay" class="text-info">...</strong>.` 
+                    ? `Bạn đã sử dụng một phần hạn mức của phiên. Hạn mức sẽ tự động refresh đầy lại sau <strong id="resetTimeDisplay" class="text-info">...</strong>.`
                     : `Số dư Token của bạn tích lũy từ gói VIP để sử dụng hỏi đáp học thuật.`;
                 $('#tokenCardDesc').html(descHtml);
                 if (isFree) {
@@ -559,14 +1070,25 @@
             const countdownEl = document.getElementById('resetTimeDisplay');
             const modalCountdownEl = document.getElementById('modalResetTimeDisplay');
             
+            const defaultText = "5 giờ (sau câu chat đầu)";
+            
+            if (!currentSessionStartDate) {
+                if (countdownEl) countdownEl.textContent = defaultText;
+                if (modalCountdownEl) modalCountdownEl.textContent = defaultText;
+                return;
+            }
+
             const now = new Date();
-            const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-            const vnTime = new Date(utc + (3600000 * 7));
+            const sessionStart = new Date(currentSessionStartDate);
+            const resetTime = new Date(sessionStart.getTime() + (5 * 60 * 60 * 1000));
             
-            const nextDay = new Date(vnTime);
-            nextDay.setHours(24, 0, 0, 0); // next midnight
-            
-            const diffMs = nextDay - vnTime;
+            const diffMs = resetTime - now;
+            if (diffMs <= 0) {
+                if (countdownEl) countdownEl.textContent = defaultText;
+                if (modalCountdownEl) modalCountdownEl.textContent = defaultText;
+                return;
+            }
+
             const diffMins = Math.floor(diffMs / 60000);
             const hours = Math.floor(diffMins / 60);
             const minutes = diffMins % 60;
@@ -581,7 +1103,7 @@
         setInterval(updateResetCountdown, 60000);
 
         // Initial UI trigger on page load using backend values
-        @if (Model.Subscription != null)
+        @if (Model.Subscription != null && Model.Subscription.PricingPackage != null)
         {
             <text>
             updateTokenUI(@Model.Subscription.RemainingTokens, @Model.Subscription.PricingPackage.TokenQuota, "@Model.Subscription.PricingPackage.Name");
@@ -608,14 +1130,12 @@
             .withAutomaticReconnect()
             .build();
 
+        function updateTodayTokenUI(todayUsed) {
+            // Sidebar is now synced with remaining tokens directly via updateTokenUI
+        }
+
         tokenConnection.on("ReceiveTokenUpdate", (todayUsed) => {
-            const limit = @Model.DailyTokenLimit;
-            document.getElementById('token-used').textContent = todayUsed;
-            const pct = Math.min(100, Math.round(todayUsed / limit * 100));
-            const bar = document.getElementById('token-progress-bar');
-            bar.style.width = pct + '%';
-            bar.className = 'progress-bar ' + (pct >= 90 ? 'bg-danger' : pct >= 70 ? 'bg-warning' : 'bg-success');
-            document.getElementById('token-warning').classList.toggle('d-none', pct < 80);
+            // SignalR token updates handled via PaymentHub / updateTokenUI
         });
 
         tokenConnection.start().catch(err => console.error('TokenUsageHub error:', err));

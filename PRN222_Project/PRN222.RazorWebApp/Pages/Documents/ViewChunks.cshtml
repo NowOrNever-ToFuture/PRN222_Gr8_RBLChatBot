@@ -47,12 +47,21 @@
                             {
                                 var chunk = Model.Chunks[i];
                                 int globalIndex = (Model.CurrentPage - 1) * Model.PageSize + i + 1;
-                                <tr>
+                                var isHighlighted = Model.HighlightChunkId == chunk.Id;
+                                <tr id="chunk-@chunk.Id" class="@(isHighlighted ? "cited-chunk-highlight" : "")">
                                     <td><strong>@globalIndex</strong></td>
                                     <td><span class="badge bg-info text-dark">Trang @chunk.PageNumber</span></td>
                                     <td><span class="badge bg-secondary">@chunk.ChunkIndex</span></td>
                                     <td>
-                                        <div style="max-height: 150px; overflow-y: auto; font-size: 0.9rem;" class="p-2 border rounded bg-light">
+                                        @if (isHighlighted)
+                                        {
+                                            <div class="mb-2">
+                                                <span class="badge bg-warning text-dark px-3 py-2" style="font-size: 0.85rem;">
+                                                    <i class="bi bi-quote"></i> Đoạn được trích dẫn trong câu trả lời
+                                                </span>
+                                            </div>
+                                        }
+                                        <div style="max-height: 150px; overflow-y: auto; font-size: 0.9rem;" class="p-2 border rounded bg-light @(isHighlighted ? "cited-chunk-content" : "")">
                                             @chunk.Content
                                         </div>
                                     </td>
@@ -125,3 +134,35 @@
         </div>
     </div>
 </div>
+
+<style>
+    /* Highlight chunk được trích dẫn khi đi từ khung chat sang */
+    .cited-chunk-highlight > td {
+        background: #fff3bf !important;
+        box-shadow: inset 5px 0 0 #f59e0b;
+    }
+    /* Nội dung đoạn trích: in đậm + viền cam để user thấy ngay nguồn */
+    .cited-chunk-content {
+        font-weight: 600 !important;
+        color: #1a2233;
+        border: 2px solid #f59e0b !important;
+        background: #fffbe8 !important;
+        animation: citedPulse 1.6s ease-in-out 3;
+    }
+    @@keyframes citedPulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+        50% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0.35); }
+    }
+</style>
+
+@if (Model.HighlightChunkId.HasValue)
+{
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var row = document.getElementById('chunk-@Model.HighlightChunkId');
+            if (row) {
+                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        });
+    </script>
+}

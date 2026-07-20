@@ -57,9 +57,14 @@ namespace PRN222.Services
 
         public async Task<List<ChartDataDto>> GetChartDataAsync()
         {
+            var latestBatchId = await GetLatestCompletedBenchmarkBatchIdAsync();
+            if (latestBatchId == Guid.Empty)
+                return new List<ChartDataDto>();
+
             var data = await _dbContext.BenchmarkResults
                 .Include(r => r.BenchmarkRun)
-                .Where(r => r.BenchmarkRun.Status == "Completed")
+                .Where(r => r.BenchmarkRun.Status == "Completed"
+                    && r.BenchmarkRun.BenchmarkBatchId == latestBatchId)
                 .GroupBy(r => new
                 {
                     r.BenchmarkRun.LlmModel,
@@ -99,19 +104,29 @@ namespace PRN222.Services
                     3);
             }
 
+            data.OrderByDescending(item => item.OverallScore).First().IsBest = true;
+
             var orderedData = data
-                .OrderByDescending(item => item.OverallScore)
+                .OrderBy(item => item.Model.StartsWith("GPT-", StringComparison.OrdinalIgnoreCase) ? 0
+                    : item.Model.StartsWith("Gemini-", StringComparison.OrdinalIgnoreCase) ? 1
+                    : item.Model.StartsWith("Qwen-", StringComparison.OrdinalIgnoreCase) ? 2
+                    : 3)
+                .ThenBy(item => item.Model)
                 .ToList();
-            orderedData[0].IsBest = true;
             return orderedData;
         }
 
         public async Task<List<DifficultyChartDataDto>> GetDifficultyChartDataAsync()
         {
+            var latestBatchId = await GetLatestCompletedBenchmarkBatchIdAsync();
+            if (latestBatchId == Guid.Empty)
+                return new List<DifficultyChartDataDto>();
+
             return await _dbContext.BenchmarkResults
                 .Include(r => r.BenchmarkRun)
                 .Include(r => r.TestQuestion)
-                .Where(r => r.BenchmarkRun.Status == "Completed")
+                .Where(r => r.BenchmarkRun.Status == "Completed"
+                    && r.BenchmarkRun.BenchmarkBatchId == latestBatchId)
                 .GroupBy(r => new
                 {
                     r.BenchmarkRun.LlmModel,
@@ -130,6 +145,15 @@ namespace PRN222.Services
                 .OrderBy(d => d.Model)
                 .ThenBy(d => d.Difficulty)
                 .ToListAsync();
+        }
+
+        private async Task<Guid> GetLatestCompletedBenchmarkBatchIdAsync()
+        {
+            return await _dbContext.BenchmarkRuns
+                .Where(run => run.Status == "Completed")
+                .OrderByDescending(run => run.RunDate)
+                .Select(run => run.BenchmarkBatchId)
+                .FirstOrDefaultAsync();
         }
 
         /// <summary>

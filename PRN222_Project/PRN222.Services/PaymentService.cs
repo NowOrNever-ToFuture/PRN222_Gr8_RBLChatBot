@@ -41,6 +41,12 @@ namespace PRN222.Services
 
         public async Task<UserSubscription?> GetUserSubscriptionAsync(Guid userId)
         {
+            var userExists = await _dbContext.Users.AnyAsync(u => u.Id == userId);
+            if (!userExists)
+            {
+                return null;
+            }
+
             var subscription = await _dbContext.UserSubscriptions
                 .Include(us => us.PricingPackage)
                 .FirstOrDefaultAsync(us => us.UserId == userId && us.Status == "Active");
@@ -72,18 +78,32 @@ namespace PRN222.Services
                     .FirstOrDefaultAsync(us => us.UserId == userId && us.Status == "Active");
             }
 
-            // Daily reset logic for Free tier
-            if (subscription != null && subscription.PricingPackage != null && subscription.PricingPackage.Name == "Free")
+            // Apply session reset logic if session has expired
+            if (subscription != null && subscription.PricingPackage != null)
             {
-                if (DateTime.UtcNow.Date > subscription.StartDate.Date)
-                {
-                    subscription.RemainingTokens = subscription.PricingPackage.TokenQuota;
-                    subscription.StartDate = DateTime.UtcNow;
-                    await _dbContext.SaveChangesAsync();
-                }
+                await CheckAndResetSessionQuotaAsync(subscription);
             }
-
+ 
             return subscription;
+        }
+
+        private async Task CheckAndResetSessionQuotaAsync(UserSubscription subscription)
+        {
+            if (subscription.SessionStartDate.HasValue && DateTime.UtcNow >= subscription.SessionStartDate.Value.AddHours(5))
+            {
+                int quotaLimit = subscription.PricingPackage.TokenQuota;
+                
+                // If user remaining tokens are below standard quota, reset to quota.
+                // If they are still above due to accumulation (e.g. napping VIP), we preserve it.
+                if (subscription.RemainingTokens < quotaLimit)
+                {
+                    subscription.RemainingTokens = quotaLimit;
+                }
+                
+                // Reset session start date so the next message begins a new 5-hour session
+                subscription.SessionStartDate = null;
+                await _dbContext.SaveChangesAsync();
+            }
         }
 
         public async Task<string> CreatePaymentLinkAsync(Guid userId, Guid packageId, string returnUrl, string cancelUrl)
@@ -223,11 +243,20 @@ namespace PRN222.Services
             await _hubContext.Clients.User(transaction.UserId.ToString())
                 .SendAsync("ReceivePaymentConfirmed", package.Name, subscription.RemainingTokens);
 
+            // Broadcast to everyone (including Admin dashboard) for live update
+            await _hubContext.Clients.All.SendAsync("ReceivePaymentLogged");
+
             return (true, "Payment confirmed and subscription updated.");
         }
 
         public async Task AssignFreePackageAsync(Guid userId)
         {
+            var userExists = await _dbContext.Users.AnyAsync(u => u.Id == userId);
+            if (!userExists)
+            {
+                return;
+            }
+
             var freePackage = await _dbContext.PricingPackages
                 .FirstOrDefaultAsync(p => p.Price == 0 && p.IsActive);
 
@@ -238,7 +267,7 @@ namespace PRN222.Services
                     Name = "Free",
                     Description = "Default Free Tier",
                     Price = 0,
-                    TokenQuota = 100,
+                    TokenQuota = 5000,
                     DurationDays = 36500,
                     IsActive = true
                 };
@@ -365,6 +394,16 @@ namespace PRN222.Services
             var subscription = await GetUserSubscriptionAsync(userId);
             if (subscription != null)
             {
+                // 1. Perform session reset checks if session has expired
+                await CheckAndResetSessionQuotaAsync(subscription);
+
+                // 2. Initialize session start time if this is the first message in the session
+                if (!subscription.SessionStartDate.HasValue)
+                {
+                    subscription.SessionStartDate = DateTime.UtcNow;
+                }
+
+                // 3. Deduct the tokens
                 subscription.RemainingTokens = Math.Max(0, subscription.RemainingTokens - amount);
                 await _dbContext.SaveChangesAsync();
 
@@ -427,6 +466,91 @@ namespace PRN222.Services
             await _hubContext.Clients.All.SendAsync("ReceivePackagesUpdated");
 
             return true;
+        }
+
+        private static readonly string[] MonthNames = {
+            "Th.1", "Th.2", "Th.3", "Th.4", "Th.5", "Th.6",
+            "Th.7", "Th.8", "Th.9", "Th.10", "Th.11", "Th.12"
+        };
+
+        public async Task<List<MonthlyPaymentStatDto>> GetMonthlyPaymentStatsAsync(int year)
+        {
+            var rawData = await _dbContext.PaymentTransactions
+                .Include(p => p.User)
+                .Where(p => p.Status == "Success" && p.Amount > 0 && p.CreatedDate.Year == year && p.User.Role == "Student")
+                .GroupBy(p => p.CreatedDate.Month)
+                .Select(g => new
+                {
+                    Month = g.Key,
+                    TotalRevenue = g.Sum(p => p.Amount),
+                    TransactionCount = g.Count()
+                })
+                .ToListAsync();
+
+            // Trả về đủ 12 tháng (tháng không có data = 0)
+            return Enumerable.Range(1, 12).Select(m =>
+            {
+                var found = rawData.FirstOrDefault(r => r.Month == m);
+                return new MonthlyPaymentStatDto
+                {
+                    Month = m,
+                    MonthName = MonthNames[m - 1],
+                    TotalRevenue = found?.TotalRevenue ?? 0,
+                    TransactionCount = found?.TransactionCount ?? 0
+                };
+            }).ToList();
+        }
+
+        public async Task<List<int>> GetPaymentAvailableYearsAsync()
+        {
+            var years = await _dbContext.PaymentTransactions
+                .Select(p => p.CreatedDate.Year)
+                .Distinct()
+                .OrderByDescending(y => y)
+                .ToListAsync();
+
+            if (!years.Any())
+                years.Add(DateTime.UtcNow.Year);
+
+            return years;
+        }
+
+        public async Task<List<UserPaymentSummaryDto>> GetUserPaymentSummaryAsync()
+        {
+            var paymentByUser = await _dbContext.PaymentTransactions
+                .Where(p => p.Status == "Success" && p.Amount > 0)
+                .GroupBy(p => p.UserId)
+                .Select(g => new
+                {
+                    UserId = g.Key,
+                    TotalPaid = g.Sum(p => p.Amount),
+                    TxCount = g.Count()
+                })
+                .ToListAsync();
+
+            var subscriptions = await _dbContext.UserSubscriptions
+                .Include(us => us.PricingPackage)
+                .Where(us => us.Status == "Active")
+                .ToListAsync();
+
+            var users = await _dbContext.Users
+                .OrderBy(u => u.FullName)
+                .ToListAsync();
+
+            return users.Select(u =>
+            {
+                var pay = paymentByUser.FirstOrDefault(p => p.UserId == u.Id);
+                var sub = subscriptions.FirstOrDefault(s => s.UserId == u.Id);
+                return new UserPaymentSummaryDto
+                {
+                    UserId = u.Id,
+                    FullName = u.FullName ?? u.Username,
+                    Username = u.Username,
+                    TotalAmountPaid = pay?.TotalPaid ?? 0,
+                    SuccessfulTransactions = pay?.TxCount ?? 0,
+                    CurrentPackage = sub?.PricingPackage?.Name ?? "Free"
+                };
+            }).ToList();
         }
     }
 }
