@@ -78,7 +78,7 @@ namespace PRN222.Services
             {
                 await CheckAndResetSessionQuotaAsync(subscription);
             }
- 
+
             return subscription;
         }
 
@@ -87,14 +87,14 @@ namespace PRN222.Services
             if (subscription.SessionStartDate.HasValue && DateTime.UtcNow >= subscription.SessionStartDate.Value.AddHours(5))
             {
                 int quotaLimit = subscription.PricingPackage.TokenQuota;
-                
+
                 // If user remaining tokens are below standard quota, reset to quota.
                 // If they are still above due to accumulation (e.g. napping VIP), we preserve it.
                 if (subscription.RemainingTokens < quotaLimit)
                 {
                     subscription.RemainingTokens = quotaLimit;
                 }
-                
+
                 // Reset session start date so the next message begins a new 5-hour session
                 subscription.SessionStartDate = null;
                 await _dbContext.SaveChangesAsync();
