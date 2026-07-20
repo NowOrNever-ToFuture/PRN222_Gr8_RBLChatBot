@@ -47,11 +47,16 @@ namespace PRN222.Services
 
             if (subscription == null)
             {
-                // Automatically assign Free package if none exists
-                await AssignFreePackageAsync(userId);
-                subscription = await _dbContext.UserSubscriptions
-                    .Include(us => us.PricingPackage)
-                    .FirstOrDefaultAsync(us => us.UserId == userId && us.Status == "Active");
+                // Verify user exists before assigning
+                var userExists = await _dbContext.Users.AnyAsync(u => u.Id == userId);
+                if (userExists)
+                {
+                    // Automatically assign Free package if none exists
+                    await AssignFreePackageAsync(userId);
+                    subscription = await _dbContext.UserSubscriptions
+                        .Include(us => us.PricingPackage)
+                        .FirstOrDefaultAsync(us => us.UserId == userId && us.Status == "Active");
+                }
             }
             else if (subscription.EndDate < DateTime.UtcNow)
             {
