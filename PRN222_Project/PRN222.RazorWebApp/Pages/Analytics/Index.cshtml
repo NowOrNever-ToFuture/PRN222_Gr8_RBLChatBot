@@ -27,6 +27,7 @@
                             <option value="mixed">Cả hai</option>
                             <option value="bar">Biểu đồ cột</option>
                             <option value="line">Biểu đồ line</option>
+                            <option value="pie">Biểu đồ tròn</option>
                         </select>
                         <select id="tokenStartMonthSelect" class="form-select form-select-sm" style="border-radius: 8px; min-width: 105px; width: auto;">
                             @for (int i = 1; i <= 12; i++)
@@ -66,6 +67,7 @@
                         <select id="paymentChartTypeSelect" class="form-select form-select-sm" style="border-radius: 8px; min-width: 125px; width: auto;">
                             <option value="line">Biểu đồ line</option>
                             <option value="bar">Biểu đồ cột</option>
+                            <option value="pie">Biểu đồ tròn</option>
                         </select>
                         <select id="paymentStartMonthSelect" class="form-select form-select-sm" style="border-radius: 8px; min-width: 105px; width: auto;">
                             @for (int i = 1; i <= 12; i++)
@@ -373,6 +375,19 @@
                             tension: 0.3
                         }
                     ];
+                } else if (chartType === 'pie') {
+                    datasets = [
+                        {
+                            label: 'Tổng số lượng tiêu thụ',
+                            data: totalTokens,
+                            backgroundColor: [
+                                '#1456b8', '#198754', '#0f9d7a', '#764ba2', '#e67e22', '#e74c3c',
+                                '#8e44ad', '#3498db', '#1abc9c', '#f1c40f', '#d35400', '#c0392b'
+                            ],
+                            borderColor: '#ffffff',
+                            borderWidth: 2
+                        }
+                    ];
                 } else {
                     datasets = [
                         {
@@ -408,31 +423,57 @@
                 }
 
                 const ctx = document.getElementById('tokenChart').getContext('2d');
+                
+                let chartOptions = {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: chartType === 'pie' ? 'right' : 'bottom',
+                            labels: { boxWidth: 12, font: { weight: '600' } }
+                        }
+                    }
+                };
+
+                if (chartType !== 'pie') {
+                    chartOptions.scales = {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(0,0,0,0.04)' }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    };
+                } else {
+                    chartOptions.plugins.tooltip = {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed !== null) {
+                                    label += context.parsed.toLocaleString('vi-VN') + ' Tokens';
+                                    let total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    if (total > 0) {
+                                        let percentage = Math.round((context.parsed * 100) / total);
+                                        label += ' (' + percentage + '%)';
+                                    }
+                                }
+                                return label;
+                            }
+                        }
+                    };
+                }
+
                 tokenChart = new Chart(ctx, {
                     type: chartType === 'mixed' ? 'bar' : chartType,
                     data: {
                         labels: labels,
                         datasets: datasets
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                                labels: { boxWidth: 12, font: { weight: '600' } }
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                grid: { color: 'rgba(0,0,0,0.04)' }
-                            },
-                            x: {
-                                grid: { display: false }
-                            }
-                        }
-                    }
+                    options: chartOptions
                 });
             }
 
@@ -457,6 +498,14 @@
                     dataset.backgroundColor = 'rgba(118, 75, 162, 0.55)';
                     dataset.borderColor = '#764ba2';
                     dataset.borderWidth = 1;
+                } else if (chartType === 'pie') {
+                    dataset.type = 'pie';
+                    dataset.backgroundColor = [
+                        '#764ba2', '#f39c12', '#2ecc71', '#e74c3c', '#3498db', '#9b59b6',
+                        '#34495e', '#16a085', '#d35400', '#c0392b', '#bdc3c7', '#7f8c8d'
+                    ];
+                    dataset.borderColor = '#ffffff';
+                    dataset.borderWidth = 2;
                 } else {
                     dataset.type = 'line';
                     dataset.backgroundColor = 'rgba(118, 75, 162, 0.08)';
@@ -467,35 +516,63 @@
                 }
 
                 const ctx = document.getElementById('paymentChart').getContext('2d');
+                
+                let chartOptions = {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: chartType === 'pie',
+                            position: 'right',
+                            labels: { boxWidth: 12, font: { weight: '600' } }
+                        }
+                    }
+                };
+
+                if (chartType !== 'pie') {
+                    chartOptions.scales = {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(0,0,0,0.04)' },
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toLocaleString('vi-VN') + ' đ';
+                                }
+                            }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    };
+                } else {
+                    chartOptions.plugins.tooltip = {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed !== null) {
+                                    label += context.parsed.toLocaleString('vi-VN') + ' đ';
+                                    let total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    if (total > 0) {
+                                        let percentage = Math.round((context.parsed * 100) / total);
+                                        label += ' (' + percentage + '%)';
+                                    }
+                                }
+                                return label;
+                            }
+                        }
+                    };
+                }
+
                 paymentChart = new Chart(ctx, {
                     type: chartType,
                     data: {
                         labels: labels,
                         datasets: [dataset]
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: false
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                grid: { color: 'rgba(0,0,0,0.04)' },
-                                ticks: {
-                                    callback: function(value) {
-                                        return value.toLocaleString('vi-VN') + ' đ';
-                                    }
-                                }
-                            },
-                            x: {
-                                grid: { display: false }
-                            }
-                        }
-                    }
+                    options: chartOptions
                 });
             }
 
